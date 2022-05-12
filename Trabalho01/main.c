@@ -4,11 +4,12 @@
 
 int main(int argc, char *argv[]){
 
-    FILE *File = fopen("teste.csv","wb");
+    char *filename = readline(stdin);
+    write_header_type1(filename);
 
-    write_header_type1(File);
+    read_header_type1(filename);
 
-    fclose(File);
+//    fclose(File);
     return 0;
 
 }

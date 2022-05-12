@@ -10,7 +10,17 @@ typedef struct header Header;
 /*
  * Comment section
 */
-int write_header_type1(FILE *File);
+char *readline(FILE *stream) ;
+
+/*
+ * Comment section
+*/
+int write_header_type1(char *filename);
+
+/*
+ * Comment section
+*/
+int read_header_type1(char *filename);
 
 
 #endif

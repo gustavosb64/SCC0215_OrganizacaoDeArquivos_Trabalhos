@@ -22,21 +22,41 @@ struct header{
     int nroRegRem;      // quantidade de registros logicamente removidos
 };
 
-int write_header_type1(FILE *File){
+#define READLINE_BUFFER 4096
+char *readline(FILE *stream) {
+    char *string = 0;
+    int pos = 0; 
+
+	do{
+        if (pos % READLINE_BUFFER == 0) {
+            string = (char *) realloc(string, (pos / READLINE_BUFFER + 1) * READLINE_BUFFER);
+        }
+        string[pos] = (char) fgetc(stream);
+    }while(string[pos++] != '\n' && string[pos-1] != '\r' && !feof(stream));
+
+    string[pos-1] = 0;
+    string = (char *) realloc(string, pos);
+
+    return string;
+}
+
+int write_header_type1(char *filename){
+
+    FILE *File = fopen(filename, "wb");
 
     char status = 0;
-    char topo = -1;
+    int topo = -1;
     char descricao[41] = "LISTAGEM DA FROTA DOS VEICULOS NO BRASIL";
     char desC1[21] = "CODIGO IDENTIFICADOR:";
     char desC2[20] = "ANO DE FABRICACAO:";
-    char desC3[25] = "QUANTIDADE DE VEICULOS";
-    char desC4[9] = "ENERGIA"; 
+    char desC3[25] = "QUANTIDADE DE VEICULOS:";
+    char desC4[9] = "ENERGIA:"; 
     char codC5 = 0;    
-    char desC5[17] = "NOME DA CIDADE";
+    char desC5[17] = "NOME DA CIDADE:";
     char codC6 = 1;    
-    char desC6[18] = "MARCA DO VEICULO";
+    char desC6[18] = "MARCA DO VEICULO:";
     char codC7 = 2;    
-    char desC7[19] = "MODELO DO VEICULO";
+    char desC7[19] = "MODELO DO VEICULO:";
     int proxRNN = -1;        
     int nroRegRem = 0;      
 
@@ -56,5 +76,57 @@ int write_header_type1(FILE *File){
     fwrite(&proxRNN, sizeof(int), 1, File);
     fwrite(&nroRegRem, sizeof(int), 1, File);
 
+    fclose(File);
+
     return 0;
+}
+
+int read_header_type1(char *filename){
+
+    FILE *File = fopen(filename, "rb");
+    if (!File){
+        printf("Arquivo não encontrado.");
+        return 1;
+    }
+
+    Header H;
+
+    fseek(File, 0, SEEK_SET);
+    fread(&H.status, sizeof(char), 1, File);
+    fread(&H.topo, sizeof(int), 1, File);
+    fread(&H.descricao, sizeof(char), 40, File);
+    fread(&H.desC1, sizeof(char), 20, File);
+    fread(&H.desC2, sizeof(char), 19, File);
+    fread(&H.desC3, sizeof(char), 24, File);
+    fread(&H.desC4, sizeof(char), 8, File);
+    fread(&H.codC5, sizeof(char), 1, File);
+    fread(&H.desC5, sizeof(char), 17, File);
+    fread(&H.codC6, sizeof(char), 1, File);
+    fread(&H.desC6, sizeof(char), 18, File);
+    fread(&H.codC7, sizeof(char), 1, File);
+    fread(&H.desC7, sizeof(char), 19, File);
+    fread(&H.proxRNN, sizeof(int), 1, File);
+    fread(&H.nroRegRem, sizeof(int), 1, File);
+
+    printf("%d\n",H.status);
+    printf("%d\n",H.topo);
+    printf("%.40s\n",H.descricao);
+    printf("%.20s\n",H.desC1);
+    printf("%.19s\n",H.desC2);
+    printf("%.24s\n",H.desC3);
+    printf("%.8s\n",H.desC4);
+    printf("%d\n",H.codC5);
+    printf("%.17s\n",H.desC5);
+    printf("%d\n",H.codC6);
+    printf("%.18s\n",H.desC6);
+    printf("%d\n",H.codC7);
+    printf("%.19s\n",H.desC7);
+    printf("%d\n",H.proxRNN);
+    printf("%d\n",H.nroRegRem);
+
+    fclose(File);
+    free(filename);
+
+    return 0;
+
 }
