@@ -5,6 +5,7 @@
     * Registro de cabeçalho
         * _status_ assume valor 1 após fechar o arquivo depois de abrí-lo para leitura também?
         * _desC1_: apenas 15 bytes mesmo? Não cabe CODIGO IDENTIFICADOR em 15 bytes
+        * _codN_: são os números de fato, ou o char referentes aos números?
     * Registro de dados
         * Se valores nulos não vão ser armazenados, como os dados serão propriamente identificados?
 
