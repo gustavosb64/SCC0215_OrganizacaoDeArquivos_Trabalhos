@@ -42,6 +42,7 @@ char *readline(FILE *stream) {
 
 int write_header_type1(char *filename){
 
+    // Abre arquivo para escrita 
     FILE *File = fopen(filename, "wb");
 
     char status = 0;
@@ -81,15 +82,33 @@ int write_header_type1(char *filename){
     return 0;
 }
 
-int read_header_type1(char *filename){
+int print_string(char string[], int len){
 
-    FILE *File = fopen(filename, "rb");
-    if (!File){
-        printf("Arquivo não encontrado.");
+    // Conferindo se comprimento fornecido é maior que 0
+    if (len <= 0){
+        printf("ERRO! Comprimento inválido.");
         return 1;
     }
 
-    Header H;
+    // Imprimindo na saída padrão os caracteres da string
+    for (int i=0; i<len; i++)
+        printf("%c",string[i]);
+
+    printf("\n");
+
+    return 0;
+}
+
+int read_header_type1(char *filename){
+
+    // Abre arquivo para leitura e checa se ele existe
+    FILE *File = fopen(filename, "rb");
+    if (File == NULL){
+        printf("ERRO! Arquivo não encontrado.");
+        return 1;
+    }
+
+    Header H; 
 
     fseek(File, 0, SEEK_SET);
     fread(&H.status, sizeof(char), 1, File);
@@ -110,17 +129,17 @@ int read_header_type1(char *filename){
 
     printf("%d\n",H.status);
     printf("%d\n",H.topo);
-    printf("%.40s\n",H.descricao);
-    printf("%.20s\n",H.desC1);
-    printf("%.19s\n",H.desC2);
-    printf("%.24s\n",H.desC3);
-    printf("%.8s\n",H.desC4);
+    print_string(H.descricao, 40);
+    print_string(H.desC1, 20);
+    print_string(H.desC2, 19);
+    print_string(H.desC3, 24);
+    print_string(H.desC4, 8);
     printf("%d\n",H.codC5);
-    printf("%.17s\n",H.desC5);
+    print_string(H.desC5, 17);
     printf("%d\n",H.codC6);
-    printf("%.18s\n",H.desC6);
+    print_string(H.desC6, 18);
     printf("%d\n",H.codC7);
-    printf("%.19s\n",H.desC7);
+    print_string(H.desC7, 19);
     printf("%d\n",H.proxRNN);
     printf("%d\n",H.nroRegRem);
 
