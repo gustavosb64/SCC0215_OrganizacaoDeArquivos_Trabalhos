@@ -60,12 +60,27 @@ Vehicle initialize_vehicle();
 /*
  * Comment section
 */
+int write_file_type1(FILE *file_csv_w, Vehicle *V);
+
+/*
+ * Comment section
+*/
+int read_file_type1(FILE *file_csv_r, Vehicle *V);
+
+/*
+ * Comment section
+*/
 int read_csv_type1(char *filename);
 
 /*
  * Comment section
 */
 int print_vehicle(Vehicle V);
+
+/*
+ * Comment section
+*/
+int free_vehicle(Vehicle *V);
 
 
 #endif
