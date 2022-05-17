@@ -1,12 +1,30 @@
 ## Anotações 
 
+* **Vídeo explicativo gravado**
+    * Registros de tamanho fixo: --:-- -> 23:30
+    * Registros de tamanho variável: 
+        * 23:30 -> --:--
+        * 28:25 -> 35:10 (o assunto desviou um pouco) 
+    * Funcionalidade1:
+        * 35:12 -> 43:15  
+    * Funcionalidade2
+        * 43:15 -> 44:25
+    * Funcionalidade3
+        * 44:25 -> 47:20
+    * Funcionalidade4
+        * 47:20 -> 47:20
+        
+
 ### Perguntas
+* Pode abrir arquivo com modo "wb+"?
+* functions.c, linha aprox. 208: tem como fazer de outra forma (sigla[0], sigla[1])
 * Arquivo tipo 1: 
     * Registro de cabeçalho
         * _status_ assume valor 1 após fechar o arquivo depois de abrí-lo para leitura também?
         * _desC1_: apenas 15 bytes mesmo? Não cabe CODIGO IDENTIFICADOR em 15 bytes
         * _codN_: são os números de fato, ou o char referentes aos números?
     * Registro de dados
+        * é para armazenar codC5 junto também?
         * Se valores nulos não vão ser armazenados, como os dados serão propriamente identificados?
 
 ### Arquivo Tipo 1: Registros de tamanho fixo
@@ -96,3 +114,7 @@
     * _cidade_
     * _marca_
     * _modelo_
+     
+### Arquivo tipo 2
+
+* _tamanhoRegistro_: considera o campo todo, exceto os campos _removido_ e o próprio _tamanhoRegistro_.  
