@@ -19,6 +19,13 @@ struct header{
     char codC7;         // descrição simplificada do campo 7
     char desC7[19];     // descrição detalhada do campo 7
     int proxRNN;        // próximo RRN disponível
+    /*
+     * union{
+     *  int proxRNN;
+     *  long int proxByteOffset;
+     * }prox;
+     *
+     */
     int nroRegRem;      // quantidade de registros logicamente removidos
 };
 
@@ -31,7 +38,7 @@ struct vehicle{
     char codC5;         // descrição simplificada do campo 5
     char *cidade;       // nome da cidade
     int qtt;            // quantidade de veículos
-    char *sigla;      // sigla do estado no qual o veículo está cadastrado
+    char *sigla;        // sigla do estado no qual o veículo está cadastrado
     int tamMarca;       // tamanho do campo marca
     char codC6;         // descrição simplificada do campo 5
     char *marca;        // nome da marca
@@ -262,6 +269,18 @@ int read_one_reg_csv(FILE *file){
 
 }
 
+// id,anoFabricacao,cidade,quantidade,siglaEstado,marca,modelo
+int read_file_type1(FILE *file_csv_r, Vehicle *V){
+    
+    if (fread(&(*V).id, sizeof(char), 1, file_csv_r))
+        return 1;
+
+    fread(&(*V).ano, sizeof(char), 1, file_csv_r);
+
+    return 0;
+
+}
+
 int write_file_type1(FILE *file_csv_w, Vehicle *V){
 
     if (file_csv_w == NULL){
@@ -289,7 +308,7 @@ int write_file_type1(FILE *file_csv_w, Vehicle *V){
     if ((*V).tamCidade){
         fwrite(&(*V).tamCidade, sizeof(int), 1, file_csv_w);
         fwrite(&(*V).codC5, sizeof(char), 1, file_csv_w);
-        fwrite(&(*V).cidade, sizeof(char), (*V).tamCidade, file_csv_w);
+        fwrite((*V).cidade, sizeof(char), (*V).tamCidade, file_csv_w);
     }
 
     fwrite(&(*V).qtt, sizeof(int), 1, file_csv_w);
@@ -303,13 +322,13 @@ int write_file_type1(FILE *file_csv_w, Vehicle *V){
     if ((*V).tamMarca){
         fwrite(&(*V).tamMarca, sizeof(int), 1, file_csv_w);
         fwrite(&(*V).codC6, sizeof(char), 1, file_csv_w);
-        fwrite(&(*V).marca, sizeof(char), (*V).tamMarca, file_csv_w);
+        fwrite((*V).marca, sizeof(char), (*V).tamMarca, file_csv_w);
     }
 
     if ((*V).tamModelo){
         fwrite(&(*V).tamModelo, sizeof(int), 1, file_csv_w);
         fwrite(&(*V).codC7, sizeof(char), 1, file_csv_w);
-        fwrite(&(*V).modelo, sizeof(char), (*V).tamModelo, file_csv_w);
+        fwrite((*V).modelo, sizeof(char), (*V).tamModelo, file_csv_w);
     }
 
     return 0;
@@ -359,7 +378,6 @@ int read_file_type1(FILE *file_csv_r, Vehicle *V){
     if (modelo[0]) (*V).modelo = modelo;
     else free(modelo);
 
-
     // Liberando memória
     free(str_id);
     free(str_ano);
@@ -368,7 +386,6 @@ int read_file_type1(FILE *file_csv_r, Vehicle *V){
     return 0;
 }
 
-// id,anoFabricacao,cidade,quantidade,siglaEstado,marca,modelo
 int read_csv_type1(char *filename){
 
     // Abrindo arquivo csv para leitura
@@ -392,7 +409,6 @@ int read_csv_type1(char *filename){
         V = initialize_vehicle();
 //        printf("-----------\n");
     }
-    free_vehicle(&V);
 
     free(filename_w);
     fclose(file_bin_w);
@@ -425,10 +441,10 @@ int print_vehicle(Vehicle V){
 
 int free_vehicle(Vehicle *V){
 
-    free( (*V).sigla );
-    free( (*V).cidade );
-    free( (*V).marca );
-    free( (*V).modelo );
+    free((*V).sigla );
+    free((*V).cidade );
+    free((*V).marca );
+    free((*V).modelo );
 
     return 0;
 }
