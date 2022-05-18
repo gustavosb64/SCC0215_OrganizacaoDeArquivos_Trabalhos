@@ -24,6 +24,7 @@
         * _desC1_: apenas 15 bytes mesmo? Não cabe CODIGO IDENTIFICADOR em 15 bytes
         * _codN_: são os números de fato, ou o char referentes aos números?
     * Registro de dados
+        * tamCampo vazio: 0 ou -1?
         * é para armazenar codC5 junto também?
         * Se valores nulos não vão ser armazenados, como os dados serão propriamente identificados?
 

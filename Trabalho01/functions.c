@@ -146,15 +146,12 @@ int print_string(char string[], int len){
 
     // Conferindo se comprimento fornecido é maior que 0
     if (len <= 0){
-        printf("ERRO! Comprimento inválido.");
         return 1;
     }
 
     // Imprimindo na saída padrão os caracteres da string
     for (int i=0; i<len; i++)
         printf("%c",string[i]);
-
-    printf("\n");
 
     return 0;
 }
@@ -211,25 +208,6 @@ int read_header_type1(char *filename){
     return 0;
 
 }
-/*
-struct vehicle{
-    char removido;      // indica se o registro está logicamente removido
-    int prox;           // armazena o RRN do próximo registro
-    int id;             // código identificador
-    int ano;            // ano de fabricação
-    int qtt;            // quantidade de veículos
-    char sigla[2];      // sigla do estado no qual o veículo está cadastrado
-    int tamCidade;      // tamanho do campo cidade
-    char codC5;         // descrição simplificada do campo 5
-    char *cidade;       // nome da cidade
-    int tamMarca;       // tamanho do campo marca
-    char codC6;         // descrição simplificada do campo 5
-    char *marca;        // nome da marca
-    int tamModelo;      // tamanho do campo modelo
-    char codC7;         // descrição simplificada do campo 5
-    char *modelo;       // nome do modelo
-}
-*/
 
 // Inicializa dado do tipo Veículo com os valores nulos padrão
 Vehicle initialize_vehicle(){
@@ -269,72 +247,207 @@ int read_one_reg_csv(FILE *file){
 
 }
 
-// id,anoFabricacao,cidade,quantidade,siglaEstado,marca,modelo
-int read_file_type1(FILE *file_csv_r, Vehicle *V){
-    
-    if (fread(&(*V).id, sizeof(char), 1, file_csv_r))
+int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V){
+
+    // Contador de bytes utilizado para garantir que não se ultrapasse
+    // o limite do registro
+    int byte_counter = 0;
+
+    // Usados na leitura para checagem dos dados
+    char aux_char;
+
+    // Caso não haja mais registros a serem lidos, retorna sinal de erro 1
+    if (!fread(&(*V).removido, sizeof(char), 1, file_bin_r))
         return 1;
 
-    fread(&(*V).ano, sizeof(char), 1, file_csv_r);
+    fread(&(*V).prox, sizeof(int), 1, file_bin_r);
+    fread(&(*V).id, sizeof(int), 1, file_bin_r);
+    fread(&(*V).ano, sizeof(int), 1, file_bin_r);
+    fread(&(*V).qtt, sizeof(int), 1, file_bin_r);
+
+    (*V).sigla = (char *) malloc(2 * sizeof(char));
+    fread((*V).sigla, sizeof(char), 2, file_bin_r);
+
+    byte_counter += sizeof(int)*4 + sizeof(char)*3;
+
+    for(int i=0; i<3; i++){
+
+        // Caso a quantidade de bytes restantes ultrapasse MAX_RRN-5,
+        // não há espaço para outro campo ter sido armazenado
+        if (byte_counter > MAX_RRN-5) return 0;
+
+        // Avança o cursor o tamanho de um inteiro para ler o caractere de 
+        // descrição simplificada do campo
+        // Caso fread() retorne 0, o arquivo atingiu o fim
+        fseek(file_bin_r, 4, SEEK_CUR);
+        if (!fread(&aux_char, sizeof(char), 1, file_bin_r)){
+            // Retorna o cursor de leitura para o início do registro
+            fseek(file_bin_r, -byte_counter-5, SEEK_CUR);
+            return 0;
+        }
+        fseek(file_bin_r, -5, SEEK_CUR); // retorna o cursor para antes do inteiro
+
+        // Caso o caractere lido não esteja entre 0 e 2, trata-se de lixo, 
+        // e o registro terminou de ser lido
+        if (aux_char > 2){
+
+            // Retorna o cursor de leitura para o início do registro
+            fseek(file_bin_r, -byte_counter, SEEK_CUR);
+            return 0;
+        }
+
+        switch(aux_char){
+
+            // Lê a cidade
+            case 0:
+                fread(&(*V).tamCidade, sizeof(int), 1, file_bin_r);
+                fread(&(*V).codC5, sizeof(char), 1, file_bin_r);
+                (*V).cidade = (char *) malloc((*V).tamCidade * sizeof(char));
+
+                fread((*V).cidade, sizeof(char), (*V).tamCidade, file_bin_r);
+
+                byte_counter += 1+4+(*V).tamCidade;
+                break;
+
+            // Lê a marca
+            case 1:
+                fread(&(*V).tamMarca, sizeof(int), 1, file_bin_r);
+                fread(&(*V).codC6, sizeof(char), 1, file_bin_r);
+                (*V).marca = (char *) malloc((*V).tamMarca * sizeof(char));
+
+                fread((*V).marca, sizeof(char), (*V).tamMarca, file_bin_r);
+
+                byte_counter += 1+4+(*V).tamMarca;
+                break;
+
+            // Lê o modelo
+            case 2:
+                fread(&(*V).tamModelo, sizeof(int), 1, file_bin_r);
+                fread(&(*V).codC7, sizeof(char), 1, file_bin_r);
+                (*V).modelo = (char *) malloc((*V).tamModelo * sizeof(char));
+
+                fread((*V).modelo, sizeof(char), (*V).tamModelo, file_bin_r);
+
+                byte_counter += 1+4+(*V).tamModelo;
+                break;
+
+        }
+
+    }
+
+    // Retorna o cursor de leitura para o início do registro
+    fseek(file_bin_r, -byte_counter, SEEK_CUR);
 
     return 0;
 
 }
 
-int write_file_type1(FILE *file_csv_w, Vehicle *V){
+int read_bin_all_reg(char *filename){
 
-    if (file_csv_w == NULL){
+    FILE *file_bin_r = fopen(filename, "rb");
+    fseek(file_bin_r, 0, SEEK_SET);
+
+    Vehicle V = initialize_vehicle();
+
+    // Enquanto ainda houverem registros a serem lidos no arquivo de dados
+    while(!read_reg_from_bin_type1(file_bin_r, &V)){
+
+        // Imprime os dados do veículo
+        print_vehicle(V);
+        printf("-------------\n");
+
+        // Posiciona o cursor de leitura no registro seguinte
+        fseek(file_bin_r, MAX_RRN, SEEK_CUR);
+
+        // Libera a memória alocada durante a leitura
+        free_vehicle(&V);
+        V = initialize_vehicle();
+    }
+
+    fclose(file_bin_r);
+
+    return 0;
+}
+
+int initialize_reg_type1(FILE *file_bin_w){
+
+    char c = '$';
+    for(int i=0; i<MAX_RRN; i++)
+        fwrite(&c, sizeof(char), 1, file_bin_w);
+
+    fseek(file_bin_w, -MAX_RRN, SEEK_CUR);
+    
+    return 0;
+}
+
+int write_file_type1(FILE *file_bin_w, Vehicle *V){
+
+    if (file_bin_w == NULL){
         return 1;
     }
+
+    initialize_reg_type1(file_bin_w);
+
+    // Conta quantos bytes devem ser pulados ao final devido ao padding
+    int offset = 0;
 
     if ((*V).cidade != NULL){
         (*V).tamCidade = strlen((*V).cidade);
         (*V).codC5 = 0;
+        offset += (4 + 1 + (*V).tamCidade);
     }
     if ((*V).marca != NULL){
         (*V).tamMarca = strlen((*V).marca);
         (*V).codC6 = 1;
+        offset += (4 + 1 + (*V).tamMarca);
     }
     if ((*V).modelo != NULL){
         (*V).tamModelo = strlen((*V).modelo);
         (*V).codC7 = 2;
+        offset += (4 + 1 + (*V).tamModelo);
     }
 
-    fwrite(&(*V).removido, sizeof(char), 1, file_csv_w);
-    fwrite(&(*V).prox, sizeof(int), 1, file_csv_w);
-    fwrite(&(*V).id, sizeof(int), 1, file_csv_w);
-    fwrite(&(*V).ano, sizeof(int), 1, file_csv_w);
+    fwrite(&(*V).removido, sizeof(char), 1, file_bin_w);
+    fwrite(&(*V).prox, sizeof(int), 1, file_bin_w);
 
-    if ((*V).tamCidade){
-        fwrite(&(*V).tamCidade, sizeof(int), 1, file_csv_w);
-        fwrite(&(*V).codC5, sizeof(char), 1, file_csv_w);
-        fwrite((*V).cidade, sizeof(char), (*V).tamCidade, file_csv_w);
-    }
-
-    fwrite(&(*V).qtt, sizeof(int), 1, file_csv_w);
+    fwrite(&(*V).id, sizeof(int), 1, file_bin_w);
+    fwrite(&(*V).ano, sizeof(int), 1, file_bin_w);
+    fwrite(&(*V).qtt, sizeof(int), 1, file_bin_w);
 
     if ((*V).sigla == NULL){
-        (*V).sigla = (char *) malloc (3 * sizeof(char));
-        strcpy((*V).sigla, "&&");
+        (*V).sigla = (char *) calloc (3, sizeof(char));
+        strcpy((*V).sigla, "$$");
     }
-    fwrite(&(*V).sigla, sizeof(char), 2, file_csv_w);
+    fwrite((*V).sigla, sizeof(char), 2, file_bin_w);
+
+    offset += (1 + 4*4 + 2);
+
+    if ((*V).tamCidade){
+        fwrite(&(*V).tamCidade, sizeof(int), 1, file_bin_w);
+        fwrite(&(*V).codC5, sizeof(char), 1, file_bin_w);
+        fwrite((*V).cidade, sizeof(char), (*V).tamCidade, file_bin_w);
+    }
 
     if ((*V).tamMarca){
-        fwrite(&(*V).tamMarca, sizeof(int), 1, file_csv_w);
-        fwrite(&(*V).codC6, sizeof(char), 1, file_csv_w);
-        fwrite((*V).marca, sizeof(char), (*V).tamMarca, file_csv_w);
+        fwrite(&(*V).tamMarca, sizeof(int), 1, file_bin_w);
+        fwrite(&(*V).codC6, sizeof(char), 1, file_bin_w);
+        fwrite((*V).marca, sizeof(char), (*V).tamMarca, file_bin_w);
     }
 
     if ((*V).tamModelo){
-        fwrite(&(*V).tamModelo, sizeof(int), 1, file_csv_w);
-        fwrite(&(*V).codC7, sizeof(char), 1, file_csv_w);
-        fwrite((*V).modelo, sizeof(char), (*V).tamModelo, file_csv_w);
+        fwrite(&(*V).tamModelo, sizeof(int), 1, file_bin_w);
+        fwrite(&(*V).codC7, sizeof(char), 1, file_bin_w);
+        fwrite((*V).modelo, sizeof(char), (*V).tamModelo, file_bin_w);
     }
+
+    // Posiciona o cursor do arquivo ao final do padding
+    offset = MAX_RRN - offset;
+    fseek(file_bin_w, offset, SEEK_CUR);
 
     return 0;
 }
 
-int read_file_type1(FILE *file_csv_r, Vehicle *V){
+int read_reg_from_csv_type1(FILE *file_csv_r, Vehicle *V){
 
     // Caso o nada seja lido no ID, não há mais dados no arquivo
     char *str_id = read_data(file_csv_r);
@@ -400,7 +513,7 @@ int read_csv_type1(char *filename){
 
     // Enquanto ainda houverem dados a serem lidos
     Vehicle V = initialize_vehicle();
-    while(!read_file_type1(file_csv_r, &V)){
+    while(!read_reg_from_csv_type1(file_csv_r, &V)){
 //        print_vehicle(V);
         
         write_file_type1(file_bin_w, &V);
@@ -420,31 +533,36 @@ int read_csv_type1(char *filename){
 
 int print_vehicle(Vehicle V){
 
-    printf("Removido: %d\n", V.removido);
-    printf("Próximo RRN: %d\n", V.prox);
-    printf("ID: %d\n", V.id);             
-    printf("Ano de fabricação: %d\n", V.ano);            
-    printf("tamCidade: %d\n", V.tamCidade);      
-    printf("codC5: %d\n", V.codC5);         
-    printf("Nome da cidade: %s\n", V.cidade);       
-    printf("Quantidade de carros: %d\n", V.qtt);            
-    printf("Estado: %s\n", V.sigla);      
-    printf("tamMarca: %d\n", V.tamMarca);       
-    printf("codC6: %d\n", V.codC6);         
-    printf("Nome da marca: %s\n", V.marca);        
-    printf("tamModelo: %d\n", V.tamModelo);      
-    printf("codC7: %d\n", V.codC7);         
-    printf("Nome do modelo: %s\n", V.modelo);       
+    printf("Removido: %d", V.removido);
+    printf("\nPróximo RRN: %d", V.prox);
+    printf("\nID: %d", V.id);             
+    printf("\nAno de fabricação: %d", V.ano);            
+    printf("\nQuantidade de carros: %d", V.qtt);            
+    printf("\nEstado: ");
+    print_string(V.sigla, 2);
+    printf("\ntamCidade: %d", V.tamCidade);      
+    printf("\ncodC5: %d", V.codC5);         
+    printf("\nNome da cidade: ");
+    print_string(V.cidade, V.tamCidade);
+    printf("\ntamMarca: %d", V.tamMarca);       
+    printf("\ncodC6: %d", V.codC6);         
+    printf("\nNome da marca: ");
+    print_string(V.marca, V.tamMarca);
+    printf("\ntamModelo: %d", V.tamModelo);      
+    printf("\ncodC7: %d", V.codC7);         
+    printf("\nNome do modelo: ");
+    print_string(V.modelo, V.tamModelo);
+    printf("\n");
     
     return 0;
 }
 
 int free_vehicle(Vehicle *V){
 
-    free((*V).sigla );
-    free((*V).cidade );
-    free((*V).marca );
-    free((*V).modelo );
+    free((*V).sigla);
+    if ((*V).tamCidade) free((*V).cidade);
+    if ((*V).tamMarca) free((*V).marca);
+    if ((*V).tamModelo) free((*V).modelo);
 
     return 0;
 }

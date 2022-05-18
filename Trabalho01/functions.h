@@ -50,22 +50,32 @@ int read_header_type1(char *filename);
 /*
  * Comment section
 */
-typedef struct vehicle Vehicle;
-
-/*
- * Comment section
-*/
 Vehicle initialize_vehicle();
 
 /*
  * Comment section
 */
-int write_file_type1(FILE *file_csv_w, Vehicle *V);
+int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V);
 
 /*
  * Comment section
 */
-int read_file_type1(FILE *file_csv_r, Vehicle *V);
+int read_bin_all_reg(char *filename);
+
+/*
+ * Comment section
+*/
+int initialize_reg_type1(FILE *file_bin_w);
+
+/*
+ * Comment section
+*/
+int write_file_type1(FILE *file_bin_w, Vehicle *V);
+
+/*
+ * Comment section
+*/
+int read_reg_from_csv_type1(FILE *file_csv_r, Vehicle *V);
 
 /*
  * Comment section

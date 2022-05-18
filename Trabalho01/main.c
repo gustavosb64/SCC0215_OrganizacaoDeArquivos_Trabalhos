@@ -11,6 +11,8 @@ int main(int argc, char *argv[]){
 
     read_csv_type1("frota.csv");
 
+    read_bin_all_reg("frota_w.bin");
+
 //    fclose(File);
     return 0;
 
