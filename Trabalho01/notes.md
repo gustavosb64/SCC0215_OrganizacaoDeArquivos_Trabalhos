@@ -14,6 +14,7 @@
     * Funcionalidade4
         * 47:20 -> 47:20
         
+* proxRRN: implementar o registro dos próximos rrn
 
 ### Perguntas
 * Pode abrir arquivo com modo "wb+"?

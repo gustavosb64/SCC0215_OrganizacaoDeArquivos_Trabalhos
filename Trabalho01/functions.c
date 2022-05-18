@@ -514,14 +514,15 @@ int read_csv_type1(char *filename){
     // Enquanto ainda houverem dados a serem lidos
     Vehicle V = initialize_vehicle();
     while(!read_reg_from_csv_type1(file_csv_r, &V)){
-//        print_vehicle(V);
-        
         write_file_type1(file_bin_w, &V);
-
         free_vehicle(&V);
         V = initialize_vehicle();
-//        printf("-----------\n");
     }
+
+    // Armazenando -1 no último indicador de próximo RRN no arquivo escrito
+    int last_rrn = -1;
+    fseek(file_bin_w, -MAX_RRN+1, SEEK_END);
+    fwrite(&last_rrn, sizeof(int), 1, file_bin_w);
 
     free(filename_w);
     fclose(file_bin_w);
