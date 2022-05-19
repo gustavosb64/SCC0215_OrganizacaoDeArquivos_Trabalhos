@@ -90,7 +90,7 @@ int read_reg_from_csv_type1(FILE *file_csv_r, Vehicle *V);
 /*
  * Comment section
 */
-int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V);
+int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg);
 
 /*
  * Comment section
@@ -105,7 +105,7 @@ int write_bin_from_csv_type1(char *filename);
 /*
  * Comment section
 */
-int print_vehicle(Vehicle V);
+int print_vehicle(Vehicle V, int type);
 
 /*
  * Comment section
