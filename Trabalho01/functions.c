@@ -4,12 +4,14 @@
 #include "./functions.h"
 
 #define MAX_RRN 97
-#define SIZE_TYPE1 182
+#define HEADER_SIZE_TYPE1 182
+#define HEADER_SIZE_TYPE2 189
 struct header{
     char status;        // consistência do arquivo
+    int tamanhoRegistro;    // tamanho do registro (usado apenas no tipo 2)
     union{
-        int rrn;            // RRN do último registro logicamente removido
-        long int offset;    // offset do último registro logicamente removido
+        int rrn;            // RRN do último registro logicamente removido (tipo 1)
+        long int offset;    // offset do último registro logicamente removido (tipo 2)
     }topo;           
     char descricao[40]; // descrição dos metadados
     char desC1[22];     // descrição detalhada do campo 1
@@ -31,9 +33,10 @@ struct header{
 
 struct vehicle{
     char removido;      // indica se o registro está logicamente removido
+    int tamanhoRegistro;
     union{
-        int rrn;           // armazena o RRN do próximo registro
-        long int offset;   // armazena o offset do próximo registro
+        int rrn;           // armazena o RRN do próximo registro (tipo 1)
+        long int offset;   // armazena o offset do próximo registro (tipo 2)
     }prox;
     int id;             // código identificador
     int ano;            // ano de fabricação
@@ -97,14 +100,17 @@ char *read_data(FILE *stream) {
     return string;
 }
 
-int write_header_type1(FILE *file_header_w){
+int write_header(FILE *file_header_w, char type){
 
     /* Motivos para não se ter utilizado a struct:
      *  Não se pode atribuir diretamente uma string a vetores de caracteres;
      *  porém, é possível declarar o vetor char já inicializado com a string desejada.
      *  Inicializando através da struct, não seria possível atribuir as strings diretamente aos seus componentes */
     char status = 0;
-    int topo = -1;
+
+    int topo_t1 = -1;      //usado em arquivo tipo 1
+    long int topo_t2 = -1; //usado em arquivo tipo 2
+                           
     char descricao[41] = "LISTAGEM DA FROTA DOS VEICULOS NO BRASIL";
     char desC1[22] = "CODIGO IDENTIFICADOR: ";
     char desC2[19] = "ANO DE FABRICACAO: ";
@@ -116,12 +122,16 @@ int write_header_type1(FILE *file_header_w){
     char desC6[18] = "MARCA DO VEICULO: ";
     char codC7 = 2;    
     char desC7[19] = "MODELO DO VEICULO: ";
-    int proxRRN = -1;        
+
+    int proxRRN = -1;               //usado em arquivo tipo 1 
+    long int proxByteOffset = -1;   //usado em arquivo tipo 2
+
     int nroRegRem = 0;      
 
     // Escreve os dados no arquivo
     fwrite(&status, sizeof(char), 1, file_header_w);
-    fwrite(&topo, sizeof(int), 1, file_header_w);
+    if (type == 1) fwrite(&topo_t1, sizeof(int), 1, file_header_w);
+    else fwrite(&topo_t2, sizeof(long int), 1, file_header_w);
     fwrite(&descricao, sizeof(char), 40, file_header_w);
     fwrite(&desC1, sizeof(char), 22, file_header_w);
     fwrite(&desC2, sizeof(char), 19, file_header_w);
@@ -133,7 +143,8 @@ int write_header_type1(FILE *file_header_w){
     fwrite(&desC6, sizeof(char), 18, file_header_w);
     fwrite(&codC7, sizeof(char), 1, file_header_w);
     fwrite(&desC7, sizeof(char), 19, file_header_w);
-    fwrite(&proxRRN, sizeof(int), 1, file_header_w);
+    if (type == 1) fwrite(&proxRRN, sizeof(int), 1, file_header_w);
+    else fwrite(&proxByteOffset, sizeof(long int), 1, file_header_w);
     fwrite(&nroRegRem, sizeof(int), 1, file_header_w);
 
     return 0;
@@ -211,8 +222,11 @@ Vehicle initialize_vehicle(int type){
     Vehicle V;
 
     V.removido = 0;
-    if (type == 1) V.prox.rrn = -1;
-    else V.prox.offset = -1;
+    if (type == 2){
+        V.prox.offset = -1;
+        V.tamanhoRegistro = -1;
+    }
+    else V.prox.rrn = -1; 
     V.id = -1;
     V.ano = -1;
     V.qtt = -1;
@@ -247,7 +261,7 @@ int read_one_reg_csv(FILE *file){
 int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn){
 
     // Colocando o cursor de leitura no início do registro a ser buscado
-    fseek(file_bin_r, MAX_RRN*rrn + SIZE_TYPE1, SEEK_SET);
+    fseek(file_bin_r, MAX_RRN*rrn + HEADER_SIZE_TYPE1, SEEK_SET);
 
     // Contador de bytes utilizado para garantir que não se ultrapasse
     // o limite do registro
@@ -342,7 +356,124 @@ int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn){
 
 }
 
-int read_bin_all_reg(char *filename){
+int read_reg_from_bin_type2(FILE *file_bin_r, Vehicle *V, long int *offset){
+
+    // Colocando o cursor de leitura no início do registro a ser buscado
+    fseek(file_bin_r, (*offset) + HEADER_SIZE_TYPE2, SEEK_SET);
+
+    // Contador de bytes utilizado para garantir que não se ultrapasse
+    // o limite do registro
+    int byte_counter = 0;
+
+    // Usados na leitura para checagem dos dados
+    char aux_char;
+
+    // Caso não haja mais registros a serem lidos, retorna sinal de erro 1
+    if (!fread(&(*V).removido, sizeof(char), 1, file_bin_r))
+        return 1;
+
+    fread(&(*V).tamanhoRegistro, sizeof(int), 1, file_bin_r);
+    fread(&(*V).prox.offset, sizeof(long int), 1, file_bin_r);
+    fread(&(*V).id, sizeof(int), 1, file_bin_r);
+    fread(&(*V).ano, sizeof(int), 1, file_bin_r);
+    fread(&(*V).qtt, sizeof(int), 1, file_bin_r);
+
+    (*V).sigla = (char *) malloc(2 * sizeof(char));
+    fread((*V).sigla, sizeof(char), 2, file_bin_r);
+
+    byte_counter += sizeof(int)*4 + sizeof(long int) + sizeof(char)*3;
+
+    for(int i=0; i<3; i++){
+
+        // Caso a quantidade de bytes restantes ultrapasse MAX_RRN-5,
+        // não há espaço para outro campo ter sido armazenado
+        if (byte_counter >= (*V).tamanhoRegistro) return 0;
+
+        // Avança o cursor o tamanho de um inteiro para ler o caractere de 
+        // descrição simplificada do campo
+        // Caso fread() retorne 0, o arquivo atingiu o fim
+        fseek(file_bin_r, 4, SEEK_CUR);
+        if (!fread(&aux_char, sizeof(char), 1, file_bin_r)){
+            // Retorna o cursor de leitura para o início do registro
+            fseek(file_bin_r, -byte_counter-5, SEEK_CUR);
+            return 0;
+        }
+        fseek(file_bin_r, -5, SEEK_CUR); // retorna o cursor para antes do inteiro
+
+        switch(aux_char){
+
+            // Lê a cidade
+            case 0:
+                fread(&(*V).tamCidade, sizeof(int), 1, file_bin_r);
+                fread(&(*V).codC5, sizeof(char), 1, file_bin_r);
+                (*V).cidade = (char *) malloc((*V).tamCidade * sizeof(char));
+
+                fread((*V).cidade, sizeof(char), (*V).tamCidade, file_bin_r);
+
+                byte_counter += 1+4+(*V).tamCidade;
+                break;
+
+            // Lê a marca
+            case 1:
+                fread(&(*V).tamMarca, sizeof(int), 1, file_bin_r);
+                fread(&(*V).codC6, sizeof(char), 1, file_bin_r);
+                (*V).marca = (char *) malloc((*V).tamMarca * sizeof(char));
+
+                fread((*V).marca, sizeof(char), (*V).tamMarca, file_bin_r);
+
+                byte_counter += 1+4+(*V).tamMarca;
+                break;
+
+            // Lê o modelo
+            case 2:
+                fread(&(*V).tamModelo, sizeof(int), 1, file_bin_r);
+                fread(&(*V).codC7, sizeof(char), 1, file_bin_r);
+                (*V).modelo = (char *) malloc((*V).tamModelo * sizeof(char));
+
+                fread((*V).modelo, sizeof(char), (*V).tamModelo, file_bin_r);
+
+                byte_counter += 1+4+(*V).tamModelo;
+                break;
+
+        }
+
+    }
+
+    // Retorna o cursor de leitura para o início do registro
+    fseek(file_bin_r, -(*V).tamanhoRegistro, SEEK_CUR);
+
+    (*offset) = ftell(file_bin_r) + (*V).tamanhoRegistro - HEADER_SIZE_TYPE2;
+
+    return 0;
+
+}
+
+int read_bin_all_reg_type2(char *filename){
+
+    FILE *file_bin_r = fopen(filename, "rb");
+    fseek(file_bin_r, 0, SEEK_SET);
+
+    Vehicle V = initialize_vehicle(2);
+    long int offset = 0;
+
+    // Enquanto ainda houverem registros a serem lidos no arquivo de dados
+    while(!read_reg_from_bin_type2(file_bin_r, &V, &offset)){
+
+        // Imprime os dados do veículo
+        print_vehicle(V);
+        printf("-------------\n");
+
+        // Libera a memória alocada durante a leitura
+        free_vehicle(&V);
+        V = initialize_vehicle(2);
+    }
+
+    fclose(file_bin_r);
+
+    return 0;
+}
+
+int read_bin_all_reg_type1(char *filename){
 
     FILE *file_bin_r = fopen(filename, "rb");
     fseek(file_bin_r, 0, SEEK_SET);
@@ -381,7 +512,7 @@ int initialize_reg_type1(FILE *file_bin_w){
     return 0;
 }
 
-int write_file_type1(FILE *file_bin_w, Vehicle *V){
+int write_reg_in_bin_type1(FILE *file_bin_w, Vehicle *V){
 
     if (file_bin_w == NULL){
         return 1;
@@ -489,16 +620,128 @@ int read_reg_from_csv_type1(FILE *file_csv_r, Vehicle *V){
     return 0;
 }
 
+int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V){
+
+    if (file_bin_w == NULL){
+        return 1;
+    }
+
+    long int start_byte = ftell(file_bin_w);
+
+    if ((*V).cidade != NULL){
+        (*V).tamCidade = strlen((*V).cidade);
+        (*V).codC5 = 0;
+    }
+    if ((*V).marca != NULL){
+        (*V).tamMarca = strlen((*V).marca);
+        (*V).codC6 = 1;
+    }
+    if ((*V).modelo != NULL){
+        (*V).tamModelo = strlen((*V).modelo);
+        (*V).codC7 = 2;
+    }
+
+    fwrite(&(*V).removido, sizeof(char), 1, file_bin_w);
+
+    // Pula campo de tamanhoRegistro para inserir depois
+    fseek(file_bin_w, sizeof(int)+sizeof(long int), SEEK_CUR); 
+
+    fwrite(&(*V).id, sizeof(int), 1, file_bin_w);
+    fwrite(&(*V).ano, sizeof(int), 1, file_bin_w);
+    fwrite(&(*V).qtt, sizeof(int), 1, file_bin_w);
+
+    if ((*V).sigla == NULL){
+        (*V).sigla = (char *) calloc (3, sizeof(char));
+        strcpy((*V).sigla, "$$");
+    }
+    fwrite((*V).sigla, sizeof(char), 2, file_bin_w);
+
+    if ((*V).tamCidade){
+        fwrite(&(*V).tamCidade, sizeof(int), 1, file_bin_w);
+        fwrite(&(*V).codC5, sizeof(char), 1, file_bin_w);
+        fwrite((*V).cidade, sizeof(char), (*V).tamCidade, file_bin_w);
+    }
+
+    if ((*V).tamMarca){
+        fwrite(&(*V).tamMarca, sizeof(int), 1, file_bin_w);
+        fwrite(&(*V).codC6, sizeof(char), 1, file_bin_w);
+        fwrite((*V).marca, sizeof(char), (*V).tamMarca, file_bin_w);
+    }
+
+    if ((*V).tamModelo){
+        fwrite(&(*V).tamModelo, sizeof(int), 1, file_bin_w);
+        fwrite(&(*V).codC7, sizeof(char), 1, file_bin_w);
+        fwrite((*V).modelo, sizeof(char), (*V).tamModelo, file_bin_w);
+    }
+
+    long int end_byte = ftell(file_bin_w);
+    (*V).tamanhoRegistro = end_byte - start_byte;
+    (*V).prox.offset = end_byte - HEADER_SIZE_TYPE2;
+
+    fseek(file_bin_w, -(*V).tamanhoRegistro + 1, SEEK_CUR);
+
+    fwrite(&(*V).tamanhoRegistro, sizeof(int), 1, file_bin_w);
+    fwrite(&(*V).prox.offset, sizeof(long int), 1, file_bin_w);
+    
+    fseek(file_bin_w, end_byte, SEEK_SET);
+
+    return 0;
+}
+
+int write_bin_from_csv_type2(char *filename){
+
+    // Abrindo arquivo csv para leitura
+    FILE *file_csv_r = fopen(filename, "rb");
+
+    char *filename_w = (char *) calloc( 12, sizeof(char));
+    strcpy(filename_w, "frota_2.bin");
+    FILE *file_bin_w = fopen(filename_w, "wb");
+
+    write_header(file_bin_w, 2);
+
+    // Lendo e liberando linha de cabeçalho
+    free(readline(file_csv_r));
+
+    Vehicle V = initialize_vehicle(2);
+    while(!read_reg_from_csv_type1(file_csv_r, &V)){
+
+        // Escrevendo o registro 
+        /*
+        print_vehicle(V);
+        printf("------------\n");
+        */
+        write_reg_in_bin_type2(file_bin_w, &V);
+        free_vehicle(&V);
+
+        // Preparando um novo registro a ser escrito
+        V = initialize_vehicle(2);
+    }
+
+    /*
+    // Armazenando -1 no último indicador de próximo offset no arquivo escrito
+    int last_offset = -1;
+    fseek(file_bin_w, -MAX_RRN+1, SEEK_END);
+    fwrite(&last_offset, sizeof(int), 1, file_bin_w);
+    */
+
+    // Liberando memória
+    free(filename_w);
+    fclose(file_bin_w);
+    fclose(file_csv_r);
+
+    return 0;
+}
+
 int write_bin_from_csv_type1(char *filename){
 
     // Abrindo arquivo csv para leitura
     FILE *file_csv_r = fopen(filename, "rb");
 
     char *filename_w = (char *) calloc( 12, sizeof(char));
-    strcpy(filename_w, "frota_w.bin");
+    strcpy(filename_w, "frota_1.bin");
     FILE *file_bin_w = fopen(filename_w, "wb");
 
-    write_header_type1(file_bin_w);
+    write_header(file_bin_w, 1);
     
     // Lendo e liberando linha de cabeçalho
     free(readline(file_csv_r));
@@ -510,7 +753,7 @@ int write_bin_from_csv_type1(char *filename){
     while(!read_reg_from_csv_type1(file_csv_r, &V)){
 
         // Escrevendo o registro 
-        write_file_type1(file_bin_w, &V);
+        write_reg_in_bin_type1(file_bin_w, &V);
         free_vehicle(&V);
 
         // Preparando um novo registro a ser escrito
@@ -523,6 +766,7 @@ int write_bin_from_csv_type1(char *filename){
     fseek(file_bin_w, -MAX_RRN+1, SEEK_END);
     fwrite(&last_rrn, sizeof(int), 1, file_bin_w);
 
+    // Liberando memória
     free(filename_w);
     fclose(file_bin_w);
     fclose(file_csv_r);
@@ -539,19 +783,19 @@ int print_vehicle(Vehicle V){
     printf("\nAno de fabricação: %d", V.ano);            
     printf("\nQuantidade de carros: %d", V.qtt);            
     printf("\nEstado: ");
-    print_string(V.sigla, 2);
+    if (V.sigla != NULL) print_string(V.sigla, 2);
     printf("\ntamCidade: %d", V.tamCidade);      
     printf("\ncodC5: %d", V.codC5);         
     printf("\nNome da cidade: ");
-    print_string(V.cidade, V.tamCidade);
+    if (V.cidade != NULL) print_string(V.cidade, strlen(V.cidade));
     printf("\ntamMarca: %d", V.tamMarca);       
     printf("\ncodC6: %d", V.codC6);         
     printf("\nNome da marca: ");
-    print_string(V.marca, V.tamMarca);
+    if (V.marca != NULL) print_string(V.marca, strlen(V.marca));
     printf("\ntamModelo: %d", V.tamModelo);      
     printf("\ncodC7: %d", V.codC7);         
     printf("\nNome do modelo: ");
-    print_string(V.modelo, V.tamModelo);
+    if (V.modelo != NULL) print_string(V.modelo, strlen(V.modelo));
     printf("\n");
     
     return 0;
