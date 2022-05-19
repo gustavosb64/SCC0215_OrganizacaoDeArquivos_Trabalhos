@@ -23,7 +23,7 @@ struct header{
      * union{
      *  int proxRNN;
      *  long int proxByteOffset;
-     * }prox;
+     * }prox.rrn;
      *
      */
     int nroRegRem;      // quantidade de registros logicamente removidos
@@ -31,7 +31,10 @@ struct header{
 
 struct vehicle{
     char removido;      // indica se o registro está logicamente removido
-    int prox;           // armazena o RRN do próximo registro
+    union{
+        int rrn;           // armazena o RRN do próximo registro
+        long int offset;   // armazena o offset do próximo registro
+    }prox;
     int id;             // código identificador
     int ano;            // ano de fabricação
     int tamCidade;      // tamanho do campo cidade
@@ -46,7 +49,6 @@ struct vehicle{
     char codC7;         // descrição simplificada do campo 5
     char *modelo;       // nome do modelo
 };
-
 
 #define READLINE_BUFFER 4096
 char *readline(FILE *stream) {
@@ -210,12 +212,13 @@ int read_header_type1(char *filename){
 }
 
 // Inicializa dado do tipo Veículo com os valores nulos padrão
-Vehicle initialize_vehicle(){
+Vehicle initialize_vehicle(int type){
 
     Vehicle V;
 
     V.removido = 0;
-    V.prox = -1;
+    if (type == 1) V.prox.rrn = -1;
+    else V.prox.offset = -1;
     V.id = -1;
     V.ano = -1;
     V.qtt = -1;
@@ -240,7 +243,7 @@ int read_one_reg_csv(FILE *file){
     if (file == NULL)
         return 1;
 
-//    Vehicle V = initialize_vehicle();
+//    Vehicle V = initialize_vehicle(1);
     
 
     return 0;
@@ -260,7 +263,7 @@ int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V){
     if (!fread(&(*V).removido, sizeof(char), 1, file_bin_r))
         return 1;
 
-    fread(&(*V).prox, sizeof(int), 1, file_bin_r);
+    fread(&(*V).prox.rrn, sizeof(int), 1, file_bin_r);
     fread(&(*V).id, sizeof(int), 1, file_bin_r);
     fread(&(*V).ano, sizeof(int), 1, file_bin_r);
     fread(&(*V).qtt, sizeof(int), 1, file_bin_r);
@@ -347,7 +350,7 @@ int read_bin_all_reg(char *filename){
     FILE *file_bin_r = fopen(filename, "rb");
     fseek(file_bin_r, 0, SEEK_SET);
 
-    Vehicle V = initialize_vehicle();
+    Vehicle V = initialize_vehicle(1);
 
     // Enquanto ainda houverem registros a serem lidos no arquivo de dados
     while(!read_reg_from_bin_type1(file_bin_r, &V)){
@@ -361,7 +364,7 @@ int read_bin_all_reg(char *filename){
 
         // Libera a memória alocada durante a leitura
         free_vehicle(&V);
-        V = initialize_vehicle();
+        V = initialize_vehicle(1);
     }
 
     fclose(file_bin_r);
@@ -408,7 +411,7 @@ int write_file_type1(FILE *file_bin_w, Vehicle *V){
     }
 
     fwrite(&(*V).removido, sizeof(char), 1, file_bin_w);
-    fwrite(&(*V).prox, sizeof(int), 1, file_bin_w);
+    fwrite(&(*V).prox.rrn, sizeof(int), 1, file_bin_w);
 
     fwrite(&(*V).id, sizeof(int), 1, file_bin_w);
     fwrite(&(*V).ano, sizeof(int), 1, file_bin_w);
@@ -512,11 +515,14 @@ int read_csv_type1(char *filename){
     free(readline(file_csv_r));
 
     // Enquanto ainda houverem dados a serem lidos
-    Vehicle V = initialize_vehicle();
+    int rrn_counter = 1;
+    Vehicle V = initialize_vehicle(1);
+    V.prox.rrn = rrn_counter++;
     while(!read_reg_from_csv_type1(file_csv_r, &V)){
         write_file_type1(file_bin_w, &V);
         free_vehicle(&V);
-        V = initialize_vehicle();
+        V = initialize_vehicle(1);
+        V.prox.rrn = rrn_counter++;
     }
 
     // Armazenando -1 no último indicador de próximo RRN no arquivo escrito
@@ -535,7 +541,7 @@ int read_csv_type1(char *filename){
 int print_vehicle(Vehicle V){
 
     printf("Removido: %d", V.removido);
-    printf("\nPróximo RRN: %d", V.prox);
+    printf("\nPróximo RRN: %d", V.prox.rrn);
     printf("\nID: %d", V.id);             
     printf("\nAno de fabricação: %d", V.ano);            
     printf("\nQuantidade de carros: %d", V.qtt);            

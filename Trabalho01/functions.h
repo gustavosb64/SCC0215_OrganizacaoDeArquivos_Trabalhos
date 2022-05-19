@@ -50,7 +50,7 @@ int read_header_type1(char *filename);
 /*
  * Comment section
 */
-Vehicle initialize_vehicle();
+Vehicle initialize_vehicle(int type);
 
 /*
  * Comment section
