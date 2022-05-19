@@ -4,9 +4,13 @@
 #include "./functions.h"
 
 #define MAX_RRN 97
+#define SIZE_TYPE1 182
 struct header{
     char status;        // consistência do arquivo
-    int topo;           // RRN do último registro logicamente removido
+    union{
+        int rrn;            // RRN do último registro logicamente removido
+        long int offset;    // offset do último registro logicamente removido
+    }topo;           
     char descricao[40]; // descrição dos metadados
     char desC1[22];     // descrição detalhada do campo 1
     char desC2[19];     // descrição detalhada do campo 2
@@ -18,14 +22,10 @@ struct header{
     char desC6[18];     // descrição detalhada do campo 6
     char codC7;         // descrição simplificada do campo 7
     char desC7[19];     // descrição detalhada do campo 7
-    int proxRNN;        // próximo RRN disponível
-    /*
-     * union{
-     *  int proxRNN;
-     *  long int proxByteOffset;
-     * }prox.rrn;
-     *
-     */
+    union{
+        int proxRRN;                // próximo RRN disponível
+        long int proxByteOffset;    // próximo offset disponível
+    }prox;
     int nroRegRem;      // quantidade de registros logicamente removidos
 };
 
@@ -97,10 +97,7 @@ char *read_data(FILE *stream) {
     return string;
 }
 
-int write_header_type1(char *filename){
-
-    // Abre arquivo para escrita 
-    FILE *file_header_w = fopen(filename, "wb");
+int write_header_type1(FILE *file_header_w){
 
     /* Motivos para não se ter utilizado a struct:
      *  Não se pode atribuir diretamente uma string a vetores de caracteres;
@@ -119,7 +116,7 @@ int write_header_type1(char *filename){
     char desC6[18] = "MARCA DO VEICULO: ";
     char codC7 = 2;    
     char desC7[19] = "MODELO DO VEICULO: ";
-    int proxRNN = -1;        
+    int proxRRN = -1;        
     int nroRegRem = 0;      
 
     // Escreve os dados no arquivo
@@ -136,10 +133,8 @@ int write_header_type1(char *filename){
     fwrite(&desC6, sizeof(char), 18, file_header_w);
     fwrite(&codC7, sizeof(char), 1, file_header_w);
     fwrite(&desC7, sizeof(char), 19, file_header_w);
-    fwrite(&proxRNN, sizeof(int), 1, file_header_w);
+    fwrite(&proxRRN, sizeof(int), 1, file_header_w);
     fwrite(&nroRegRem, sizeof(int), 1, file_header_w);
-
-    fclose(file_header_w);
 
     return 0;
 }
@@ -172,7 +167,7 @@ int read_header_type1(char *filename){
 
     fseek(file_header_r, 0, SEEK_SET);
     fread(&H.status, sizeof(char), 1, file_header_r);
-    fread(&H.topo, sizeof(int), 1, file_header_r);
+    fread(&H.topo.rrn, sizeof(int), 1, file_header_r);
     fread(&H.descricao, sizeof(char), 40, file_header_r);
     fread(&H.desC1, sizeof(char), 22, file_header_r);
     fread(&H.desC2, sizeof(char), 19, file_header_r);
@@ -184,12 +179,12 @@ int read_header_type1(char *filename){
     fread(&H.desC6, sizeof(char), 18, file_header_r);
     fread(&H.codC7, sizeof(char), 1, file_header_r);
     fread(&H.desC7, sizeof(char), 19, file_header_r);
-    fread(&H.proxRNN, sizeof(int), 1, file_header_r);
+    fread(&H.prox.proxRRN, sizeof(int), 1, file_header_r);
     fread(&H.nroRegRem, sizeof(int), 1, file_header_r);
 
     // Imprime os dados lidos
     printf("%d\n",H.status);
-    printf("%d\n",H.topo);
+    printf("%d\n",H.topo.rrn);
     print_string(H.descricao, 40);
     print_string(H.desC1, 22);
     print_string(H.desC2, 19);
@@ -201,10 +196,9 @@ int read_header_type1(char *filename){
     print_string(H.desC6, 18);
     printf("%d\n",H.codC7);
     print_string(H.desC7, 19);
-    printf("%d\n",H.proxRNN);
+    printf("%d\n",H.prox.proxRRN);
     printf("%d\n",H.nroRegRem);
 
-    fclose(file_header_r);
     free(filename);
 
     return 0;
@@ -250,7 +244,10 @@ int read_one_reg_csv(FILE *file){
 
 }
 
-int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V){
+int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn){
+
+    // Colocando o cursor de leitura no início do registro a ser buscado
+    fseek(file_bin_r, MAX_RRN*rrn + SIZE_TYPE1, SEEK_SET);
 
     // Contador de bytes utilizado para garantir que não se ultrapasse
     // o limite do registro
@@ -351,20 +348,19 @@ int read_bin_all_reg(char *filename){
     fseek(file_bin_r, 0, SEEK_SET);
 
     Vehicle V = initialize_vehicle(1);
+    int rrn = 0;
 
     // Enquanto ainda houverem registros a serem lidos no arquivo de dados
-    while(!read_reg_from_bin_type1(file_bin_r, &V)){
+    while(!read_reg_from_bin_type1(file_bin_r, &V, rrn)){
 
         // Imprime os dados do veículo
         print_vehicle(V);
         printf("-------------\n");
 
-        // Posiciona o cursor de leitura no registro seguinte
-        fseek(file_bin_r, MAX_RRN, SEEK_CUR);
-
         // Libera a memória alocada durante a leitura
         free_vehicle(&V);
         V = initialize_vehicle(1);
+        rrn++;
     }
 
     fclose(file_bin_r);
@@ -374,10 +370,12 @@ int read_bin_all_reg(char *filename){
 
 int initialize_reg_type1(FILE *file_bin_w){
 
+    // Preenche o espaço do registro com '$'
     char c = '$';
     for(int i=0; i<MAX_RRN; i++)
         fwrite(&c, sizeof(char), 1, file_bin_w);
 
+    // Posiciona o cursor de leitura ao início do registro
     fseek(file_bin_w, -MAX_RRN, SEEK_CUR);
     
     return 0;
@@ -397,17 +395,17 @@ int write_file_type1(FILE *file_bin_w, Vehicle *V){
     if ((*V).cidade != NULL){
         (*V).tamCidade = strlen((*V).cidade);
         (*V).codC5 = 0;
-        offset += (4 + 1 + (*V).tamCidade);
+        offset += (sizeof(int) + sizeof(char) + (*V).tamCidade);
     }
     if ((*V).marca != NULL){
         (*V).tamMarca = strlen((*V).marca);
         (*V).codC6 = 1;
-        offset += (4 + 1 + (*V).tamMarca);
+        offset += (sizeof(int) + sizeof(char) + (*V).tamMarca);
     }
     if ((*V).modelo != NULL){
         (*V).tamModelo = strlen((*V).modelo);
         (*V).codC7 = 2;
-        offset += (4 + 1 + (*V).tamModelo);
+        offset += (sizeof(int) + sizeof(char) + (*V).tamModelo);
     }
 
     fwrite(&(*V).removido, sizeof(char), 1, file_bin_w);
@@ -423,7 +421,7 @@ int write_file_type1(FILE *file_bin_w, Vehicle *V){
     }
     fwrite((*V).sigla, sizeof(char), 2, file_bin_w);
 
-    offset += (1 + 4*4 + 2);
+    offset += (sizeof(char) + 4*sizeof(int) + 2*sizeof(char));
 
     if ((*V).tamCidade){
         fwrite(&(*V).tamCidade, sizeof(int), 1, file_bin_w);
@@ -443,7 +441,7 @@ int write_file_type1(FILE *file_bin_w, Vehicle *V){
         fwrite((*V).modelo, sizeof(char), (*V).tamModelo, file_bin_w);
     }
 
-    // Posiciona o cursor do arquivo ao final do padding
+    // Posiciona o cursor do arquivo ao final do registro com padding
     offset = MAX_RRN - offset;
     fseek(file_bin_w, offset, SEEK_CUR);
 
@@ -470,18 +468,7 @@ int read_reg_from_csv_type1(FILE *file_csv_r, Vehicle *V){
     char *marca = read_data(file_csv_r); 
     char *modelo = read_data(file_csv_r);
 
-    /*
-    if (id) printf("id: %d\n", id);
-    if (ano) printf("ano: %d\n", ano);
-    if (cidade[0]) printf("cidade: %s\n", cidade);
-    if (qtt) printf("qtt: %d\n", qtt);
-    if (sigla[0]) printf("marca: %s\n", sigla);
-    if (marca[0]) printf("marca: %s\n", marca);
-    if (modelo[0]) printf("modelo: %s\n", modelo);
-
-    printf("---------\n");
-    */
-
+    // Armazenando os dados lidos no registro, quando presentes
     if (id) (*V).id = id;
     if (ano) (*V).ano = ano;
     if (cidade[0]) (*V).cidade = cidade;
@@ -494,7 +481,7 @@ int read_reg_from_csv_type1(FILE *file_csv_r, Vehicle *V){
     if (modelo[0]) (*V).modelo = modelo;
     else free(modelo);
 
-    // Liberando memória
+    // Liberando memória das strings auxiliares utilizadas
     free(str_id);
     free(str_ano);
     free(str_qtt);
@@ -502,7 +489,7 @@ int read_reg_from_csv_type1(FILE *file_csv_r, Vehicle *V){
     return 0;
 }
 
-int read_csv_type1(char *filename){
+int write_bin_from_csv_type1(char *filename){
 
     // Abrindo arquivo csv para leitura
     FILE *file_csv_r = fopen(filename, "rb");
@@ -510,6 +497,8 @@ int read_csv_type1(char *filename){
     char *filename_w = (char *) calloc( 12, sizeof(char));
     strcpy(filename_w, "frota_w.bin");
     FILE *file_bin_w = fopen(filename_w, "wb");
+
+    write_header_type1(file_bin_w);
     
     // Lendo e liberando linha de cabeçalho
     free(readline(file_csv_r));
@@ -519,10 +508,14 @@ int read_csv_type1(char *filename){
     Vehicle V = initialize_vehicle(1);
     V.prox.rrn = rrn_counter++;
     while(!read_reg_from_csv_type1(file_csv_r, &V)){
+
+        // Escrevendo o registro 
         write_file_type1(file_bin_w, &V);
         free_vehicle(&V);
+
+        // Preparando um novo registro a ser escrito
         V = initialize_vehicle(1);
-        V.prox.rrn = rrn_counter++;
+        V.prox.rrn = rrn_counter++; //incrementando o RRN
     }
 
     // Armazenando -1 no último indicador de próximo RRN no arquivo escrito

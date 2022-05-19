@@ -29,7 +29,7 @@ char *read_data(FILE *stream) ;
 /*
  * Comment section
 */
-int write_header_type1(char *filename);
+int write_header_type1(FILE *file_header_w);
 
 /*
  * Função para imprimir strings dos registradores na saída padrão
@@ -55,7 +55,7 @@ Vehicle initialize_vehicle(int type);
 /*
  * Comment section
 */
-int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V);
+int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn);
 
 /*
  * Comment section
@@ -80,7 +80,7 @@ int read_reg_from_csv_type1(FILE *file_csv_r, Vehicle *V);
 /*
  * Comment section
 */
-int read_csv_type1(char *filename);
+int write_bin_from_csv_type1(char *filename);
 
 /*
  * Comment section
