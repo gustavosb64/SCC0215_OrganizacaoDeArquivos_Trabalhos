@@ -208,10 +208,7 @@ int write_header(FILE *file_header_w, int f_type){
 
 int write_reg_in_bin_type1(FILE *file_bin_w, Vehicle *V){
 
-    if (file_bin_w == NULL){
-        return 1;
-    }
-
+    // Inicializa o espaço dos próximos MAX_RRN bytes com o caractere '$'
     initialize_reg_type1(file_bin_w);
 
     // Conta quantos bytes devem ser pulados ao final devido ao padding
@@ -274,10 +271,6 @@ int write_reg_in_bin_type1(FILE *file_bin_w, Vehicle *V){
 }
 
 int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg){
-
-    if (file_bin_w == NULL){
-        return 1;
-    }
 
     long int start_byte = ftell(file_bin_w);
 
@@ -546,6 +539,9 @@ int read_reg_from_bin_type2(FILE *file_bin_r, Vehicle *V, long int *offset){
 int read_all_reg_from_bin(char *filename_in_bin, int f_type){
 
     FILE *file_bin_r = fopen(filename_in_bin, "rb");
+    if (file_bin_r == NULL){
+        return 1;
+    }
 
     Vehicle V = initialize_vehicle(f_type);
 
