@@ -27,11 +27,6 @@ char *readline(FILE *stream) ;
 char *read_data(FILE *stream) ;
 
 /*
- * Comment section
-*/
-int write_header(FILE *file_header_w, char type);
-
-/*
  * Função para imprimir strings dos registradores na saída padrão
  *  Parâmetros:
  *      char string[]: string a ser impressa
@@ -45,12 +40,27 @@ int print_string(char string[], int len);
 /*
  * Comment section
 */
-int read_header_type1(char *filename);
+Vehicle initialize_vehicle(int f_type);
 
 /*
  * Comment section
 */
-Vehicle initialize_vehicle(int type);
+int initialize_reg_type1(FILE *file_bin_w);
+
+/*
+ * Comment section
+*/
+int write_header(FILE *file_header_w, int f_type);
+
+/*
+ * Comment section
+*/
+int write_reg_in_bin_type1(FILE *file_bin_w, Vehicle *V);
+
+/*
+ * Comment section
+*/
+int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg);
 
 /*
  * Comment section
@@ -65,47 +75,22 @@ int read_reg_from_bin_type2(FILE *file_bin_r, Vehicle *V, long int *offset);
 /*
  * Comment section
 */
-int read_bin_all_reg_type2(char *filename);
+int read_all_reg_from_bin(char *filename_in_bin, int f_type);
 
 /*
  * Comment section
 */
-int read_bin_all_reg_type1(char *filename);
+int read_reg_from_csv(FILE *file_csv_r, Vehicle *V);
 
 /*
  * Comment section
 */
-int initialize_reg_type1(FILE *file_bin_w);
+int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type);
 
 /*
  * Comment section
 */
-int write_reg_in_bin_type1(FILE *file_bin_w, Vehicle *V);
-
-/*
- * Comment section
-*/
-int read_reg_from_csv_type1(FILE *file_csv_r, Vehicle *V);
-
-/*
- * Comment section
-*/
-int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg);
-
-/*
- * Comment section
-*/
-int write_bin_from_csv_type2(char *filename);
-
-/*
- * Comment section
-*/
-int write_bin_from_csv_type1(char *filename);
-
-/*
- * Comment section
-*/
-int print_vehicle(Vehicle V, int type);
+int print_vehicle(Vehicle V, int f_type);
 
 /*
  * Comment section
