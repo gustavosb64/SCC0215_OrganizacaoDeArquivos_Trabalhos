@@ -33,7 +33,7 @@ struct header{
 
 struct vehicle{
     char removido;      // indica se o registro está logicamente removido
-    int tamanhoRegistro;
+    int tamanhoRegistro;    // utilizado apenas por registros tipo 2
     union{
         int rrn;           // armazena o RRN do próximo registro (tipo 1)
         long int offset;   // armazena o offset do próximo registro (tipo 2)
@@ -66,14 +66,12 @@ char *readline(FILE *stream) {
         pos++;
     }while(string[pos-1] != '\n' && !feof(stream));
 
-    if (string[pos-2] == 'r'){
-        string[pos-2] = 0;
-        string = (char *) realloc(string, pos-1);
-    }
-    else{
-        string[pos-1] = 0;
-        string = (char *) realloc(string, pos);
-    }
+    // Caso o último caractere seja \r, o próximo será um \n
+    if (string[pos-1] == '\r')
+        fgetc(stream);
+
+    string[pos-1] = 0;
+    string = (char *) realloc(string, pos);
 
     return string;
 }
