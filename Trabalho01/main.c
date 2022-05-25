@@ -28,7 +28,18 @@ void select_rrn_cmd() {
     int rrn;
     scanf("%d", &rrn);
     
-    search_vehicle_rrn(f_bin, rrn);
+    switch(search_vehicle_rrn(f_bin, rrn)){
+        case 1:
+            printf("Falha no processamento do arquivo.\n");
+            break;
+
+        case 2:
+            printf("Registro inexistente.\n");
+            break;
+
+        default:
+            break;
+    }
 
     free(f_bin);
 }

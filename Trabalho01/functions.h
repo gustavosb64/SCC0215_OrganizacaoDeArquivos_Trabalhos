@@ -198,6 +198,11 @@ char* remove_quotes_str(char* quoted_str) ;
 /*
  * Comment section
 */
+int customized_strcmp(char *v_str, char *str);
+
+/*
+ * Comment section
+*/
 int check_meets_condition(Vehicle V, char* field, char* value) ;
 
 /*
