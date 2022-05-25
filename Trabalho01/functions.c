@@ -148,7 +148,7 @@ int initialize_reg_type1(FILE *file_bin_w){
     for(int i=0; i<MAX_RRN; i++)
         fwrite(&c, sizeof(char), 1, file_bin_w);
 
-    // Posiciona o cursor de leitura ao início do registro
+    // Posiciona o ponteiro do arquivo ao início do registro
     fseek(file_bin_w, -MAX_RRN, SEEK_CUR);
     
     return 0;
@@ -261,7 +261,7 @@ int write_reg_in_bin_type1(FILE *file_bin_w, Vehicle *V){
         fwrite((*V).modelo, sizeof(char), (*V).tamModelo, file_bin_w);
     }
 
-    // Posiciona o cursor do arquivo ao final do registro com padding
+    // Posiciona o ponteiro do arquivo ao final do registro com padding
     offset = MAX_RRN - offset;
     fseek(file_bin_w, offset, SEEK_CUR);
 
@@ -269,8 +269,6 @@ int write_reg_in_bin_type1(FILE *file_bin_w, Vehicle *V){
 }
 
 int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg){
-
-    long int start_byte = ftell(file_bin_w);
 
     if ((*V).cidade != NULL){
         (*V).tamCidade = strlen((*V).cidade);
@@ -288,7 +286,12 @@ int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg){
     fwrite(&(*V).removido, sizeof(char), 1, file_bin_w);
 
     // Pula campo de tamanhoRegistro e proxOffset para inserir depois
-    fseek(file_bin_w, sizeof(int)+sizeof(long int), SEEK_CUR); 
+    fseek(file_bin_w, sizeof(int), SEEK_CUR); 
+
+    // Armazena o byte offset onde os dados do registro começam
+    long int start_byte = ftell(file_bin_w);
+
+    fseek(file_bin_w, sizeof(long int), SEEK_CUR); 
 
     fwrite(&(*V).id, sizeof(int), 1, file_bin_w);
     fwrite(&(*V).ano, sizeof(int), 1, file_bin_w);
@@ -322,11 +325,11 @@ int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg){
     long int end_byte = ftell(file_bin_w);
     (*V).tamanhoRegistro = end_byte - start_byte;
 
-    //prox.offset padrão é onde o cursor de leitura parou
-    (*V).prox.offset = end_byte - HEADER_SIZE_TYPE2; 
+    //prox.offset padrão é onde o ponteiro do arquivo parou
+    (*V).prox.offset = end_byte; 
 
-    // Retorna o cursor de leitura nas posições reservadas ao tamanho e ao offset
-    fseek(file_bin_w, start_byte + 1, SEEK_SET);
+    // Retorna o ponteiro do arquivo nas posições reservadas ao tamanho e ao offset
+    fseek(file_bin_w, start_byte - 4, SEEK_SET);
 
     fwrite(&(*V).tamanhoRegistro, sizeof(int), 1, file_bin_w);
     fwrite(&(*V).prox.offset, sizeof(long int), 1, file_bin_w);
@@ -334,7 +337,7 @@ int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg){
     // Atualiza size_last_reg
     (*size_last_reg) = (*V).tamanhoRegistro;
     
-    // Posiciona o cursor de leitura ao final do registro escrito
+    // Posiciona o ponteiro do arquivo ao final do registro escrito
     fseek(file_bin_w, end_byte, SEEK_SET);
 
     return 0;
@@ -342,7 +345,7 @@ int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg){
 
 int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn){
 
-    // Colocando o cursor de leitura no início do registro a ser buscado
+    // Colocando o ponteiro do arquivo no início do registro a ser buscado
     fseek(file_bin_r, MAX_RRN*rrn + HEADER_SIZE_TYPE1, SEEK_SET);
 
     // Contador de bytes utilizado para garantir que não se ultrapasse
@@ -372,22 +375,22 @@ int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn){
         // não há espaço para outro campo ter sido armazenado
         if (byte_counter > MAX_RRN-5) return 0;
 
-        // Avança o cursor o tamanho de um inteiro para ler o caractere de 
+        // Avança o ponteiro o tamanho de um inteiro para ler o caractere de 
         // descrição simplificada do campo
         // Caso fread() retorne 0, o arquivo atingiu o fim
         fseek(file_bin_r, 4, SEEK_CUR);
         if (!fread(&aux_char, sizeof(char), 1, file_bin_r)){
-            // Retorna o cursor de leitura para o início do registro
+            // Retorna o ponteiro do arquivo para o início do registro
             fseek(file_bin_r, -byte_counter-5, SEEK_CUR);
             return 0;
         }
-        fseek(file_bin_r, -5, SEEK_CUR); // retorna o cursor para antes do inteiro
+        fseek(file_bin_r, -5, SEEK_CUR); // retorna o ponteiro para antes do inteiro
 
         // Caso o caractere lido não esteja entre 0 e 2, trata-se de lixo, 
         // e o registro terminou de ser lido
         if (aux_char > 2){
 
-            // Retorna o cursor de leitura para o início do registro
+            // Retorna o ponteiro do arquivo para o início do registro
             fseek(file_bin_r, -byte_counter, SEEK_CUR);
             return 0;
         }
@@ -431,7 +434,7 @@ int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn){
 
     }
 
-    // Retorna o cursor de leitura para o início do registro
+    // Retorna o ponteiro do arquivo para o início do registro
     fseek(file_bin_r, -byte_counter, SEEK_CUR);
 
     return 0;
@@ -440,8 +443,8 @@ int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn){
 
 int read_reg_from_bin_type2(FILE *file_bin_r, Vehicle *V, long int *offset){
 
-    // Colocando o cursor de leitura no início do registro a ser buscado
-    fseek(file_bin_r, (*offset) + (HEADER_SIZE_TYPE2), SEEK_SET);
+    // Colocando o ponteiro do arquivo no início do registro a ser buscado
+    fseek(file_bin_r, (*offset), SEEK_SET);
 
     // Contador de bytes utilizado para garantir que não se ultrapasse
     // o limite do registro
@@ -470,23 +473,23 @@ int read_reg_from_bin_type2(FILE *file_bin_r, Vehicle *V, long int *offset){
         // Caso a quantidade de bytes restantes ultrapasse o tamanhoRegistro,
         // não há espaço para outro campo ter sido armazenado
         if (byte_counter >= (*V).tamanhoRegistro){
-            // Retorna o cursor de leitura para o início do registro
-            (*offset) = ftell(file_bin_r) - HEADER_SIZE_TYPE2;
+            // Retorna o ponteiro do arquivo para o início do registro
+            (*offset) = ftell(file_bin_r);
 
             return 0;
         }
 
-        // Avança o cursor o tamanho de um inteiro para ler o caractere de 
+        // Avança o ponteiro o tamanho de um inteiro para ler o caractere de 
         // descrição simplificada do campo
         // Caso fread() retorne 0, o arquivo atingiu o fim
         fseek(file_bin_r, 4, SEEK_CUR);
 
         if (!fread(&aux_char, sizeof(char), 1, file_bin_r)){
-            // Retorna o cursor de leitura para o início do registro
-            (*offset) = ftell(file_bin_r) - HEADER_SIZE_TYPE2;
+            // Retorna o ponteiro do arquivo para o início do registro
+            (*offset) = ftell(file_bin_r);
             return 0;
         }
-        fseek(file_bin_r, -5, SEEK_CUR); // retorna o cursor para antes do inteiro
+        fseek(file_bin_r, -5, SEEK_CUR); // retorna o ponteiro para antes do inteiro
 
         switch(aux_char){
 
@@ -527,8 +530,8 @@ int read_reg_from_bin_type2(FILE *file_bin_r, Vehicle *V, long int *offset){
 
     }
 
-    // Retorna o cursor de leitura para o início do registro
-    (*offset) = ftell(file_bin_r) - HEADER_SIZE_TYPE2;
+    // Retorna o ponteiro do arquivo para o início do registro
+    (*offset) = ftell(file_bin_r);
 
     return 0;
 
@@ -564,7 +567,7 @@ int read_all_reg_from_bin(char *filename_in_bin, int f_type){
     }
     else if (f_type == 2){
 
-        long int offset = 1;
+        long int offset = HEADER_SIZE_TYPE2+1;
 
         // Enquanto ainda houverem registros a serem lidos no arquivo de dados
         while(!read_reg_from_bin_type2(file_bin_r, &V, &offset)){
@@ -682,7 +685,7 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
 
         // Armazenando -1 no último indicador de próximo offset no arquivo escrito
         long int last_offset = -1;
-        fseek(file_bin_w, -size_last_reg+1+sizeof(int), SEEK_END);
+        fseek(file_bin_w, -size_last_reg, SEEK_END);
         fwrite(&last_offset, sizeof(long int), 1, file_bin_w);
     }
 
