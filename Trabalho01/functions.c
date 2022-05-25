@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "./functions.h"
 
 #define MAX_RRN 97
@@ -75,6 +76,57 @@ char *readline(FILE *stream) {
 
     return string;
 }
+
+char *readfield(FILE *stream) {
+    char *string = 0;
+    int pos = 0; 
+
+	do{
+        if (pos % READLINE_BUFFER == 0) {
+            string = (char *) realloc(string, (pos / READLINE_BUFFER + 1) * READLINE_BUFFER);
+        }
+        string[pos] = (char) fgetc(stream);
+        pos++;
+    }while(string[pos-1] != '\n' && string[pos-1] != ' ' && !feof(stream));
+
+    // Caso o último caractere seja \r, o próximo será um \n
+    if (string[pos-1] == '\r')
+        fgetc(stream);
+
+    string[pos-1] = 0;
+    string = (char *) realloc(string, pos);
+
+    return string;
+}
+
+void binarioNaTela(char *nomeArquivoBinario) { /* Você não precisa entender o código dessa função. */
+
+	/* Use essa função para comparação no run.codes. Lembre-se de ter fechado (fclose) o arquivo anteriormente.
+	*  Ela vai abrir de novo para leitura e depois fechar (você não vai perder pontos por isso se usar ela). */
+
+	unsigned long i, cs;
+	unsigned char *mb;
+	size_t fl;
+	FILE *fs;
+	if(nomeArquivoBinario == NULL || !(fs = fopen(nomeArquivoBinario, "rb"))) {
+		fprintf(stderr, "ERRO AO ESCREVER O BINARIO NA TELA (função binarioNaTela): não foi possível abrir o arquivo que me passou para leitura. Ele existe e você tá passando o nome certo? Você lembrou de fechar ele com fclose depois de usar?\n");
+		return;
+	}
+	fseek(fs, 0, SEEK_END);
+	fl = ftell(fs);
+	fseek(fs, 0, SEEK_SET);
+	mb = (unsigned char *) malloc(fl);
+	fread(mb, 1, fl, fs);
+
+	cs = 0;
+	for(i = 0; i < fl; i++) {
+		cs += (unsigned long) mb[i];
+	}
+	printf("%lf\n", (cs / (double) 100));
+	free(mb);
+	fclose(fs);
+}
+
 
 char *read_data(FILE *stream) {
     char *string = 0;
@@ -693,7 +745,7 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
     return 0;
 }
 
-int print_vehicle(Vehicle V, int f_type){
+int print_vehicle_full(Vehicle V, int f_type){
 
     printf("Removido: %d", V.removido);
     if (f_type == 2) printf("\nTamanhoRegistro: %d", V.tamanhoRegistro);
@@ -721,12 +773,184 @@ int print_vehicle(Vehicle V, int f_type){
     return 0;
 }
 
+int print_vehicle(Vehicle V, int f_type){
+           
+    printf("MARCA DO VEICULO: ");
+    if (V.marca != NULL) print_string(V.marca, V.tamMarca); else printf("NAO PREENCHIDO"); 
+
+    printf("\nMODELO DO VEICULO: ");
+    if (V.modelo != NULL) print_string(V.modelo, V.tamModelo); else printf("NAO PREENCHIDO"); 
+
+    printf("\nANO DE FABRICACAO: ");          
+    if (V.ano != -1) printf("%d", V.ano); else printf("NAO PREENCHIDO"); 
+
+    printf("\nNOME DA CIDADE: ");
+    if (V.cidade != NULL) print_string(V.cidade, V.tamCidade); else printf("NAO PREENCHIDO"); 
+
+    printf("\nQUANTIDADE DE VEICULOS: ");
+    if (V.qtt != -1) printf("%d", V.qtt); else printf("NAO PREENCHIDO"); 
+
+    printf("\n");
+    
+    return 0;
+}
+
 int free_vehicle(Vehicle *V){
 
     free((*V).sigla);
     if ((*V).tamCidade) free((*V).cidade);
     if ((*V).tamMarca) free((*V).marca);
     if ((*V).tamModelo) free((*V).modelo);
+
+    return 0;
+}
+
+int search_vehicle_rrn(char *filename_in_bin ,int rrn) {
+    FILE *file_bin_r = fopen(filename_in_bin, "rb");
+    if (file_bin_r == NULL){
+        return 1;
+    }
+    Vehicle V = initialize_vehicle(1);
+
+    read_reg_from_bin_type1(file_bin_r, &V, rrn);
+
+    // Imprime os dados do veículo
+    print_vehicle(V,1);
+    printf("\n");
+
+    // Libera a memória alocada durante a leitura
+    free_vehicle(&V);
+    return 0;
+}
+
+char* remove_quotes_str(char* quoted_str) {
+    char* unquoted_str = calloc(1, strlen(quoted_str)-1);
+
+    for (int i=1; i<strlen(quoted_str)-1; i++) {
+        unquoted_str[i-1] = quoted_str[i];
+    }
+    unquoted_str[strlen(quoted_str)-2] = '\0';
+
+    return unquoted_str;
+}
+
+int check_meets_condition(Vehicle V, char* field, char* value) {
+
+    char* unquoted_value;
+    if (strcmp(field, "id") == 0) {
+        if(V.id == atoi(value)) return 1;
+    } else if (strcmp(field, "marca") == 0) {
+        unquoted_value = remove_quotes_str(value);
+        if (V.marca != NULL && strcmp(V.marca, unquoted_value) == 0){
+            free(unquoted_value);
+            return 1;
+        }
+        free(unquoted_value);
+    } else if (strcmp(field, "cidade") == 0) {
+        unquoted_value = remove_quotes_str(value);
+        if (V.cidade != NULL && strcmp(V.cidade, unquoted_value) == 0){
+            free(unquoted_value);
+            return 1;
+        }
+        free(unquoted_value);
+    } else if (strcmp(field, "estado") == 0) {
+        unquoted_value = remove_quotes_str(value);
+        if (V.sigla != NULL && strcmp(V.sigla, unquoted_value) == 0){
+            free(unquoted_value);
+            return 1;
+        }
+        free(unquoted_value);
+    } else if (strcmp(field, "modelo") == 0) {
+        unquoted_value = remove_quotes_str(value);
+        if (V.modelo != NULL && strcmp(V.modelo, unquoted_value) == 0) {
+            free(unquoted_value);
+            return 1;
+        }
+        free(unquoted_value);
+    } else if (strcmp(field, "quantidade") == 0) {
+        if(V.qtt == atoi(value)) return 1;
+    } else if (strcmp(field, "ano") == 0) {
+        if(V.ano == atoi(value)) return 1;
+    }
+
+    return 0;
+}
+
+int read_condition_reg_from_bin(char *filename_in_bin, int f_type, char** conditions, int n){
+    char** fields = malloc(n*sizeof(char*));
+    char** values = malloc(n*sizeof(char*));
+    char* sp;
+    for (int i=0; i<n; i++) {
+        sp = strchr(conditions[i], ' ');
+        fields[i] = strndup(conditions[i], sp-conditions[i]);;
+        values[i] = sp+1;
+    }
+
+    FILE *file_bin_r = fopen(filename_in_bin, "rb");
+    if (file_bin_r == NULL){
+        return 1;
+    }
+
+    Vehicle V = initialize_vehicle(f_type);
+    int is_selected;
+
+    // Realiza diferentes rotinas a depender do tipo a ser lido
+    if (f_type == 1){
+
+        int rrn = 0;
+
+        // Enquanto ainda houverem registros a serem lidos no arquivo de dados
+        while(!read_reg_from_bin_type1(file_bin_r, &V, rrn)){
+
+            // Checa se atende à todas as condições do select
+            is_selected = 0;
+            for (int i=0; i<n; i++) {
+                is_selected = is_selected + check_meets_condition(V, fields[i], values[i]);
+            }        
+            if (is_selected == n) {
+                // Imprime os dados do veículo
+                print_vehicle(V,1);
+                printf("\n");
+            }
+
+            // Libera a memória alocada durante a leitura
+            free_vehicle(&V);
+            V = initialize_vehicle(1);
+            rrn++;
+        }
+
+    }
+    else if (f_type == 2){
+
+        long int offset = 1;
+
+        // Enquanto ainda houverem registros a serem lidos no arquivo de dados
+        while(!read_reg_from_bin_type2(file_bin_r, &V, &offset)){
+
+            // Checa se atende à todas as condições do select
+            is_selected = 0;
+            for (int i=0; i<n; i++) {
+                is_selected = is_selected + check_meets_condition(V, fields[i], values[i]);
+            }        
+            if (is_selected == n) {
+                // Imprime os dados do veículo
+                print_vehicle(V,2);
+                printf("\n");
+            }
+
+            // Libera a memória alocada durante a leitura
+            free_vehicle(&V);
+            V = initialize_vehicle(2);
+        }
+
+    }
+
+    for (int i=0; i<n; i++) { 
+        free(fields[i]);
+    }
+    free(fields);
+    free(values);
+    fclose(file_bin_r);
 
     return 0;
 }

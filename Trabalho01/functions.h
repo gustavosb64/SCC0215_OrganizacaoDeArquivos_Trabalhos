@@ -22,6 +22,16 @@ typedef struct vehicle Vehicle;
 char *readline(FILE *stream) ;
 
 /*
+ * Comment section
+*/
+char *readfield(FILE *stream) ;
+
+/*
+ * Comment section
+*/
+void binarioNaTela(char *nomeArquivoBinario) ; /* Você não precisa entender o código dessa função. */
+
+/*
  * Função para leitura de dados de um csv; utiliza caractere ',' como separador
  *  Parâmetros:
  *      FILE* stream: arquivo de onde será lida a string
@@ -152,6 +162,11 @@ int read_reg_from_csv(FILE *file_csv_r, Vehicle *V);
 int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type);
 
 /*
+ * Comment section
+*/
+int print_vehicle_full(Vehicle V, int f_type);
+
+/*
  * Imprime os dados de um registro Vehicle
  *  Parâmetros:
  *      Vehicle V: estrutura cujos dados serão impressos
@@ -169,6 +184,26 @@ int print_vehicle(Vehicle V, int f_type);
  *      0: nenhum erro
 */
 int free_vehicle(Vehicle *V);
+
+/*
+ * Comment section
+*/
+int search_vehicle_rrn(char *filename_in_bin ,int rrn) ;
+
+/*
+ * Comment section
+*/
+char* remove_quotes_str(char* quoted_str) ;
+
+/*
+ * Comment section
+*/
+int check_meets_condition(Vehicle V, char* field, char* value) ;
+
+/*
+ * Comment section
+*/
+int read_condition_reg_from_bin(char *filename_in_bin, int f_type, char** conditions, int n);
 
 
 #endif
