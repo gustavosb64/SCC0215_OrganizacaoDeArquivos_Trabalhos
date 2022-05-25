@@ -18,7 +18,8 @@ void create_table_cmd(int f_type) {
 void select_full_cmd(int f_type) {
     char *f_bin = readfield(stdin);
 
-    read_all_reg_from_bin(f_bin, f_type);
+    if (read_all_reg_from_bin(f_bin, f_type))
+        printf("Falha no processamento do arquivo.\n");
 
     free(f_bin);
 }

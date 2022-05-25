@@ -212,7 +212,7 @@ int write_header(FILE *file_header_w, int f_type){
      *  Não se pode atribuir diretamente uma string a vetores de caracteres;
      *  porém, é possível declarar o vetor char já inicializado com a string desejada.
      *  Inicializando através da struct, não seria possível atribuir as strings diretamente aos seus componentes */
-    char status = 0;
+    char status = '1';
 
     int topo_t1 = -1;      //usado em arquivo tipo 1
     long int topo_t2 = -1; //usado em arquivo tipo 2
@@ -601,6 +601,14 @@ int read_all_reg_from_bin(char *filename_in_bin, int f_type){
     // Realiza diferentes rotinas a depender do tipo a ser lido
     if (f_type == 1){
 
+        char c_aux;
+        fread(&c_aux, sizeof(char), 1, file_bin_r);
+        if (c_aux == '0'){
+            fclose(file_bin_r);
+            return 1;
+        }
+        fseek(file_bin_r,0,SEEK_SET);
+
         int rrn = 0;
 
         // Enquanto ainda houverem registros a serem lidos no arquivo de dados
@@ -851,10 +859,6 @@ int check_meets_condition(Vehicle V, char* field, char* value) {
         if(V.id == atoi(value)) return 1;
     } else if (strcmp(field, "marca") == 0) {
         unquoted_value = remove_quotes_str(value);
-/*        printf("%s / %s - ", unquoted_value, V.marca);
-        if (V.marca != NULL) printf("%d\n", strcmp(V.marca, unquoted_value));
-        else printf("\n");
-        */
         if (V.marca != NULL && customized_strcmp(V.marca, unquoted_value) == 0){
             free(unquoted_value);
             return 1;
@@ -862,21 +866,21 @@ int check_meets_condition(Vehicle V, char* field, char* value) {
         free(unquoted_value);
     } else if (strcmp(field, "cidade") == 0) {
         unquoted_value = remove_quotes_str(value);
-        if (V.cidade != NULL && strcmp(V.cidade, unquoted_value) == 0){
+        if (V.cidade != NULL && customized_strcmp(V.cidade, unquoted_value) == 0){
             free(unquoted_value);
             return 1;
         }
         free(unquoted_value);
     } else if (strcmp(field, "estado") == 0) {
         unquoted_value = remove_quotes_str(value);
-        if (V.sigla != NULL && strcmp(V.sigla, unquoted_value) == 0){
+        if (V.sigla != NULL && customized_strcmp(V.sigla, unquoted_value) == 0){
             free(unquoted_value);
             return 1;
         }
         free(unquoted_value);
     } else if (strcmp(field, "modelo") == 0) {
         unquoted_value = remove_quotes_str(value);
-        if (V.modelo != NULL && strcmp(V.modelo, unquoted_value) == 0) {
+        if (V.modelo != NULL && customized_strcmp(V.modelo, unquoted_value) == 0) {
             free(unquoted_value);
             return 1;
         }
