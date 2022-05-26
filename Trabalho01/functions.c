@@ -230,7 +230,7 @@ int write_header(FILE *file_header_w, int f_type){
     char desC7[19] = "MODELO DO VEICULO: ";
 
     int proxRRN = 0;               //usado em arquivo tipo 1 
-    long int proxByteOffset = -1;   //usado em arquivo tipo 2
+    long int proxByteOffset = 0;   //usado em arquivo tipo 2
 
     int nroRegRem = 0;      
 
@@ -378,7 +378,7 @@ int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg){
     (*V).tamanhoRegistro = end_byte - start_byte;
 
     // Retorna o ponteiro do arquivo nas posições reservadas ao tamanho e ao offset
-    fseek(file_bin_w, start_byte - ( sizeof(int) + 1), SEEK_SET);
+    fseek(file_bin_w, start_byte - sizeof(int), SEEK_SET);
 
     fwrite(&(*V).tamanhoRegistro, sizeof(int), 1, file_bin_w);
 
@@ -386,7 +386,7 @@ int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg){
     (*size_last_reg) = (*V).tamanhoRegistro;
     
     // Posiciona o ponteiro do arquivo ao final do registro escrito
-    fseek(file_bin_w, end_byte, SEEK_SET);
+    fseek(file_bin_w, 0, SEEK_END);
 
     return 0;
 }
@@ -689,7 +689,7 @@ int read_reg_from_csv(FILE *file_csv_r, Vehicle *V){
 int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type){
 
     FILE *file_csv_r = fopen(filename_in_csv, "rb");
-    FILE *file_bin_w = fopen(filename_out_bin, "wb+");
+    FILE *file_bin_w = fopen(filename_out_bin, "wb");
 
     write_header(file_bin_w, f_type);
     
@@ -729,24 +729,17 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
         // o proxByteOffset do último registro do arquivo
         int size_last_reg = 0;
 //        long int offset = HEADER_SIZE_TYPE2;
+        long int cur_prox_offset = ftell(file_bin_w);
         while(!read_reg_from_csv(file_csv_r, &V)){
 
             // Escrevendo o registro 
             write_reg_in_bin_type2(file_bin_w, &V, &size_last_reg);
 
-            /*
-            fseek(file_bin_w, - size_last_reg - 5, SEEK_CUR);
-            read_reg_from_bin_type2(file_bin_w, &V, &offset);
-
-
-//            offset += size_last_reg + 5;
-
-
-            //fseek(file_bin_w, -(size_last_reg+5), SEEK_END);
-            */
-
-            print_vehicle(V,2);
-            printf("------\n");
+            // Atualizando proxByteOffset no cabeçalho
+            cur_prox_offset = ftell(file_bin_w);
+            fseek(file_bin_w, 178, SEEK_SET);
+            fwrite(&cur_prox_offset, sizeof(long int), 1, file_bin_w);
+            fseek(file_bin_w, 0, SEEK_END);
 
             free_vehicle(&V);
 
