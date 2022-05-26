@@ -1,3 +1,12 @@
+/*
+ * Alunos:
+ *  Gustavo Siqueira Barbosa, NºUSP 10728122
+ *  Luiz Fernando Silva Eugênio dos Santos, NºUSP 10892680
+ * Código do curso: SCC0215
+ * Ano/semestre: 2022/1º semestre
+ * Título: Primeiro Trabalho Prático
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
