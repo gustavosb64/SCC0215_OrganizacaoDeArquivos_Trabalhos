@@ -99,7 +99,7 @@ char *readfield(FILE *stream) {
     return string;
 }
 
-void binarioNaTela(char *nomeArquivoBinario) { /* Você não precisa entender o código dessa função. */
+void binarioNaTela(char *nomeArquivoBinario) { 
 
 	/* Use essa função para comparação no run.codes. Lembre-se de ter fechado (fclose) o arquivo anteriormente.
 	*  Ela vai abrir de novo para leitura e depois fechar (você não vai perder pontos por isso se usar ela). */
@@ -320,7 +320,7 @@ int write_reg_in_bin_type1(FILE *file_bin_w, Vehicle *V){
     return 0;
 }
 
-int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg){
+int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V){
 
     if ((*V).cidade != NULL){
         (*V).tamCidade = strlen((*V).cidade);
@@ -377,14 +377,10 @@ int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg){
     long int end_byte = ftell(file_bin_w);
     (*V).tamanhoRegistro = end_byte - start_byte;
 
-    // Retorna o ponteiro do arquivo nas posições reservadas ao tamanho e ao offset
+    // Retorna o ponteiro do arquivo nas posições reservadas ao tamanho e o atualiza 
     fseek(file_bin_w, start_byte - sizeof(int), SEEK_SET);
-
     fwrite(&(*V).tamanhoRegistro, sizeof(int), 1, file_bin_w);
 
-    // Atualiza size_last_reg
-    (*size_last_reg) = (*V).tamanhoRegistro;
-    
     // Posiciona o ponteiro do arquivo ao final do registro escrito
     fseek(file_bin_w, 0, SEEK_END);
 
@@ -597,6 +593,8 @@ int read_all_reg_from_bin(char *filename_in_bin, int f_type){
     // Realiza diferentes rotinas a depender do tipo a ser lido
     if (f_type == 1){
 
+        // Caractere auxiliar para verificar se o primeiro byte a ser lido se
+        // refere a um registro. Retorna sinal de erro 1 caso não seja
         char c_aux;
         fread(&c_aux, sizeof(char), 1, file_bin_r);
         if (c_aux == '0'){
@@ -689,6 +687,9 @@ int read_reg_from_csv(FILE *file_csv_r, Vehicle *V){
 int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type){
 
     FILE *file_csv_r = fopen(filename_in_csv, "rb");
+    if (file_csv_r == NULL){
+        return 1;
+    }
     FILE *file_bin_w = fopen(filename_out_bin, "wb");
 
     write_header(file_bin_w, f_type);
@@ -725,15 +726,12 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
     }
     else if (f_type == 2){
 
-        // Armazena o tamanho do último registro escrito, usado para setar como -1
-        // o proxByteOffset do último registro do arquivo
-        int size_last_reg = 0;
-//        long int offset = HEADER_SIZE_TYPE2;
+        // Armazena o byte offset atual para atualizar o header 
         long int cur_prox_offset = ftell(file_bin_w);
         while(!read_reg_from_csv(file_csv_r, &V)){
 
             // Escrevendo o registro 
-            write_reg_in_bin_type2(file_bin_w, &V, &size_last_reg);
+            write_reg_in_bin_type2(file_bin_w, &V);
 
             // Atualizando proxByteOffset no cabeçalho
             cur_prox_offset = ftell(file_bin_w);
@@ -821,8 +819,10 @@ int search_vehicle_rrn(char *filename_in_bin ,int rrn) {
     }
     Vehicle V = initialize_vehicle(1);
 
-    if (read_reg_from_bin_type1(file_bin_r, &V, rrn))
+    if (read_reg_from_bin_type1(file_bin_r, &V, rrn)){
+        fclose(file_bin_r);
         return 2;
+    }
 
     // Imprime os dados do veículo
     print_vehicle(V,1);
@@ -830,6 +830,8 @@ int search_vehicle_rrn(char *filename_in_bin ,int rrn) {
 
     // Libera a memória alocada durante a leitura
     free_vehicle(&V);
+    fclose(file_bin_r);
+
     return 0;
 }
 
@@ -846,6 +848,7 @@ char* remove_quotes_str(char* quoted_str) {
 
 int customized_strcmp(char *v_str, char *str){
 
+    // Adiciona '\0' ao final da string v_str para a possibilitar o uso do strcmp
     v_str[strlen(str)] = '\0';
     return strcmp(str, v_str);
 

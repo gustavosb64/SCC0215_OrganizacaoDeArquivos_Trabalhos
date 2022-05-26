@@ -22,14 +22,18 @@ typedef struct vehicle Vehicle;
 char *readline(FILE *stream) ;
 
 /*
- * Comment section
+ * Função para leitura de dados de um csv; utiliza caractere ',' como separador
+ *  Parâmetros:
+ *      FILE* stream: arquivo de onde será lida a string
+ *  Retorno:
+ *      char*: string lida de stream
 */
 char *readfield(FILE *stream) ;
 
 /*
- * Comment section
+ * Função fornecida para a comparação dos binários gerados pelas funções de escrita
 */
-void binarioNaTela(char *nomeArquivoBinario) ; /* Você não precisa entender o código dessa função. */
+void binarioNaTela(char *nomeArquivoBinario) ; 
 
 /*
  * Função para leitura de dados de um csv; utiliza caractere ',' como separador
@@ -93,16 +97,9 @@ int write_header(FILE *file_header_w, int f_type);
 int write_reg_in_bin_type1(FILE *file_bin_w, Vehicle *V);
 
 /*
- * Escreve um registro do tipo 2 em um arquivo binário 
- *  Parâmetros:
- *      FILE *file_bin_w: arquivo em que o registro será escrito 
- *      Vehicle *V: registro do tipo Vehicle contendo os dados a serem 
- *                  armazenados no arquivo
- *      int *size_last_reg: tamanho do último registro escrito
- *  Retorno:
- *      0: nenhum erro
+ * Comment section
 */
-int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg);
+int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V);
 
 /*
  * Lê um registro do tipo 1 com dado RRN de um arquivo binário
@@ -113,11 +110,20 @@ int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg);
  *      int rrn: RRN do registro a ser lido
  *  Retorno:
  *      0: nenhum erro
+ *      1: erro na leitura do campo ou fim do arquivo atingido
 */
 int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn);
 
 /*
- * Comment section
+ * Lê um registro do tipo 2 com dado byte offset de um arquivo binário
+ *  Parâmetros:
+ *      FILE *file_bin_r: arquivo do qual o registro será lido 
+ *      Vehicle *V: registro do tipo Vehicle contendo os dados lidos do
+ *                  arquivo fornecido
+ *      long int offset: byte offset do registro a ser lido
+ *  Retorno:
+ *      0: nenhum erro
+ *      1: erro na leitura do campo ou fim do arquivo atingido
 */
 int read_reg_from_bin_type2(FILE *file_bin_r, Vehicle *V, long int *offset);
 
@@ -128,7 +134,7 @@ int read_reg_from_bin_type2(FILE *file_bin_r, Vehicle *V, long int *offset);
  *      int f_type: tipo do registro a ser lido
  *  Retorno:
  *      0: nenhum erro
- *      1: arquivo de entrada não encontrado
+ *      1: falha na abertura do arquivo, erro na leitura do campo, fim do arquivo atingido 
 */
 int read_all_reg_from_bin(char *filename_in_bin, int f_type);
 
@@ -139,7 +145,7 @@ int read_all_reg_from_bin(char *filename_in_bin, int f_type);
  *      Vehicle *V: registro de veículo onde os dados lidos serão armazenados
  *  Retorno:
  *      0: nenhum erro
- *      1: não há mais dados no arquivo de entrada
+ *      1: não há mais campos no csv a serem lidos (leitura do campo id retornou uma string vazia)
 */
 int read_reg_from_csv(FILE *file_csv_r, Vehicle *V);
 
@@ -151,16 +157,22 @@ int read_reg_from_csv(FILE *file_csv_r, Vehicle *V);
  *      int f_type: tipo do registro a ser escrito
  *  Retorno:
  *      0: nenhum erro
+ *      1: falha na abertura do arquivo de leitura csv
 */
 int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type);
 
 /*
- * Comment section
+ * Imprime todos os dados de um registro Vehicle
+ *  Parâmetros:
+ *      Vehicle V: estrutura cujos dados serão impressos
+ *      int f_type: tipo do registro
+ *  Retorno:
+ *      0: nenhum erro
 */
 int print_vehicle_full(Vehicle V, int f_type);
 
 /*
- * Imprime os dados de um registro Vehicle
+ * Imprime os dados requisitados pela aplicação de um registro Vehicle
  *  Parâmetros:
  *      Vehicle V: estrutura cujos dados serão impressos
  *      int f_type: tipo do registro
@@ -189,7 +201,12 @@ int search_vehicle_rrn(char *filename_in_bin ,int rrn) ;
 char* remove_quotes_str(char* quoted_str) ;
 
 /*
- * Comment section
+ * Função customizada para comparação de string. Adiciona caractere '\0' ao final de v_str para utilizar strcmp()
+ *  Parâmetros:
+ *      char *v_str: string armazenada em uma estrutura do tipo Vehicle (sem '\0' ao final)
+ *      char *str: string usada para comparação
+ *  Retorno:
+ *      strcmp(v_str, str)
 */
 int customized_strcmp(char *v_str, char *str);
 
