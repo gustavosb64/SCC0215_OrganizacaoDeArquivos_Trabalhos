@@ -80,7 +80,13 @@ int write_header(FILE *file_header_w, int f_type);
 int write_reg_in_bin_type1(FILE *file_bin_w, Vehicle *V);
 
 /*
- * Comment section
+ * Escreve um registro do tipo 2 em um arquivo binário 
+ *  Parâmetros:
+ *      FILE *file_bin_w: arquivo em que o registro será escrito 
+ *      Vehicle *V: registro do tipo Vehicle contendo os dados a serem 
+ *                  armazenados no arquivo
+ *  Retorno:
+ *      0: nenhum erro
 */
 int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V);
 
@@ -174,12 +180,23 @@ int print_vehicle(Vehicle V, int f_type);
 int free_vehicle(Vehicle *V);
 
 /*
- * Comment section
+ * Busca um registro no arquivo a partir de um RRN fornecido
+ *  Parâmetros:
+ *      char *filename_in_bin: nome do arquivo binário de leitura
+ *      int rrn: RRN fornecido para ser buscado
+ *  Retorno:
+ *      0: nenhum erro
+ *      1: falha na abertura do arquivo de leitura 
+ *      2: falha na leitura do registro (registro inexistente)
 */
 int search_vehicle_rrn(char *filename_in_bin ,int rrn) ;
 
 /*
- * Comment section
+ * Remove aspas da string passada por parâmetro.
+ *  Parâmetros:
+ *      char *quoted_str: string a ter aspas removidas
+ *  Retorno:
+ *      char *: string tratada, com aspas removidas
 */
 char* remove_quotes_str(char* quoted_str) ;
 
@@ -194,12 +211,27 @@ char* remove_quotes_str(char* quoted_str) ;
 int customized_strcmp(char *v_str, char *str);
 
 /*
- * Comment section
+ * Checa se o campo lido cumpre com os requisitos de filtragem.
+ *  Parâmetros:
+ *      Vehicle V: estrutura onde os dados do registro lido estão armazenados
+ *      char *field: nome do campo a ser usado na comparação 
+ *      char *value: valor do campo a ser usado na comparação
+ *  Retorno:
+ *      0: não cumpre com o requisito (comparação retorna falso)
+ *      1: cumpre com o requisito (comparação retorna verdadeiro)
 */
 int check_meets_condition(Vehicle V, char* field, char* value) ;
 
 /*
- * Comment section
+ * Lê registros de um arquivo binário filtrando por condições passadas por parâmetro.
+ *  Parâmetros:
+ *      char *filename_in_bin: nome do arquivo binário de leitura
+ *      int f_type: tipo do arquivo
+ *      char **conditions: condições de filtragem
+ *      int n: número de condições
+ *  Retorno:
+ *      0: nenhum erro
+ *      1: falha na abertura do arquivo de leitura
 */
 int read_condition_reg_from_bin(char *filename_in_bin, int f_type, char** conditions, int n);
 
