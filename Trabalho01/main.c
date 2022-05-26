@@ -4,8 +4,11 @@
 #include "./functions.h"
 
 void create_table_cmd(int f_type) {
-    char *f_input_csv = readfield(stdin);
-    char *f_output_bin = readfield(stdin);
+
+    char aux_delimiters[1] = " ";
+
+    char *f_input_csv = readline(stdin, aux_delimiters);
+    char *f_output_bin = readline(stdin, aux_delimiters);
 
     write_bin_from_csv(f_input_csv, f_output_bin, f_type);
     binarioNaTela(f_output_bin);
@@ -16,7 +19,8 @@ void create_table_cmd(int f_type) {
 }
 
 void select_full_cmd(int f_type) {
-    char *f_bin = readfield(stdin);
+    char aux_delimiters[1] = " ";
+    char *f_bin = readline(stdin, aux_delimiters);
 
     if (read_all_reg_from_bin(f_bin, f_type))
         printf("Falha no processamento do arquivo.\n");
@@ -25,7 +29,8 @@ void select_full_cmd(int f_type) {
 }
 
 void select_rrn_cmd() {
-    char *f_bin = readfield(stdin);
+    char aux_delimiters[1] = " ";
+    char *f_bin = readline(stdin, aux_delimiters);
     int rrn;
     scanf("%d", &rrn);
     
@@ -46,14 +51,18 @@ void select_rrn_cmd() {
 }
 
 void select_where_cmd(int f_type) {
-    char *f_bin = readfield(stdin);
+    char aux_delimiters[1] = " ";
+
+    char *f_bin = readline(stdin, aux_delimiters);
     int n;
     scanf("%d\n", &n);
     char** conditions = malloc(n*sizeof(char*));
 
+    aux_delimiters[0] = '\0';
+
     char* line;
     for (int i=0; i<n; i++) {
-        line = readline(stdin);
+        line = readline(stdin, aux_delimiters);
         conditions[i] = line;
     }
 
@@ -68,22 +77,11 @@ void select_where_cmd(int f_type) {
 
 int main(int argc, char *argv[]){
 
-    // Lendo os respectivos inputs do argv[]
-    /*
-    int operation = atoi(argv[1]);
-    int f_type = atoi(argv[2]);
-    char *f_input_csv = argv[3];
-    char *f_output_bin = argv[4];
-
-    char *filename = readline(stdin);
-    write_header_type1(filename);
-
-    read_header_type1(filename);
-    */
     // Lendo os respectivos inputs do stdin
     int operation;
     scanf("%d\n", &operation);
-    char *f_type_str = readfield(stdin);
+    char aux_delimiters[1] = " ";
+    char *f_type_str = readline(stdin, aux_delimiters);
     int f_type = f_type_str[strlen(f_type_str)-1] - '0';
 
 
@@ -112,23 +110,6 @@ int main(int argc, char *argv[]){
             break;
         }
     }
-
-
-    /*
-    write_bin_from_csv_type1("frota.csv", "frota_1.bin");
-    read_bin_all_reg_type1("frota_1.bin");
-    */
-
-    /*
-    write_bin_from_csv_type2("frota.csv", "frota_2.bin");
-    read_bin_all_reg_type2("frota_2.bin");
-    */
-
-    //-write_bin_from_csv("frota.csv", "frota_1.bin", 1);
-//    read_bin_all_reg_type2("frota_2.bin");
-    //-read_all_reg_from_bin("frota_1.bin",1);
-
-//    fclose(File);
 
     free(f_type_str);
     return 0;

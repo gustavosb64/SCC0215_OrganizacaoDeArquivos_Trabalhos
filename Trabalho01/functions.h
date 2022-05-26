@@ -13,36 +13,19 @@ typedef struct header Header;
 typedef struct vehicle Vehicle;
 
 /*
- * Função para leitura de string de um arquivo
+ * Função para leitura de linha de stream; utiliza lista com delimitadores, além dos delimitadores padrão '\r', '\n' e EOF(stream). 
  *  Parâmetros:
  *      FILE* stream: arquivo de onde será lida a string
+ *      char delimiters[]: array com os caracteres delimitadores especiais
  *  Retorno:
  *      char*: string lida de stream
 */
-char *readline(FILE *stream) ;
-
-/*
- * Função para leitura de dados de um csv; utiliza caractere ',' como separador
- *  Parâmetros:
- *      FILE* stream: arquivo de onde será lida a string
- *  Retorno:
- *      char*: string lida de stream
-*/
-char *readfield(FILE *stream) ;
+char *readline(FILE *stream, char delimiters[]) ;
 
 /*
  * Função fornecida para a comparação dos binários gerados pelas funções de escrita
 */
 void binarioNaTela(char *nomeArquivoBinario) ; 
-
-/*
- * Função para leitura de dados de um csv; utiliza caractere ',' como separador
- *  Parâmetros:
- *      FILE* stream: arquivo de onde será lida a string
- *  Retorno:
- *      char*: string lida de stream
-*/
-char *read_data(FILE *stream) ;
 
 /*
  * Função para imprimir strings dos registradores na saída padrão

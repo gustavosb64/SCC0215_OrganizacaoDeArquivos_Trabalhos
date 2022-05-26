@@ -55,39 +55,28 @@ struct vehicle{
 };
 
 #define READLINE_BUFFER 4096
-char *readline(FILE *stream) {
+char *readline(FILE *stream, char delimiters[]) {
     char *string = 0;
     int pos = 0; 
 
+    // Armazena o tamanho do vetor de delimitadores
+    int len_delimiters = sizeof((*delimiters));
+
+    // flag para sair do laço while
+    char flag = 0;
 	do{
         if (pos % READLINE_BUFFER == 0) {
             string = (char *) realloc(string, (pos / READLINE_BUFFER + 1) * READLINE_BUFFER);
         }
         string[pos] = (char) fgetc(stream);
+
         pos++;
-    }while(string[pos-1] != '\n' && !feof(stream));
 
-    // Caso o último caractere seja \r, o próximo será um \n
-    if (string[pos-1] == '\r')
-        fgetc(stream);
+        // Caso o char lido seja um dos delimitadores, flag é marcada
+        for(int i=0; i < len_delimiters; i++)
+            if (string[pos-1] == delimiters[i]) flag = 1;
 
-    string[pos-1] = 0;
-    string = (char *) realloc(string, pos);
-
-    return string;
-}
-
-char *readfield(FILE *stream) {
-    char *string = 0;
-    int pos = 0; 
-
-	do{
-        if (pos % READLINE_BUFFER == 0) {
-            string = (char *) realloc(string, (pos / READLINE_BUFFER + 1) * READLINE_BUFFER);
-        }
-        string[pos] = (char) fgetc(stream);
-        pos++;
-    }while(string[pos-1] != '\n' && string[pos-1] != ' ' && !feof(stream));
+    }while(string[pos-1] != '\r' && string[pos-1] != '\n' && !flag && !feof(stream));
 
     // Caso o último caractere seja \r, o próximo será um \n
     if (string[pos-1] == '\r')
@@ -125,29 +114,6 @@ void binarioNaTela(char *nomeArquivoBinario) {
 	printf("%lf\n", (cs / (double) 100));
 	free(mb);
 	fclose(fs);
-}
-
-
-char *read_data(FILE *stream) {
-    char *string = 0;
-    int pos = 0; 
-
-	do{
-        if (pos % READLINE_BUFFER == 0) {
-            string = (char *) realloc(string, (pos / READLINE_BUFFER + 1) * READLINE_BUFFER);
-        }
-        string[pos] = (char) fgetc(stream);
-        pos++;
-    }while(string[pos-1] != ',' && string[pos-1] != '\r' && string[pos-1] != '\n' && !feof(stream));
-
-    // Caso o último caractere seja \r, o próximo será um \n
-    if (string[pos-1] == '\r')
-        fgetc(stream);
-
-    string[pos-1] = 0;
-    string = (char *) realloc(string, pos);
-
-    return string;
 }
 
 int print_string(char string[], int len){
@@ -645,8 +611,10 @@ int read_all_reg_from_bin(char *filename_in_bin, int f_type){
 
 int read_reg_from_csv(FILE *file_csv_r, Vehicle *V){
 
+    char aux_delimiters[1] = ",";
+
     // Caso nada seja lido no ID, não há mais dados no arquivo
-    char *str_id = read_data(file_csv_r);
+    char *str_id = readline(file_csv_r, aux_delimiters);
     if (str_id[0] == 0){
         free(str_id);
         return 1;
@@ -654,14 +622,14 @@ int read_reg_from_csv(FILE *file_csv_r, Vehicle *V){
 
     // Lendo corretamente os dados do arquivo csv
     int id = atoi(str_id);
-    char *str_ano = read_data(file_csv_r);
+    char *str_ano = readline(file_csv_r, aux_delimiters);
     int ano = atoi(str_ano); 
-    char *cidade = read_data(file_csv_r);
-    char *str_qtt = read_data(file_csv_r);
+    char *cidade = readline(file_csv_r, aux_delimiters);
+    char *str_qtt = readline(file_csv_r, aux_delimiters);
     int qtt = atoi(str_qtt);
-    char *sigla = read_data(file_csv_r);
-    char *marca = read_data(file_csv_r); 
-    char *modelo = read_data(file_csv_r);
+    char *sigla = readline(file_csv_r, aux_delimiters);
+    char *marca = readline(file_csv_r, aux_delimiters); 
+    char *modelo = readline(file_csv_r, aux_delimiters);
 
     // Armazenando os dados lidos no registro, quando presentes
     if (id) (*V).id = id;
@@ -695,7 +663,8 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
     write_header(file_bin_w, f_type);
     
     // Lendo e liberando linha de cabeçalho
-    free(readline(file_csv_r));
+    char aux_delimiters[1] = "\0";
+    free(readline(file_csv_r, aux_delimiters));
 
     Vehicle V = initialize_vehicle(f_type);
 
