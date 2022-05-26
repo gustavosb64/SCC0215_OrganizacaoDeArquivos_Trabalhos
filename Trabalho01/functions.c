@@ -217,7 +217,7 @@ int write_header(FILE *file_header_w, int f_type){
     int topo_t1 = -1;      //usado em arquivo tipo 1
     long int topo_t2 = -1; //usado em arquivo tipo 2
                            
-    char descricao[41] = "LISTAGEM DA FROTA DOS VEICULOS NO BRASIL";
+    char descricao[40] = "LISTAGEM DA FROTA DOS VEICULOS NO BRASIL";
     char desC1[22] = "CODIGO IDENTIFICADOR: ";
     char desC2[19] = "ANO DE FABRICACAO: ";
     char desC3[24] = "QUANTIDADE DE VEICULOS: ";
@@ -229,7 +229,7 @@ int write_header(FILE *file_header_w, int f_type){
     char codC7 = '2';    
     char desC7[19] = "MODELO DO VEICULO: ";
 
-    int proxRRN = -1;               //usado em arquivo tipo 1 
+    int proxRRN = 0;               //usado em arquivo tipo 1 
     long int proxByteOffset = -1;   //usado em arquivo tipo 2
 
     int nroRegRem = 0;      
@@ -238,7 +238,7 @@ int write_header(FILE *file_header_w, int f_type){
     fwrite(&status, sizeof(char), 1, file_header_w);
     if (f_type == 1) fwrite(&topo_t1, sizeof(int), 1, file_header_w);
     else fwrite(&topo_t2, sizeof(long int), 1, file_header_w);
-    fwrite(&descricao, sizeof(char), 40, file_header_w);
+    fwrite(descricao, sizeof(char), 40, file_header_w);
     fwrite(&desC1, sizeof(char), 22, file_header_w);
     fwrite(&desC2, sizeof(char), 19, file_header_w);
     fwrite(&desC3, sizeof(char), 24, file_header_w);
@@ -343,7 +343,7 @@ int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg){
     // Armazena o byte offset onde os dados do registro começam
     long int start_byte = ftell(file_bin_w);
 
-    fseek(file_bin_w, sizeof(long int), SEEK_CUR); 
+    fwrite(&(*V).prox.offset, sizeof(long int), 1, file_bin_w);
 
     fwrite(&(*V).id, sizeof(int), 1, file_bin_w);
     fwrite(&(*V).ano, sizeof(int), 1, file_bin_w);
@@ -377,14 +377,10 @@ int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg){
     long int end_byte = ftell(file_bin_w);
     (*V).tamanhoRegistro = end_byte - start_byte;
 
-    //prox.offset padrão é onde o ponteiro do arquivo parou
-    (*V).prox.offset = end_byte; 
-
     // Retorna o ponteiro do arquivo nas posições reservadas ao tamanho e ao offset
-    fseek(file_bin_w, start_byte - 4, SEEK_SET);
+    fseek(file_bin_w, start_byte - ( sizeof(int) + 1), SEEK_SET);
 
     fwrite(&(*V).tamanhoRegistro, sizeof(int), 1, file_bin_w);
-    fwrite(&(*V).prox.offset, sizeof(long int), 1, file_bin_w);
 
     // Atualiza size_last_reg
     (*size_last_reg) = (*V).tamanhoRegistro;
@@ -693,7 +689,7 @@ int read_reg_from_csv(FILE *file_csv_r, Vehicle *V){
 int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type){
 
     FILE *file_csv_r = fopen(filename_in_csv, "rb");
-    FILE *file_bin_w = fopen(filename_out_bin, "wb");
+    FILE *file_bin_w = fopen(filename_out_bin, "wb+");
 
     write_header(file_bin_w, f_type);
     
@@ -705,9 +701,8 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
     // Realiza diferentes rotinas a depender do tipo do arquivo
     if (f_type == 1){
 
-        // Contador de RRN, usado para marcar o próximo RRN nos registros
+        // Contador de RRN, usado para marcar o próximo RRN no cabeçalho
         int rrn_counter = 1;
-        V.prox.rrn = rrn_counter++;
 
         // Enquanto ainda houverem dados a serem lidos
         while(!read_reg_from_csv(file_csv_r, &V)){
@@ -718,36 +713,47 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
 
             // Preparando um novo registro a ser escrito
             V = initialize_vehicle(1);
-            V.prox.rrn = rrn_counter++; //incrementando o RRN
+
+            // Atualizando proxRRN no cabeçalho
+            fseek(file_bin_w, 174, SEEK_SET);
+            fwrite(&rrn_counter, sizeof(int), 1, file_bin_w);
+            fseek(file_bin_w, 0, SEEK_END);
+
+            rrn_counter++; //incrementando o RRN
         }
 
-        // Armazenando -1 no último indicador de próximo RRN no arquivo escrito
-        int last_rrn = -1;
-        fseek(file_bin_w, -MAX_RRN+1, SEEK_END);
-        fwrite(&last_rrn, sizeof(int), 1, file_bin_w);
     }
     else if (f_type == 2){
 
         // Armazena o tamanho do último registro escrito, usado para setar como -1
         // o proxByteOffset do último registro do arquivo
         int size_last_reg = 0;
-
+//        long int offset = HEADER_SIZE_TYPE2;
         while(!read_reg_from_csv(file_csv_r, &V)){
 
             // Escrevendo o registro 
             write_reg_in_bin_type2(file_bin_w, &V, &size_last_reg);
+
+            /*
+            fseek(file_bin_w, - size_last_reg - 5, SEEK_CUR);
+            read_reg_from_bin_type2(file_bin_w, &V, &offset);
+
+
+//            offset += size_last_reg + 5;
+
+
+            //fseek(file_bin_w, -(size_last_reg+5), SEEK_END);
+            */
+
+            print_vehicle(V,2);
+            printf("------\n");
+
             free_vehicle(&V);
 
             // Preparando um novo registro a ser escrito
             V = initialize_vehicle(2);
         }
-
-        // Armazenando -1 no último indicador de próximo offset no arquivo escrito
-        long int last_offset = -1;
-        fseek(file_bin_w, -size_last_reg, SEEK_END);
-        fwrite(&last_offset, sizeof(long int), 1, file_bin_w);
     }
-
     // Liberando memória
     fclose(file_bin_w);
     fclose(file_csv_r);

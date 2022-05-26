@@ -117,14 +117,7 @@ int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V, int *size_last_reg);
 int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn);
 
 /*
- * Lê um registro do tipo 2 com dado offset de um arquivo binário
- *  Parâmetros:
- *      FILE *file_bin_r: arquivo do qual o registro será lido 
- *      Vehicle *V: registro do tipo Vehicle contendo os dados lidos do
- *                  arquivo fornecido
- *      long int offset: offset do registro a ser lido
- *  Retorno:
- *      0: nenhum erro
+ * Comment section
 */
 int read_reg_from_bin_type2(FILE *file_bin_r, Vehicle *V, long int *offset);
 
