@@ -13,30 +13,9 @@ typedef struct header Header;
 typedef struct vehicle Vehicle;
 
 /*
- * Função para leitura de linha de stream; utiliza lista com delimitadores, além dos delimitadores padrão '\r', '\n' e EOF(stream). 
- *  Parâmetros:
- *      FILE* stream: arquivo de onde será lida a string
- *      char delimiters[]: array com os caracteres delimitadores especiais
- *  Retorno:
- *      char*: string lida de stream
+ * Comment section
 */
-char *readline(FILE *stream, char delimiters[]) ;
-
-/*
- * Função fornecida para a comparação dos binários gerados pelas funções de escrita
-*/
-void binarioNaTela(char *nomeArquivoBinario) ; 
-
-/*
- * Função para imprimir strings dos registradores na saída padrão
- *  Parâmetros:
- *      char string[]: string a ser impressa
- *      int len: comprimento da string
- *  Retorno:
- *      0: nenhum erro
- *      1: comprimento fornecido inválido (menor ou igual a 0)
-*/
-int print_string(char string[], int len);
+char *readline(FILE *stream, char delimiters[]);
 
 /*
  * Inicializa uma estrutura do tipo Vehicle com valores padrão.
@@ -151,35 +130,6 @@ int read_reg_from_csv(FILE *file_csv_r, Vehicle *V);
 int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type);
 
 /*
- * Imprime todos os dados de um registro Vehicle
- *  Parâmetros:
- *      Vehicle V: estrutura cujos dados serão impressos
- *      int f_type: tipo do registro
- *  Retorno:
- *      0: nenhum erro
-*/
-int print_vehicle_full(Vehicle V, int f_type);
-
-/*
- * Imprime os dados requisitados pela aplicação de um registro Vehicle
- *  Parâmetros:
- *      Vehicle V: estrutura cujos dados serão impressos
- *      int f_type: tipo do registro
- *  Retorno:
- *      0: nenhum erro
-*/
-int print_vehicle(Vehicle V, int f_type);
-
-/*
- * Libera os dados dinamicamente alocados em uma estrutura Vehicle
- *  Parâmetros:
- *      Vehicle V: estrutura cujos dados serão liberados
- *  Retorno:
- *      0: nenhum erro
-*/
-int free_vehicle(Vehicle *V);
-
-/*
  * Busca um registro no arquivo a partir de um RRN fornecido
  *  Parâmetros:
  *      char *filename_in_bin: nome do arquivo binário de leitura
@@ -202,6 +152,7 @@ char* remove_quotes_str(char* quoted_str) ;
 
 /*
  * Função customizada para comparação de string. Adiciona caractere '\0' ao final de v_str para utilizar strcmp()
+ * Utilizada pela função check_meets_condition.
  *  Parâmetros:
  *      char *v_str: string armazenada em uma estrutura do tipo Vehicle (sem '\0' ao final)
  *      char *str: string usada para comparação
@@ -234,6 +185,51 @@ int check_meets_condition(Vehicle V, char* field, char* value) ;
  *      1: falha na abertura do arquivo de leitura
 */
 int read_condition_reg_from_bin(char *filename_in_bin, int f_type, char** conditions, int n);
+
+/*
+ * Função para imprimir strings dos registradores na saída padrão
+ *  Parâmetros:
+ *      char string[]: string a ser impressa
+ *      int len: comprimento da string
+ *  Retorno:
+ *      0: nenhum erro
+ *      1: comprimento fornecido inválido (menor ou igual a 0)
+*/
+int print_string(char string[], int len);
+
+/*
+ * Imprime todos os dados de um registro Vehicle
+ *  Parâmetros:
+ *      Vehicle V: estrutura cujos dados serão impressos
+ *      int f_type: tipo do registro
+ *  Retorno:
+ *      0: nenhum erro
+*/
+int print_vehicle_full(Vehicle V, int f_type);
+
+/*
+ * Imprime os dados requisitados pela aplicação de um registro Vehicle
+ *  Parâmetros:
+ *      Vehicle V: estrutura cujos dados serão impressos
+ *      int f_type: tipo do registro
+ *  Retorno:
+ *      0: nenhum erro
+*/
+int print_vehicle(Vehicle V, int f_type);
+
+/*
+ * Libera os dados dinamicamente alocados em uma estrutura Vehicle
+ *  Parâmetros:
+ *      Vehicle V: estrutura cujos dados serão liberados
+ *  Retorno:
+ *      0: nenhum erro
+*/
+int free_vehicle(Vehicle *V);
+
+/*
+ * Função fornecida para a comparação dos binários gerados pelas funções de escrita
+*/
+void binarioNaTela(char *nomeArquivoBinario) ; 
 
 
 #endif

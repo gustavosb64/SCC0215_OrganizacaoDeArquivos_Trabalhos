@@ -64,7 +64,7 @@ struct vehicle{
 };
 
 #define READLINE_BUFFER 4096
-char *readline(FILE *stream, char delimiters[]) {
+char *readline(FILE *stream, char delimiters[]){
     char *string = 0;
     int pos = 0; 
 
@@ -97,48 +97,6 @@ char *readline(FILE *stream, char delimiters[]) {
     return string;
 }
 
-void binarioNaTela(char *nomeArquivoBinario) { 
-
-	/* Use essa função para comparação no run.codes. Lembre-se de ter fechado (fclose) o arquivo anteriormente.
-	*  Ela vai abrir de novo para leitura e depois fechar (você não vai perder pontos por isso se usar ela). */
-
-	unsigned long i, cs;
-	unsigned char *mb;
-	size_t fl;
-	FILE *fs;
-	if(nomeArquivoBinario == NULL || !(fs = fopen(nomeArquivoBinario, "rb"))) {
-		fprintf(stderr, "ERRO AO ESCREVER O BINARIO NA TELA (função binarioNaTela): não foi possível abrir o arquivo que me passou para leitura. Ele existe e você tá passando o nome certo? Você lembrou de fechar ele com fclose depois de usar?\n");
-		return;
-	}
-	fseek(fs, 0, SEEK_END);
-	fl = ftell(fs);
-	fseek(fs, 0, SEEK_SET);
-	mb = (unsigned char *) malloc(fl);
-	fread(mb, 1, fl, fs);
-
-	cs = 0;
-	for(i = 0; i < fl; i++) {
-		cs += (unsigned long) mb[i];
-	}
-	printf("%lf\n", (cs / (double) 100));
-	free(mb);
-	fclose(fs);
-}
-
-int print_string(char string[], int len){
-
-    // Conferindo se comprimento fornecido é maior que 0
-    if (len <= 0){
-        return 1;
-    }
-
-    // Imprimindo na saída padrão os caracteres da string
-    for (int i=0; i<len; i++)
-        printf("%c",string[i]);
-
-    return 0;
-}
-
 // Inicializa dado do tipo Veículo com os valores nulos padrão
 Vehicle initialize_vehicle(int f_type){
 
@@ -165,7 +123,6 @@ Vehicle initialize_vehicle(int f_type){
     V.modelo = NULL;
     
     return V; 
-
 }
 
 int initialize_reg_type1(FILE *file_bin_w){
@@ -558,6 +515,7 @@ int read_reg_from_bin_type2(FILE *file_bin_r, Vehicle *V, long int *offset){
 
 int read_all_reg_from_bin(char *filename_in_bin, int f_type){
 
+    // Caso haja falha na leitura do arquivo, retorna 1
     FILE *file_bin_r = fopen(filename_in_bin, "rb");
     if (file_bin_r == NULL){
         return 1;
@@ -620,6 +578,7 @@ int read_all_reg_from_bin(char *filename_in_bin, int f_type){
 
 int read_reg_from_csv(FILE *file_csv_r, Vehicle *V){
 
+    // Delimitador a ser usado na leitura das strings do csv
     char aux_delimiters[1] = ",";
 
     // Caso nada seja lido no ID, não há mais dados no arquivo
@@ -663,6 +622,7 @@ int read_reg_from_csv(FILE *file_csv_r, Vehicle *V){
 
 int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type){
 
+    // Caso haja falha na leitura do arquivo, retorna 1
     FILE *file_csv_r = fopen(filename_in_csv, "rb");
     if (file_csv_r == NULL){
         return 1;
@@ -697,8 +657,7 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
             fseek(file_bin_w, 174, SEEK_SET);
             fwrite(&rrn_counter, sizeof(int), 1, file_bin_w);
             fseek(file_bin_w, 0, SEEK_END);
-
-            rrn_counter++; //incrementando o RRN
+            rrn_counter++; 
         }
 
     }
@@ -723,6 +682,7 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
             V = initialize_vehicle(2);
         }
     }
+    
     // Liberando memória
     fclose(file_bin_w);
     fclose(file_csv_r);
@@ -730,73 +690,16 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
     return 0;
 }
 
-int print_vehicle_full(Vehicle V, int f_type){
-
-    printf("Removido: %d", V.removido);
-    if (f_type == 2) printf("\nTamanhoRegistro: %d", V.tamanhoRegistro);
-    if (f_type == 1) printf("\nPróximo RRN: %d", V.prox.rrn);
-    else printf("\nPróximo offset: %ld", V.prox.offset);
-    printf("\nID: %d", V.id);             
-    printf("\nAno de fabricação: %d", V.ano);            
-    printf("\nQuantidade de carros: %d", V.qtt);            
-    printf("\nEstado: ");
-    if (V.sigla != NULL) print_string(V.sigla, 2);
-    printf("\ntamCidade: %d", V.tamCidade);      
-    printf("\ncodC5: %c", V.codC5);         
-    printf("\nNome da cidade: ");
-    if (V.cidade != NULL) print_string(V.cidade, V.tamCidade);
-    printf("\ntamMarca: %d", V.tamMarca);       
-    printf("\ncodC6: %c", V.codC6);         
-    printf("\nNome da marca: ");
-    if (V.marca != NULL) print_string(V.marca, V.tamMarca);
-    printf("\ntamModelo: %d", V.tamModelo);      
-    printf("\ncodC7: %c", V.codC7);         
-    printf("\nNome do modelo: ");
-    if (V.modelo != NULL) print_string(V.modelo, V.tamModelo);
-    printf("\n");
-    
-    return 0;
-}
-
-int print_vehicle(Vehicle V, int f_type){
-           
-    printf("MARCA DO VEICULO: ");
-    if (V.marca != NULL) print_string(V.marca, V.tamMarca); else printf("NAO PREENCHIDO"); 
-
-    printf("\nMODELO DO VEICULO: ");
-    if (V.modelo != NULL) print_string(V.modelo, V.tamModelo); else printf("NAO PREENCHIDO"); 
-
-    printf("\nANO DE FABRICACAO: ");          
-    if (V.ano != -1) printf("%d", V.ano); else printf("NAO PREENCHIDO"); 
-
-    printf("\nNOME DA CIDADE: ");
-    if (V.cidade != NULL) print_string(V.cidade, V.tamCidade); else printf("NAO PREENCHIDO"); 
-
-    printf("\nQUANTIDADE DE VEICULOS: ");
-    if (V.qtt != -1) printf("%d", V.qtt); else printf("NAO PREENCHIDO"); 
-
-    printf("\n");
-    
-    return 0;
-}
-
-int free_vehicle(Vehicle *V){
-
-    free((*V).sigla);
-    if ((*V).tamCidade) free((*V).cidade);
-    if ((*V).tamMarca) free((*V).marca);
-    if ((*V).tamModelo) free((*V).modelo);
-
-    return 0;
-}
-
 int search_vehicle_rrn(char *filename_in_bin ,int rrn) {
+
+    // Caso haja falha na leitura do arquivo, retorna 1
     FILE *file_bin_r = fopen(filename_in_bin, "rb");
     if (file_bin_r == NULL){
         return 1;
     }
     Vehicle V = initialize_vehicle(1);
 
+    // Caso haja falha na leitura do registro, retorna 2
     if (read_reg_from_bin_type1(file_bin_r, &V, rrn)){
         fclose(file_bin_r);
         return 2;
@@ -884,6 +787,7 @@ int read_condition_reg_from_bin(char *filename_in_bin, int f_type, char** condit
         values[i] = sp+1;
     }
 
+    // Caso haja falha na leitura do arquivo, retorna 1
     FILE *file_bin_r = fopen(filename_in_bin, "rb");
     if (file_bin_r == NULL){
         return 1;
@@ -951,4 +855,106 @@ int read_condition_reg_from_bin(char *filename_in_bin, int f_type, char** condit
     fclose(file_bin_r);
 
     return 0;
+}
+
+int print_string(char string[], int len){
+
+    // Conferindo se comprimento fornecido é maior que 0
+    if (len <= 0){
+        return 1;
+    }
+
+    // Imprimindo na saída padrão os caracteres da string
+    for (int i=0; i<len; i++)
+        printf("%c",string[i]);
+
+    return 0;
+}
+
+int print_vehicle_full(Vehicle V, int f_type){
+
+    printf("Removido: %d", V.removido);
+    if (f_type == 2) printf("\nTamanhoRegistro: %d", V.tamanhoRegistro);
+    if (f_type == 1) printf("\nPróximo RRN: %d", V.prox.rrn);
+    else printf("\nPróximo offset: %ld", V.prox.offset);
+    printf("\nID: %d", V.id);             
+    printf("\nAno de fabricação: %d", V.ano);            
+    printf("\nQuantidade de carros: %d", V.qtt);            
+    printf("\nEstado: ");
+    if (V.sigla != NULL) print_string(V.sigla, 2);
+    printf("\ntamCidade: %d", V.tamCidade);      
+    printf("\ncodC5: %c", V.codC5);         
+    printf("\nNome da cidade: ");
+    if (V.cidade != NULL) print_string(V.cidade, V.tamCidade);
+    printf("\ntamMarca: %d", V.tamMarca);       
+    printf("\ncodC6: %c", V.codC6);         
+    printf("\nNome da marca: ");
+    if (V.marca != NULL) print_string(V.marca, V.tamMarca);
+    printf("\ntamModelo: %d", V.tamModelo);      
+    printf("\ncodC7: %c", V.codC7);         
+    printf("\nNome do modelo: ");
+    if (V.modelo != NULL) print_string(V.modelo, V.tamModelo);
+    printf("\n");
+    
+    return 0;
+}
+
+int print_vehicle(Vehicle V, int f_type){
+           
+    printf("MARCA DO VEICULO: ");
+    if (V.marca != NULL) print_string(V.marca, V.tamMarca); else printf("NAO PREENCHIDO"); 
+
+    printf("\nMODELO DO VEICULO: ");
+    if (V.modelo != NULL) print_string(V.modelo, V.tamModelo); else printf("NAO PREENCHIDO"); 
+
+    printf("\nANO DE FABRICACAO: ");          
+    if (V.ano != -1) printf("%d", V.ano); else printf("NAO PREENCHIDO"); 
+
+    printf("\nNOME DA CIDADE: ");
+    if (V.cidade != NULL) print_string(V.cidade, V.tamCidade); else printf("NAO PREENCHIDO"); 
+
+    printf("\nQUANTIDADE DE VEICULOS: ");
+    if (V.qtt != -1) printf("%d", V.qtt); else printf("NAO PREENCHIDO"); 
+
+    printf("\n");
+    
+    return 0;
+}
+
+int free_vehicle(Vehicle *V){
+
+    free((*V).sigla);
+    if ((*V).tamCidade) free((*V).cidade);
+    if ((*V).tamMarca) free((*V).marca);
+    if ((*V).tamModelo) free((*V).modelo);
+
+    return 0;
+}
+
+void binarioNaTela(char *nomeArquivoBinario) { 
+
+	/* Use essa função para comparação no run.codes. Lembre-se de ter fechado (fclose) o arquivo anteriormente.
+	*  Ela vai abrir de novo para leitura e depois fechar (você não vai perder pontos por isso se usar ela). */
+
+	unsigned long i, cs;
+	unsigned char *mb;
+	size_t fl;
+	FILE *fs;
+	if(nomeArquivoBinario == NULL || !(fs = fopen(nomeArquivoBinario, "rb"))) {
+		fprintf(stderr, "ERRO AO ESCREVER O BINARIO NA TELA (função binarioNaTela): não foi possível abrir o arquivo que me passou para leitura. Ele existe e você tá passando o nome certo? Você lembrou de fechar ele com fclose depois de usar?\n");
+		return;
+	}
+	fseek(fs, 0, SEEK_END);
+	fl = ftell(fs);
+	fseek(fs, 0, SEEK_SET);
+	mb = (unsigned char *) malloc(fl);
+	fread(mb, 1, fl, fs);
+
+	cs = 0;
+	for(i = 0; i < fl; i++) {
+		cs += (unsigned long) mb[i];
+	}
+	printf("%lf\n", (cs / (double) 100));
+	free(mb);
+	fclose(fs);
 }
