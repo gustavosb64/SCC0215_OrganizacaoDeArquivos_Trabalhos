@@ -1,10 +1,10 @@
 all:
 	python ../autotad.py records.c
 	python ../autotad.py index.c
-	gcc -g -Wall -Wpedantic -o main main.c functions.c
+	gcc -g -Wall -Wpedantic -o main *.c
 
 c:
-	gcc -g -o main main.c functions.c
+	gcc -g -o main *.c
 
 run:
 	./main

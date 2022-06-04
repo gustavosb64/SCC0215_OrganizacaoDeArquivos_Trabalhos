@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "./record.h"
+#include "./records.h"
 
 #define MAX_RRN 97
 #define HEADER_SIZE_TYPE1 182
@@ -533,7 +533,8 @@ int read_all_reg_from_bin(char *filename_in_bin, int f_type){
         while(!read_reg_from_bin_type1(file_bin_r, &V, rrn)){
 
             // Imprime os dados do veículo
-            print_vehicle(V,1);
+            //print_vehicle(V,1);
+            print_vehicle_full(V,1);
             printf("\n");
 
             // Libera a memória alocada durante a leitura
