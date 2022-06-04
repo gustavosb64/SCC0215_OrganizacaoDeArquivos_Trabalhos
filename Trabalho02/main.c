@@ -33,14 +33,17 @@ int main(int argc, char *argv[]){
 
     read_all_idices_from_idx("indices1.bin", f_type);
 
+
+    /*
+    printf("###########\n");
+
     FILE *file_bin_r = fopen("binario1.bin", "rb");
     Vehicle V = initialize_vehicle(f_type);
 
-//    read_all_reg_from_bin("binario1.bin", f_type);
-    printf("###########\n");
-
+    read_all_reg_from_bin("binario1.bin", f_type);
     read_reg_from_bin_type1(file_bin_r, &V, 999);
 
     print_vehicle_full(V, f_type);
+    */
     return 0;
 }

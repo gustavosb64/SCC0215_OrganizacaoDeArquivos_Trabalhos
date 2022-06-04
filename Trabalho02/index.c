@@ -65,7 +65,7 @@ int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_t
 
     FILE *file_idx_w = fopen(output_filename, "wb");
 
-    //write_idx_header(file_idx_w);
+    write_idx_header(file_idx_w);
 
     Index I = create_index(f_type);
 
@@ -89,9 +89,6 @@ int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_t
         // Enquanto ainda houverem registros a serem lidos no arquivo de dados
         while(!read_id_from_reg_type1(file_bin_r, &I, rrn)){
 
-            printf("id: %d\n",I.id);
-            printf("rrn: %d\n\n",I.idx.rrn);
-
             fwrite(&(I.id), sizeof(int), 1, file_idx_w);
             fwrite(&(I.idx.rrn), sizeof(int), 1, file_idx_w);
 
@@ -99,24 +96,25 @@ int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_t
         }
 
     }
+    fclose(file_idx_w);
+    fclose(file_bin_r);
 
     return 0;
 }
 
 int read_idx_type1(FILE *file_idx_r, Index *I, int idx_rrn){
 
-    /*
+    // Posicionando o ponteiro no índice a ser lido. Como o arquivo de índices
+    // possui registros de tamanho fixo, podemos utilizar um idx_rrn
     int size_index = 2*sizeof(int);
     long int offset = sizeof(char) + idx_rrn*size_index;
     fseek(file_idx_r, offset, SEEK_SET);
-    */
 
     // Lê ID do registro indicado por rrn
     // Caso não haja mais registros a serem lidos, retorna sinal de erro 1
-    /*
-    */
-    if (!fread(&(*I).id, sizeof(int), 1, file_idx_r)) 
+    if (!fread(&(*I).id, sizeof(int), 1, file_idx_r)){
         return 1;
+    }
 
     fread(&(*I).idx.rrn, sizeof(int), 1, file_idx_r);
 
@@ -134,18 +132,18 @@ int read_all_idices_from_idx(char *input_filename, int f_type){
 
     if (f_type == 1){
         
-//        fseek(file_idx_r, 1, SEEK_SET);
+        fseek(file_idx_r, 1, SEEK_SET);
         int idx_rrn = 0; 
         while(!read_idx_type1(file_idx_r, &I, idx_rrn)){
             
-            printf("idx: %d\n", I.id);
-            printf("rrn: %d\n\n", I.idx.rrn);
+            I = create_index(f_type);
 
             idx_rrn++;
         }
-
         
     }
+
+    fclose(file_idx_r);
 
     return 0;
 }
