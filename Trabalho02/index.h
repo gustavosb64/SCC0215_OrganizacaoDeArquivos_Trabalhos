@@ -40,7 +40,7 @@ int read_idx_type1(FILE *file_idx_r, Index *I, int idx_rrn);
 /*
  * Comment section
 */
-int read_all_idices_from_idx(char *input_filename, int f_type);
+int read_all_indices_from_idx(char *input_filename, int f_type);
 
 
 #endif

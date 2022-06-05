@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "./records.h"
 #include "./index.h"
+#include "./lista_encadeada.h"
 
 struct vehicle{
     char removido;      // indica se o registro está logicamente removido
@@ -31,7 +32,7 @@ int main(int argc, char *argv[]){
     write_idx_file_from_bin("binario1.bin", "indices1.bin", f_type);
     printf("###########\n");
 
-    read_all_idices_from_idx("indices1.bin", f_type);
+    read_all_indices_from_idx("indices1.bin", f_type);
 
 
     /*

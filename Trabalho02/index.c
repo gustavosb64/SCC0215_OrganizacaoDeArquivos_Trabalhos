@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "./records.h"
 #include "./index.h"
+#include "./lista_encadeada.h"
 
 #define MAX_RRN 97
 #define REG_HEADER_SIZE_TYPE1 182
@@ -28,7 +29,6 @@ Index create_index(int f_type){
     else I.idx.byteoffset = -1;
 
     return I;
-    
 }
 
 int write_idx_header(FILE *file_idx_w){
@@ -121,13 +121,14 @@ int read_idx_type1(FILE *file_idx_r, Index *I, int idx_rrn){
     return 0;
 }
 
-int read_all_idices_from_idx(char *input_filename, int f_type){
+int read_all_indices_from_idx(char *input_filename, int f_type){
 
     FILE *file_idx_r = fopen(input_filename, "rb");
     if (file_idx_r == NULL){
         return 1;
     }
 
+    List *IndexList = CreateList();
     Index I = create_index(f_type);
 
     if (f_type == 1){
@@ -136,20 +137,16 @@ int read_all_idices_from_idx(char *input_filename, int f_type){
         int idx_rrn = 0; 
         while(!read_idx_type1(file_idx_r, &I, idx_rrn)){
             
-            I = create_index(f_type);
+            AddLastElemList(IndexList, I);
 
+            I = create_index(f_type);
             idx_rrn++;
         }
         
     }
 
     fclose(file_idx_r);
+    FreeList(IndexList);
 
     return 0;
 }
-
-
-
-
-
-
