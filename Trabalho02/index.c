@@ -145,6 +145,8 @@ int read_all_indices_from_idx(char *input_filename, int f_type){
         
     }
 
+    sort_by_merge(IndexList);
+    
     fclose(file_idx_r);
     FreeList(IndexList);
 

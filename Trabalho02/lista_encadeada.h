@@ -21,5 +21,6 @@ int IndexRemoveElem(List *list, elem *e, int index);
 int RemoveMiddleElem(Node *node, elem *e);
 int PrintList(List *list);
 int FreeList(List *list);
+List* sort_by_merge(List *list);
 
 #endif

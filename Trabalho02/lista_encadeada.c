@@ -376,3 +376,10 @@ void mergesort(Node **node_ref){
 
     (*node_ref) = sort_merge(node_left, node_right);
 }
+
+List* sort_by_merge(List *list){
+
+    mergesort(&(list->first));
+
+    return list;
+}

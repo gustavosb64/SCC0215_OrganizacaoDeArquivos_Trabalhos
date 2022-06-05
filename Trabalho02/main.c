@@ -29,11 +29,10 @@ struct vehicle{
 int main(int argc, char *argv[]){
 
     int f_type = 1;
-    write_idx_file_from_bin("binario1.bin", "indices1.bin", f_type);
+    write_idx_file_from_bin("binario3.bin", "indices3.bin", f_type);
     printf("###########\n");
 
-    read_all_indices_from_idx("indices1.bin", f_type);
-
+    read_all_indices_from_idx("indices3.bin", f_type);
 
     /*
     printf("###########\n");
