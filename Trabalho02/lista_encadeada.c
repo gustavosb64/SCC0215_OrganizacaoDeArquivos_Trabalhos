@@ -383,3 +383,57 @@ List* sort_by_merge(List *list){
 
     return list;
 }
+
+Node* GetNextNode(Node *node){
+    return node->next;
+}
+
+Node* GetFirstNode(List *list){
+    return list->first;
+}
+
+Index GetElem(Node *node){
+    return node->val;
+}
+
+List* load_all_idx_from_bin(FILE *file_bin_r, int f_type){
+    
+    List *IndexList = CreateList();
+    Index I = create_index(f_type);
+
+    // Realiza diferentes rotinas a depender do tipo a ser lido
+    if (f_type == 1){
+
+        // Caractere auxiliar para verificar se o primeiro byte a ser lido se
+        // refere a um registro. Retorna sinal de erro 1 caso não seja
+        /*
+        char c_aux;
+        fread(&c_aux, sizeof(char), 1, file_bin_r);
+        if (c_aux == '0'){
+            fclose(file_bin_r);
+            return 1;
+        }
+        fseek(file_bin_r,0,SEEK_SET);
+        */
+
+        int rrn = 0;
+
+        // Enquanto ainda houverem registros a serem lidos no arquivo de dados
+        while(!read_id_from_reg_type1(file_bin_r, &I, rrn)){
+
+            AddLastElemList(IndexList, I);
+
+            /*
+            fwrite(&(I.id), sizeof(int), 1, file_idx_w);
+            fwrite(&(I.idx.rrn), sizeof(int), 1, file_idx_w);
+            */
+
+            rrn++;
+        }
+
+    }
+
+    PrintList(IndexList);
+
+    return IndexList;
+}

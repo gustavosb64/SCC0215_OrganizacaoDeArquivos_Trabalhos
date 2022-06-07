@@ -231,5 +231,15 @@ int free_vehicle(Vehicle *V);
 */
 void binarioNaTela(char *nomeArquivoBinario) ; 
 
+/*
+ * Comment section
+*/
+int add_new_reg(int f_type, char *input_bin_name, char *input_idx_name, int id, int ano, int qtt, char *sigla, char *cidade, char *marca, char *modelo);
+
+/*
+ * Comment section
+*/
+int print_reg_from_bin_by_rrn(char *filename, int rrn);
+
 
 #endif

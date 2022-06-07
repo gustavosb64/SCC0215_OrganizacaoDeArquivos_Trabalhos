@@ -29,12 +29,13 @@ struct vehicle{
 int main(int argc, char *argv[]){
 
     int f_type = 1;
-    write_idx_file_from_bin("binario3.bin", "indices3.bin", f_type);
+    write_idx_file_from_bin("binario1.bin", "indices1.bin", f_type);
     printf("###########\n");
 
-    read_all_indices_from_idx("indices3.bin", f_type);
+    read_all_indices_from_idx("indices1.bin", f_type);
 
     /*
+    printf("%d\n",search_index_from_idx("indices1.bin", 313, 1));
     printf("###########\n");
 
     FILE *file_bin_r = fopen("binario1.bin", "rb");
@@ -45,5 +46,9 @@ int main(int argc, char *argv[]){
 
     print_vehicle_full(V, f_type);
     */
+
+//    add_new_reg(f_type, "binario1_teste.bin", "indices1.bin", 1001, 2001, 123, "RS", "Porto Alegre", "Chevrolet", "Agile");
+
+//    read_all_reg_from_bin("binario1_teste.bin", f_type);
     return 0;
 }

@@ -1,6 +1,5 @@
 all:
-	python ../autotad.py records.c
-	python ../autotad.py index.c
+	python ../autotad.py records.c index.c lista_encadeada.c
 	gcc -g -Wall -Wpedantic -o main *.c
 
 c:

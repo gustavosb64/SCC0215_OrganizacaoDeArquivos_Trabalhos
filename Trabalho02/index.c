@@ -56,48 +56,38 @@ int read_id_from_reg_type1(FILE *file_bin_r, Index *I, int rrn){
 }
 
 int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_type){
-    
+
     // Caso haja falha na leitura do arquivo, retorna 1
     FILE *file_bin_r = fopen(input_filename, "rb");
     if (file_bin_r == NULL){
         return 1;
     }
-
     FILE *file_idx_w = fopen(output_filename, "wb");
 
     write_idx_header(file_idx_w);
 
+    List *IndexList = load_all_idx_from_bin(file_bin_r, f_type);
     Index I = create_index(f_type);
 
-    // Realiza diferentes rotinas a depender do tipo a ser lido
     if (f_type == 1){
 
-        // Caractere auxiliar para verificar se o primeiro byte a ser lido se
-        // refere a um registro. Retorna sinal de erro 1 caso não seja
-        /*
-        char c_aux;
-        fread(&c_aux, sizeof(char), 1, file_bin_r);
-        if (c_aux == '0'){
-            fclose(file_bin_r);
-            return 1;
-        }
-        fseek(file_bin_r,0,SEEK_SET);
-        */
+        Node *aux_node = GetFirstNode(IndexList);
 
-        int rrn = 0;
+        while(aux_node != NULL){
 
-        // Enquanto ainda houverem registros a serem lidos no arquivo de dados
-        while(!read_id_from_reg_type1(file_bin_r, &I, rrn)){
+            I = GetElem(aux_node);
 
             fwrite(&(I.id), sizeof(int), 1, file_idx_w);
             fwrite(&(I.idx.rrn), sizeof(int), 1, file_idx_w);
 
-            rrn++;
+            aux_node = GetNextNode(aux_node);
         }
 
     }
-    fclose(file_idx_w);
+
     fclose(file_bin_r);
+    fclose(file_idx_w);
+    FreeList(IndexList);
 
     return 0;
 }
@@ -134,21 +124,48 @@ int read_all_indices_from_idx(char *input_filename, int f_type){
     if (f_type == 1){
         
         fseek(file_idx_r, 1, SEEK_SET);
+
         int idx_rrn = 0; 
         while(!read_idx_type1(file_idx_r, &I, idx_rrn)){
             
             AddLastElemList(IndexList, I);
+
+            print_reg_from_bin_by_rrn("binario1_teste.bin", I.idx.rrn);
 
             I = create_index(f_type);
             idx_rrn++;
         }
         
     }
-
-    sort_by_merge(IndexList);
     
     fclose(file_idx_r);
     FreeList(IndexList);
 
     return 0;
+}
+
+int search_index_from_idx(char *input_filename, int src_id, int f_type){
+
+    FILE *file_idx_r = fopen(input_filename, "rb");
+    if (file_idx_r == NULL){
+        return -2;
+    }
+
+    Index I = create_index(f_type);
+
+    if (f_type == 1){
+
+        fseek(file_idx_r, 1, SEEK_SET);
+
+        int idx_rrn = 0; 
+        while(!read_idx_type1(file_idx_r, &I, idx_rrn)){
+
+            if (I.id == src_id) return I.idx.rrn;
+            idx_rrn++;
+        }
+
+    }
+
+    return -1;
+    fclose(file_idx_r);
 }

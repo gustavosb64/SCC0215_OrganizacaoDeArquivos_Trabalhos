@@ -1,6 +1,7 @@
 #ifndef INDEX_H
 #define INDEX_H
 
+#include "lista_encadeada.h"
 
 /*
  * Comment section
@@ -41,6 +42,11 @@ int read_idx_type1(FILE *file_idx_r, Index *I, int idx_rrn);
  * Comment section
 */
 int read_all_indices_from_idx(char *input_filename, int f_type);
+
+/*
+ * Comment section
+*/
+int search_index_from_idx(char *input_filename, int src_id, int f_type);
 
 
 #endif

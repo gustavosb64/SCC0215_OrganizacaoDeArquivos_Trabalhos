@@ -950,3 +950,55 @@ void binarioNaTela(char *nomeArquivoBinario) {
 	free(mb);
 	fclose(fs);
 }
+
+int add_new_reg(int f_type, char *input_bin_name, char *input_idx_name, int id, int ano, int qtt, char *sigla, char *cidade, char *marca, char *modelo){
+
+    Vehicle V = initialize_vehicle(f_type);
+
+    V.id = id;
+    V.ano = ano;
+    V.qtt = qtt;
+    V.sigla = sigla;
+    V.cidade = cidade;
+    V.marca = marca;
+    V.modelo = modelo;
+
+    FILE *file_bin_w = fopen(input_bin_name, "rb+"); 
+
+    if (f_type == 1){
+
+        int rrn;
+        fseek(file_bin_w, 174, SEEK_SET);
+        fread(&rrn, sizeof(int), 1, file_bin_w);
+
+        long int offset = rrn*MAX_RRN + HEADER_SIZE_TYPE1;
+        fseek(file_bin_w, offset, SEEK_SET);
+       
+        write_reg_in_bin_type1(file_bin_w, &V);
+
+        // Atualizando proxRRN no cabeçalho
+        rrn += 1;
+        fseek(file_bin_w, 174, SEEK_SET);
+        fwrite(&rrn, sizeof(int), 1, file_bin_w);
+        fseek(file_bin_w, 0, SEEK_END);
+    }
+
+    return 0;
+}
+
+int print_reg_from_bin_by_rrn(char *filename, int rrn){
+
+    FILE *file_bin_r = fopen(filename, "rb");
+
+    Vehicle V = initialize_vehicle(1);
+
+    read_reg_from_bin_type1(file_bin_r, &V, rrn);
+
+    print_vehicle_full(V, 1);
+    printf("\n");
+
+    fclose(file_bin_r);
+    free_vehicle(&V);
+    return 0;
+
+}
