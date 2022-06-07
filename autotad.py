@@ -25,7 +25,7 @@ def adaptLine(line):
         struct_name = line[line.index("struct") + 1]
 
         line = "typedef struct " + struct_name + " " + struct_name.capitalize() + ";\n"
-    else:
+    else: 
         line = line.replace('{',';')
 
     return line
@@ -70,19 +70,30 @@ def writeContents(DotcFile, ADTFile, comment_off, dict_functions_comments = {}, 
 
                 line = adaptLine(line)
 
+                if "struct" not in line and "typedef" not in line:
+                    name_function = line.split(" ")
+                    name_function = name_function[1].split('(',1)
+                    name_function = name_function[0]
+                else:
+                    name_function = line
+
                 #If line already existed in a previous file, it's original comment is kept in the new one
-                if line in dict_functions_comments:
-                    str_comment_section = "\n" + dict_functions_comments[line]
+                if name_function in dict_functions_comments:
+                    str_comment_section = "\n" + dict_functions_comments[name_function]
                 else:
                     str_comment_section = default_comment 
 
                 ADTFile.write(str_comment_section)
                 ADTFile.write(line)
 
-            curly_braces_control += 1
+            if curly_braces_control >= 0: curly_braces_control += 1
+            else: curly_braces_control -= 1
 
         if '}' in line:
-            curly_braces_control -= 1 if curly_braces_control > 0 else 0
+            if curly_braces_control >= 0: curly_braces_control -= 1
+            elif curly_braces_control < 0: curly_braces_control += 1
+            if curly_braces_control == -1: curly_braces_control = 0
+
 
     return
 
@@ -137,8 +148,13 @@ def ADTFromExistentFile(FilesNames, ADTFile, comment_off):
             typedef_list.append(line)
             comment = ""
 
-        else:
-            dict_functions_comments[line] = comment
+        else: 
+            if line[0] != '\n' and '#' not in line and "struct" not in line and "typedef" not in line:
+                name = line.split(" ")
+                name = name[1].split("(",1)
+                dict_functions_comments[name[0]] = comment
+            else:
+                dict_functions_comments[line] = comment
             comment = ""
 
     """ Then, the previous file is overwritten by the new version, keeping the original comments """
@@ -147,8 +163,9 @@ def ADTFromExistentFile(FilesNames, ADTFile, comment_off):
     return
 
 
-FilesNames = ClassFileNames()
+FilesList = []
 comment_off = False
+FilesNames = ClassFileNames()
 
 """ Checks input from sys.argv """
 for i in range(1, len(sys.argv)):
@@ -158,19 +175,22 @@ for i in range(1, len(sys.argv)):
 
     elif FilesNames.dotc_filename == "": 
         FilesNames.dotc_filename = sys.argv[i]
+        FilesList.append(FilesNames)
+        FilesNames = ClassFileNames()
 
     else:
         raise Exception(sys.argv[i] + " is not a valid command. Given filename: " + FilesNames.dotc_filename)
 
-""" If dotc_filename is not given via sys.argv, asks for input from stdin """
-if FilesNames.dotc_filename == "":
-    FilesNames.dotc_filename = str(input())
+for FilesNames in FilesList:
+    """ If dotc_filename is not given via sys.argv, asks for input from stdin """
+    if FilesNames.dotc_filename == "":
+        FilesNames.dotc_filename = str(input())
 
-FilesNames = getFilesNames(FilesNames)
+    FilesNames = getFilesNames(FilesNames)
 
-""" If the file adt_filename already exists, the new one is created based on it """
-try:
-    with open(FilesNames.adt_filename, "r") as ADTFile:
-        ADTFromExistentFile(FilesNames, ADTFile, comment_off)
-except:
-    writeNewADT(FilesNames, comment_off)
+    """ If the file adt_filename already exists, the new one is created based on it """
+    try:
+        with open(FilesNames.adt_filename, "r") as ADTFile:
+            ADTFromExistentFile(FilesNames, ADTFile, comment_off)
+    except:
+        writeNewADT(FilesNames, comment_off)
