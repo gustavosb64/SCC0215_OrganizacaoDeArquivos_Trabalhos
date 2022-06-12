@@ -66,21 +66,25 @@ int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_t
 
     write_idx_header(file_idx_w);
 
+    // Carrega todos os índices em uma lista na memória para ordená-los
+    // antes de efetuar a escrita
     List *IndexList = load_all_idx_from_bin(file_bin_r, f_type);
+    sort_by_merge(IndexList);
+
     Index I = create_index(f_type);
 
     if (f_type == 1){
 
-        Node *aux_node = GetFirstNode(IndexList);
+        Node *I_node = GetFirstNode(IndexList);
 
-        while(aux_node != NULL){
+        while(I_node != NULL){
 
-            I = GetElem(aux_node);
+            I = GetElem(I_node);
 
             fwrite(&(I.id), sizeof(int), 1, file_idx_w);
             fwrite(&(I.idx.rrn), sizeof(int), 1, file_idx_w);
 
-            aux_node = GetNextNode(aux_node);
+            I_node = GetNextNode(I_node);
         }
 
     }
