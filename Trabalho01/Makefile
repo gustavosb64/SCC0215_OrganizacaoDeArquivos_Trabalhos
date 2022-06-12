@@ -1,5 +1,5 @@
 all:
-	python ../autotad.py functions.c
+	lua ../autotad.lua functions.c
 	gcc -g -Wall -Wpedantic -o main main.c functions.c
 
 c:
