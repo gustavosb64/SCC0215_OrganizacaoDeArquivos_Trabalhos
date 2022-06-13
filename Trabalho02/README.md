@@ -3,6 +3,7 @@
 - [x] Escrita de índices em um arquivo a partir de um binário **tipo 1**  
 - [ ] Escrita de índices em um arquivo a partir de um binário **tipo 2**  
 - [x] Mergesort em lista_encadeada
+- [ ] Insertion sort em lista_encadeada
 - [x] Leitura de todos os índices de um arquivo (tipo1)
 - [ ] Leitura de todos os índices de um arquivo (tipo2)
 - [x] Busca de índice por id em um arquivo de índices(tipo1)
@@ -17,3 +18,6 @@
 - [ ] Comentar index.h
 - [ ] Comentar lista_encadeada.h
 - [ ] Comentar lista_encadeada.c
+- [ ] Adicionar sinal de erro para leitura de registros removidos
+- [ ] Main (antiga): adicionar sinais de erro para operação 3
+- [ ] Busca binária em arquivo de índices
