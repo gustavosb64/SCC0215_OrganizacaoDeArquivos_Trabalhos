@@ -15,7 +15,7 @@ typedef struct vehicle Vehicle;
 /*
  * Comment section
 */
-char *readline(FILE *stream, char delimiters[]);
+char* readline(FILE *stream, char delimiters[]);
 
 /*
  * Inicializa uma estrutura do tipo Vehicle com valores padrão.
@@ -229,8 +229,8 @@ int free_vehicle(Vehicle *V);
 /*
  * Função fornecida para a comparação dos binários gerados pelas funções de escrita
 */
-void binarioNaTela(char *nomeArquivoBinario) ; 
-
+void binarioNaTela(char *nomeArquivoBinario) ;
+ 
 /*
  * Comment section
 */

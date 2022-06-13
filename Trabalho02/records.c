@@ -55,7 +55,7 @@ struct vehicle{
 };
 
 #define READLINE_BUFFER 4096
-char *readline(FILE *stream, char delimiters[]){
+char* readline(FILE *stream, char delimiters[]){
     char *string = 0;
     int pos = 0; 
 
@@ -1002,3 +1002,29 @@ int print_reg_from_bin_by_rrn(char *filename, int rrn){
     return 0;
 
 }
+
+int remove_reg_type1(FILE *file_bin_rw, int rrn, int *err){
+
+    fseek(file_bin_rw, MAX_RRN*rrn + HEADER_SIZE_TYPE1, SEEK_SET);
+
+    // Caso registro não seja encontrado, retorna sinal de erro 1
+    char aux_char;
+    if (!fread(&(*V).removido, sizeof(char), 1, file_bin_rw)){
+        *err = 1;
+        return -1;
+    }
+    fseek(file_bin_rw, -1, SEEK_CUR);
+
+    // Armazena o próximo valor da pilha no registro
+    aux_char = '1'; 
+    fwrite(&aux_char, sizeof(char), 1, file_bin_rw);
+    fwrite(&header_rrn, sizeof(char), 1, file_bin_rw);
+
+    // Atualiza o cabeçalho com o novo topo da pilha
+    long int offset = HEADER_SIZE_TYPE1 + sizeof(char) + sizeof(int);
+    fseek(file_bin_rw, offset, SEEK_SET);
+    fwrite(&rrn, sizeof(char), 1, file_bin_rw);
+
+    return 0;
+}
+

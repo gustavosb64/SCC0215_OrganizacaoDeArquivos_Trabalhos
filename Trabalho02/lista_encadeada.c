@@ -420,14 +420,7 @@ List* load_all_idx_from_bin(FILE *file_bin_r, int f_type){
 
         // Enquanto ainda houverem registros a serem lidos no arquivo de dados
         while(!read_id_from_reg_type1(file_bin_r, &I, rrn)){
-
             AddLastElemList(IndexList, I);
-
-            /*
-            fwrite(&(I.id), sizeof(int), 1, file_idx_w);
-            fwrite(&(I.idx.rrn), sizeof(int), 1, file_idx_w);
-            */
-
             rrn++;
         }
 

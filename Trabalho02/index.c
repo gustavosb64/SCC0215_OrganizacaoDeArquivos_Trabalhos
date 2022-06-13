@@ -170,6 +170,7 @@ int search_index_from_idx(char *input_filename, int src_id, int f_type){
 
     }
 
-    return -1;
     fclose(file_idx_r);
+
+    return -1;
 }

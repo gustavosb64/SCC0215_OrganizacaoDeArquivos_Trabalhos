@@ -1,12 +1,11 @@
 #ifndef INDEX_H
 #define INDEX_H
 
-#include "lista_encadeada.h"
 
 /*
  * Comment section
 */
-typedef struct idxHeader Idxheader;
+typedef struct idxHeader IdxHeader;
 
 /*
  * Comment section
