@@ -241,5 +241,15 @@ int add_new_reg(int f_type, char *input_bin_name, char *input_idx_name, int id, 
 */
 int print_reg_from_bin_by_rrn(char *filename, int rrn);
 
+/*
+ * Comment section
+*/
+int remove_reg_type1(FILE *file_bin_rw, int rrn, int header_rrn, int *err);
+
+/*
+ * Comment section
+*/
+void test_remove_reg_type1(int f_type);
+
 
 #endif
