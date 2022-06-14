@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "./records.h"
+#include "./records_utils.h"
+#include "./reg_type1.h"
+#include "./reg_type2.h"
 #include "./index.h"
 #include "./lista_encadeada.h"
 

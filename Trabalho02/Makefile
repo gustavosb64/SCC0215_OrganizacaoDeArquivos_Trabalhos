@@ -1,5 +1,5 @@
 all:
-	lua ../autotad.lua records.c index.c lista_encadeada.c
+	lua ../autotad.lua records_utils.c index.c lista_encadeada.c reg_type1.c reg_type2.c 
 	gcc -g -Wall -Wpedantic -o main *.c
 
 c:

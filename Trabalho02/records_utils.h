@@ -1,5 +1,5 @@
-#ifndef RECORDS_H
-#define RECORDS_H
+#ifndef RECORDS_UTILS_H
+#define RECORDS_UTILS_H
 
 
 /*
@@ -28,16 +28,6 @@ char* readline(FILE *stream, char delimiters[]);
 Vehicle initialize_vehicle(int f_type);
 
 /*
- * Inicializa registros do tipo 1 (tamanho fixo), preenchendo com caracteres '$' 
- * o espaço onde o registro será escrito no arquivo de saída.
- *  Parâmetros:
- *      FILE *file_bin_w: arquivo em que o registro será escrito 
- *  Retorno:
- *      0: nenhum erro
-*/
-int initialize_reg_type1(FILE *file_bin_w);
-
-/*
  * Escreve o cabeçalho, tanto do tipo 1 quanto do tipo 2, no arquivo de saída.
  *  Parâmetros:
  *      FILE *file_bin_w: arquivo em que o cabeçalho será escrito 
@@ -46,54 +36,6 @@ int initialize_reg_type1(FILE *file_bin_w);
  *      0: nenhum erro
 */
 int write_header(FILE *file_header_w, int f_type);
-
-/*
- * Escreve um registro do tipo 1 em um arquivo binário 
- *  Parâmetros:
- *      FILE *file_bin_w: arquivo em que o registro será escrito 
- *      Vehicle *V: registro do tipo Vehicle contendo os dados a serem 
- *                  armazenados no arquivo
- *  Retorno:
- *      0: nenhum erro
-*/
-int write_reg_in_bin_type1(FILE *file_bin_w, Vehicle *V);
-
-/*
- * Escreve um registro do tipo 2 em um arquivo binário 
- *  Parâmetros:
- *      FILE *file_bin_w: arquivo em que o registro será escrito 
- *      Vehicle *V: registro do tipo Vehicle contendo os dados a serem 
- *                  armazenados no arquivo
- *  Retorno:
- *      0: nenhum erro
-*/
-int write_reg_in_bin_type2(FILE *file_bin_w, Vehicle *V);
-
-/*
- * Lê um registro do tipo 1 com dado RRN de um arquivo binário
- *  Parâmetros:
- *      FILE *file_bin_r: arquivo do qual o registro será lido 
- *      Vehicle *V: registro do tipo Vehicle contendo os dados lidos do
- *                  arquivo fornecido
- *      int rrn: RRN do registro a ser lido
- *  Retorno:
- *      0: nenhum erro
- *      1: erro na leitura do campo ou fim do arquivo atingido
-*/
-int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn);
-
-/*
- * Lê um registro do tipo 2 com dado byte offset de um arquivo binário
- *  Parâmetros:
- *      FILE *file_bin_r: arquivo do qual o registro será lido 
- *      Vehicle *V: registro do tipo Vehicle contendo os dados lidos do
- *                  arquivo fornecido
- *      long int offset: byte offset do registro a ser lido
- *  Retorno:
- *      0: nenhum erro
- *      1: erro na leitura do campo ou fim do arquivo atingido
-*/
-int read_reg_from_bin_type2(FILE *file_bin_r, Vehicle *V, long int *offset);
 
 /*
  * Lê todos os registros de um arquivo binário
@@ -128,18 +70,6 @@ int read_reg_from_csv(FILE *file_csv_r, Vehicle *V);
  *      1: falha na abertura do arquivo de leitura csv
 */
 int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type);
-
-/*
- * Busca um registro no arquivo a partir de um RRN fornecido
- *  Parâmetros:
- *      char *filename_in_bin: nome do arquivo binário de leitura
- *      int rrn: RRN fornecido para ser buscado
- *  Retorno:
- *      0: nenhum erro
- *      1: falha na abertura do arquivo de leitura 
- *      2: falha na leitura do registro (registro inexistente)
-*/
-int search_vehicle_rrn(char *filename_in_bin ,int rrn) ;
 
 /*
  * Remove aspas da string passada por parâmetro.
@@ -235,21 +165,6 @@ void binarioNaTela(char *nomeArquivoBinario) ;
  * Comment section
 */
 int add_new_reg(int f_type, char *input_bin_name, char *input_idx_name, int id, int ano, int qtt, char *sigla, char *cidade, char *marca, char *modelo);
-
-/*
- * Comment section
-*/
-int print_reg_from_bin_by_rrn(char *filename, int rrn);
-
-/*
- * Comment section
-*/
-int remove_reg_type1(FILE *file_bin_rw, int rrn, int header_rrn, int *err);
-
-/*
- * Comment section
-*/
-void test_remove_reg_type1(int f_type);
 
 
 #endif
