@@ -83,7 +83,6 @@ Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices){
         // Enquanto ainda houverem registros a serem lidos no arquivo de dados
         while(!read_id_from_reg_type1(file_bin_r, &I, rrn)){
 
-//            print_index(I,1);
             if (rrn*sizeof(Index) % (BUFFER * sizeof(Index)) == 0) 
                 I_list = (Index *) realloc(I_list, (rrn / (BUFFER*sizeof(Index)) + 1) * BUFFER*sizeof(Index));
             I_list[rrn] = I;
@@ -116,7 +115,7 @@ int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_t
     // antes de efetuar a escrita
     int n_indices = 0;
     Index *I_list = load_all_idx_from_bin(file_bin_r, f_type, &n_indices);
-    quick_sort(I_list, 0, n_indices);
+    //quick_sort(I_list, 0, n_indices);
     
     if (f_type == 1){
         

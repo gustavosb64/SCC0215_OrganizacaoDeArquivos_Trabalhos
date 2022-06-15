@@ -2,7 +2,7 @@
 
 - [x] Escrita de índices em um arquivo a partir de um binário **tipo 1**  
 - [ ] Escrita de índices em um arquivo a partir de um binário **tipo 2**  
-- [x] Quicksort em lista de índices
+- [ ] Quicksort em lista de índices (não está funcionando)
 - [ ] Testar quicksort em lista de índices
 - [ ] Insertion sort em lista de índices
 - [x] Leitura de todos os índices de um arquivo (tipo1)
@@ -23,3 +23,4 @@
 - [ ] Adicionar sinal de erro para leitura de registros removidos
 - [ ] Main (antiga): adicionar sinais de erro para operação 3
 - [ ] Busca binária em arquivo de índices
+- [ ] ? Separar funções utilitárias em uma biblioteca separada

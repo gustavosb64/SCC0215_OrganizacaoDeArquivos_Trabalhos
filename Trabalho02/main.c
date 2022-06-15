@@ -35,7 +35,7 @@ int main(int argc, char *argv[]){
 
     Vehicle V = initialize_vehicle(f_type);
     write_idx_file_from_bin("./antes/binario1.bin", "indices1.bin", f_type);
-    read_all_indices_from_idx("indices1.bin", f_type);
+    //read_all_indices_from_idx("indices1.bin", f_type);
 
     //int rrn = search_index_from_idx("./meu_indice5.bin", 555, f_type);
     //printf("rrn: %d\n\n",rrn);
