@@ -2,22 +2,24 @@
 
 - [x] Escrita de índices em um arquivo a partir de um binário **tipo 1**  
 - [ ] Escrita de índices em um arquivo a partir de um binário **tipo 2**  
-- [x] Mergesort em lista_encadeada
-- [ ] Insertion sort em lista_encadeada
+- [x] Quicksort em lista de índices
+- [ ] Testar quicksort em lista de índices
+- [ ] Insertion sort em lista de índices
 - [x] Leitura de todos os índices de um arquivo (tipo1)
 - [ ] Leitura de todos os índices de um arquivo (tipo2)
 - [x] Busca de índice por id em um arquivo de índices(tipo1)
 - [ ] Busca de índice por id em um arquivo de índices(tipo2)
-- [ ] Remoção lógica (tipo1)
+- [x] Remoção lógica (tipo1)
 - [ ] Remoção lógica (tipo2)
-- [x] Adição de novo registro no arquivo (tipo1) [_conferir após implementar remoção_]
+- [ ] Adição de novo registro no arquivo (tipo1) 
+    - [ ] Atualização de pilha de removidos (caso reutilize espaço)
+    - [ ] Atualização de nroRegRem (caso reutilize espaço)
+    - [ ] Atualização de proxRRN (caso NÃO reutilize espaço)
 - [ ] Adição de novo dado no arquivo (tipo2)
 - [ ] Atualização de registros (tipo1)
 - [ ] Atualização de registros (tipo2)
 - [ ] Ajustar mensagens de erro
 - [ ] Comentar index.h
-- [ ] Comentar lista_encadeada.h
-- [ ] Comentar lista_encadeada.c
 - [ ] Adicionar sinal de erro para leitura de registros removidos
 - [ ] Main (antiga): adicionar sinais de erro para operação 3
 - [ ] Busca binária em arquivo de índices
