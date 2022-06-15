@@ -396,6 +396,8 @@ Index GetElem(Node *node){
     return node->val;
 }
 
+//AUTOTAD_PRIVATE
+/*
 List* load_all_idx_from_bin(FILE *file_bin_r, int f_type){
     
     List *IndexList = CreateList();
@@ -406,7 +408,6 @@ List* load_all_idx_from_bin(FILE *file_bin_r, int f_type){
 
         // Caractere auxiliar para verificar se o primeiro byte a ser lido se
         // refere a um registro. Retorna sinal de erro 1 caso não seja
-        /*
         char c_aux;
         fread(&c_aux, sizeof(char), 1, file_bin_r);
         if (c_aux == '0'){
@@ -414,7 +415,6 @@ List* load_all_idx_from_bin(FILE *file_bin_r, int f_type){
             return 1;
         }
         fseek(file_bin_r,0,SEEK_SET);
-        */
 
         int rrn = 0;
 
@@ -430,3 +430,4 @@ List* load_all_idx_from_bin(FILE *file_bin_r, int f_type){
 
     return IndexList;
 }
+*/

@@ -30,6 +30,11 @@ int read_id_from_reg_type1(FILE *file_bin_r, Index *I, int rrn);
 /*
  * Comment section
 */
+Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices);
+
+/*
+ * Comment section
+*/
 int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_type);
 
 /*
@@ -46,6 +51,21 @@ int read_all_indices_from_idx(char *input_filename, int f_type);
  * Comment section
 */
 int search_index_from_idx(char *input_filename, int src_id, int f_type);
+
+/*
+ * Comment section
+*/
+void print_index(Index I, int f_type);
+
+/*
+ * Comment section
+*/
+void swap(Index *a, Index *b);
+
+/*
+ * Comment section
+*/
+void quick_sort(Index *I, int ini, int fim);
 
 
 #endif

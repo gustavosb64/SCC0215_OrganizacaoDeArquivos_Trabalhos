@@ -129,10 +129,5 @@ Node* GetFirstNode(List *list);
 */
 Index GetElem(Node *node);
 
-/*
- * Comment section
-*/
-List* load_all_idx_from_bin(FILE *file_bin_r, int f_type);
-
 
 #endif

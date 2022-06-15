@@ -9,6 +9,7 @@
 #define MAX_RRN 97
 #define REG_HEADER_SIZE_TYPE1 182
 #define REG_HEADER_SIZE_TYPE2 189
+#define BUFFER 4096
 
 struct idxHeader{
     char status;
@@ -57,6 +58,49 @@ int read_id_from_reg_type1(FILE *file_bin_r, Index *I, int rrn){
     return 0;
 }
 
+Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices){
+    
+    Index *I_list = (Index *) malloc(BUFFER*sizeof(Index));
+    Index I = create_index(f_type);
+
+    // Realiza diferentes rotinas a depender do tipo a ser lido
+    if (f_type == 1){
+
+        // Caractere auxiliar para verificar se o primeiro byte a ser lido se
+        // refere a um registro. Retorna sinal de erro 1 caso não seja
+        /*
+        char c_aux;
+        fread(&c_aux, sizeof(char), 1, file_bin_r);
+        if (c_aux == '0'){
+            fclose(file_bin_r);
+            return 1;
+        }
+        fseek(file_bin_r,0,SEEK_SET);
+        */
+
+        int rrn = 0;
+
+        // Enquanto ainda houverem registros a serem lidos no arquivo de dados
+        while(!read_id_from_reg_type1(file_bin_r, &I, rrn)){
+
+//            print_index(I,1);
+            if (rrn*sizeof(Index) % (BUFFER * sizeof(Index)) == 0) 
+                I_list = (Index *) realloc(I_list, (rrn / (BUFFER*sizeof(Index)) + 1) * BUFFER*sizeof(Index));
+            I_list[rrn] = I;
+            rrn++;
+        }
+
+        I = create_index(f_type);
+        I_list[rrn] = I;
+        I_list = (Index *) realloc(I_list, (rrn+1)*sizeof(Index));
+
+        (*n_indices) = rrn;
+    }
+//    PrintList(IndexList);
+
+    return I_list;
+}
+
 int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_type){
 
     // Caso haja falha na leitura do arquivo, retorna 1
@@ -70,30 +114,30 @@ int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_t
 
     // Carrega todos os índices em uma lista na memória para ordená-los
     // antes de efetuar a escrita
-    List *IndexList = load_all_idx_from_bin(file_bin_r, f_type);
-    sort_by_merge(IndexList);
-
-    Index I = create_index(f_type);
-
+    int n_indices = 0;
+    Index *I_list = load_all_idx_from_bin(file_bin_r, f_type, &n_indices);
+    quick_sort(I_list, 0, n_indices);
+    
     if (f_type == 1){
+        
+        int i = 0;
+        Index I = I_list[i]; 
 
-        Node *I_node = GetFirstNode(IndexList);
-
-        while(I_node != NULL){
-
-            I = GetElem(I_node);
+        while(I.id != -1){
 
             fwrite(&(I.id), sizeof(int), 1, file_idx_w);
             fwrite(&(I.idx.rrn), sizeof(int), 1, file_idx_w);
 
-            I_node = GetNextNode(I_node);
+            //print_reg_from_bin_by_rrn("binario1_teste.bin", I.idx.rrn);
+            //print_index(I, 1);
+            I = I_list[++i]; 
         }
-
+        
     }
 
     fclose(file_bin_r);
     fclose(file_idx_w);
-    FreeList(IndexList);
+    free(I_list);
 
     return 0;
 }
@@ -124,7 +168,6 @@ int read_all_indices_from_idx(char *input_filename, int f_type){
         return 1;
     }
 
-    List *IndexList = CreateList();
     Index I = create_index(f_type);
 
     if (f_type == 1){
@@ -134,8 +177,6 @@ int read_all_indices_from_idx(char *input_filename, int f_type){
         int idx_rrn = 0; 
         while(!read_idx_type1(file_idx_r, &I, idx_rrn)){
             
-            AddLastElemList(IndexList, I);
-
             print_reg_from_bin_by_rrn("binario1_teste.bin", I.idx.rrn);
 
             I = create_index(f_type);
@@ -145,7 +186,6 @@ int read_all_indices_from_idx(char *input_filename, int f_type){
     }
     
     fclose(file_idx_r);
-    FreeList(IndexList);
 
     return 0;
 }
@@ -175,4 +215,43 @@ int search_index_from_idx(char *input_filename, int src_id, int f_type){
     fclose(file_idx_r);
 
     return -1;
+}
+
+void print_index(Index I, int f_type){
+    
+    printf("Id: %d\n", I.id);
+    if (f_type == 1) printf("RRN: %d\n", I.idx.rrn);
+    else printf("Offset: %ld\n", I.idx.byteoffset);
+
+    return;
+}
+
+void swap(Index *a, Index *b){
+    Index aux = *a;
+    *a = *b;
+    *b = aux;
+
+    return;
+}
+
+void quick_sort(Index *I, int ini, int fim){
+
+	int meio = (int) ((ini + fim) / 2);
+	int m = I[meio].id;
+
+	int i = ini, j = fim;
+	do{
+		while (I[i].id < m) i++;
+		while (I[j].id > m) j--;
+
+		if(i <= j){
+			swap(&I[i],&I[j]);
+			i++;
+			j--;
+		}
+
+	} while(j > i);
+
+	if(ini < j) quick_sort(I, ini, j);
+	if(i < fim) quick_sort(I, i, fim);
 }
