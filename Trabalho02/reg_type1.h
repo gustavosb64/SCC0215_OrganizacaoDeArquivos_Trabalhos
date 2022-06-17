@@ -61,7 +61,7 @@ int search_vehicle_rrn(char *filename_in_bin ,int rrn) ;
 /*
  * Comment section
 */
-int remove_reg_type1(FILE *file_bin_rw, int rrn, int header_rrn, int *err);
+int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, int *err);
 
 /*
  * Comment section
@@ -77,6 +77,16 @@ int print_reg_from_bin_by_rrn(char *filename, int rrn);
  * Comment section
 */
 int add_new_reg_type1(FILE *file_bin_rw, Vehicle V);
+
+/*
+ * Comment section
+*/
+int read_id_from_reg_type1(FILE *file_bin_r, int *id, int rrn);
+
+/*
+ * Comment section
+*/
+char get_status(FILE *file_bin_r);
 
 
 #endif

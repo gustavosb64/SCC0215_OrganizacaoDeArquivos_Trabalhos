@@ -215,3 +215,23 @@ int read_reg_from_bin_type2(FILE *file_bin_r, Vehicle *V, long int *offset){
     return 0;
 
 }
+
+int read_id_from_reg_type2(FILE *file_bin_r, int *id, long int *offset){
+    
+    // Colocando o ponteiro do arquivo no ID do registro a ser buscado
+    long int id_offset = (*offset) + HEADER_SIZE_TYPE2 + sizeof(int);
+
+    fseek(file_bin_r, id_offset, SEEK_SET);
+
+    int tam_registro = 0;
+    // Lê o novo tam_registro e atualiza o offset
+    // Caso não haja mais registros a serem lidos, retorna sinal de erro 1
+    if (!fread(&tam_registro, sizeof(long int), 1, file_bin_r)) 
+        return 1;
+    (*offset) += tam_registro;
+
+    // Lê ID do registro indicado por rrn
+    fread(&(*id), sizeof(int), 1, file_bin_r);
+
+    return 0;
+}

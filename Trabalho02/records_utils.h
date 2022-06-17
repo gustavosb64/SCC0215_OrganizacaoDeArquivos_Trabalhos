@@ -164,7 +164,22 @@ void binarioNaTela(char *nomeArquivoBinario) ;
 /*
  * Comment section
 */
-int add_new_reg(int f_type, char *input_bin_name, char *input_idx_name, int id, int ano, int qtt, char *sigla, char *cidade, char *marca, char *modelo);
+int add_new_reg(char *input_bin_name, int f_type, char *input_idx_name, int id, int ano, int qtt, char *sigla, char *cidade, char *marca, char *modelo);
+
+/*
+ * Comment section
+*/
+int update_nroRegRem(FILE *file_bin_rw, int f_type, char operation);
+
+/*
+ * Comment section
+*/
+int update_stack(FILE *file_bin_rw, int f_type, long int new_value);
+
+/*
+ * Comment section
+*/
+long int get_stack_top(FILE *file_bin_rw, int f_type);
 
 
 #endif

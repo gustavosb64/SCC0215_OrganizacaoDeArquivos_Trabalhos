@@ -36,12 +36,13 @@ Index create_index(int f_type){
 
 int write_idx_header(FILE *file_idx_w){
 
-    char status = '1';
+    char status = '0';
     fwrite(&status, sizeof(char), 1, file_idx_w);
 
     return 0;
 }
 
+/* AUTOTAD_PRIVATE
 int read_id_from_reg_type1(FILE *file_bin_r, Index *I, int rrn){
     
     // Colocando o ponteiro do arquivo no ID do registro a ser buscado
@@ -57,6 +58,7 @@ int read_id_from_reg_type1(FILE *file_bin_r, Index *I, int rrn){
 
     return 0;
 }
+*/
 
 Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices){
     
@@ -79,12 +81,18 @@ Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices){
         */
 
         int rrn = 0;
+        int id = -1;
 
         // Enquanto ainda houverem registros a serem lidos no arquivo de dados
-        while(!read_id_from_reg_type1(file_bin_r, &I, rrn)){
+        while(!read_id_from_reg_type1(file_bin_r, &id, rrn)){
+
+            // Atribuindo valores a um índice
+            I.id = id;
+            I.idx.rrn = rrn;
 
             if (rrn*sizeof(Index) % (BUFFER * sizeof(Index)) == 0) 
                 I_list = (Index *) realloc(I_list, (rrn / (BUFFER*sizeof(Index)) + 1) * BUFFER*sizeof(Index));
+
             I_list[rrn] = I;
             rrn++;
         }
@@ -133,6 +141,10 @@ int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_t
         }
         
     }
+
+    char status = '1';
+    fseek(file_idx_w, 0, SEEK_SET);
+    fwrite(&status, sizeof(char), 1, file_idx_w);
 
     fclose(file_bin_r);
     fclose(file_idx_w);

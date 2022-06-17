@@ -25,11 +25,6 @@ int write_idx_header(FILE *file_idx_w);
 /*
  * Comment section
 */
-int read_id_from_reg_type1(FILE *file_bin_r, Index *I, int rrn);
-
-/*
- * Comment section
-*/
 Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices);
 
 /*

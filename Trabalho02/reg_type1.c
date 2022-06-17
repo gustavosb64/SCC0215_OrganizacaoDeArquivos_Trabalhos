@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "./reg_type1.h"
 #include "./records_utils.h"
 #include "./index.h"
 
@@ -68,6 +69,11 @@ int initialize_reg_type1(FILE *file_bin_w){
 }
 
 int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn){
+
+    // Caso o arquivo de registros não esteja consistente
+    if (get_status(file_bin_r) != '1'){
+        return 2;
+    }
 
     // Colocando o ponteiro do arquivo no início do registro a ser buscado
     fseek(file_bin_r, MAX_RRN*rrn + HEADER_SIZE_TYPE1, SEEK_SET);
@@ -255,7 +261,15 @@ int search_vehicle_rrn(char *filename_in_bin ,int rrn) {
     return 0;
 }
 
-int remove_reg_type1(FILE *file_bin_rw, int rrn, int header_rrn, int *err){
+// header_rrn -> topo da pilha
+//  header.topo.rrn
+int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, int *err){
+
+    // Caso o arquivo de registros não esteja consistente
+    if (get_status(file_bin_rw) != '1'){
+        *err = 2;
+        return -2;
+    }
 
     fseek(file_bin_rw, MAX_RRN*rrn + HEADER_SIZE_TYPE1, SEEK_SET);
 
@@ -268,20 +282,16 @@ int remove_reg_type1(FILE *file_bin_rw, int rrn, int header_rrn, int *err){
     fseek(file_bin_rw, -1, SEEK_CUR);
 
     // Armazena o próximo valor da pilha no registro
+    int header_rrn = get_stack_top(file_bin_rw, 1);
     aux_char = '1'; 
     fwrite(&aux_char, sizeof(char), 1, file_bin_rw);
     fwrite(&header_rrn, sizeof(char), 1, file_bin_rw);
 
-    // Atualiza o cabeçalho com o novo topo da pilha
-    long int offset = sizeof(char);
-    fseek(file_bin_rw, offset, SEEK_SET);
-    fwrite(&rrn, sizeof(int), 1, file_bin_rw);
+    // Atualiza topo da pilha
+    update_stack(file_bin_rw, 1, rrn);
 
-    // Incrementa o número de registros logicamente removidos
-    int nroRegRem;
-    fread(&nroRegRem, sizeof(int), 1, file_bin_rw);
-    nroRegRem += 1;
-    fwrite(&nroRegRem, sizeof(int), 1, file_bin_rw);
+    // Atualiza nroRegRem
+    update_nroRegRem(file_bin_rw, 1, '+');
 
     return 0;
 }
@@ -294,15 +304,8 @@ void test_remove_reg_type1(int f_type){
     int rrn = search_index_from_idx("meu_indice5.bin", 999, f_type);
     printf("rrn: %d\n\n",rrn);
 
-    int header_rrn; 
-
-    fseek(file_bin_rw, 1, SEEK_SET); 
-    fread(&header_rrn, sizeof(int), 1, file_bin_rw);
-
-    printf("header: %d\n",header_rrn);
-
     int err = 0;
-    remove_reg_type1(file_bin_rw, rrn, header_rrn, &err);
+    remove_reg_by_rrn_type1(file_bin_rw, rrn, &err);
 
     printf("\n");
     read_reg_from_bin_type1(file_bin_rw, &V, rrn);
@@ -313,6 +316,8 @@ void test_remove_reg_type1(int f_type){
     file_bin_rw = fopen("meu_binario5.bin", "rb+");
     */
 
+
+    int header_rrn; 
 
     fseek(file_bin_rw, 1, SEEK_SET); 
     fread(&header_rrn, sizeof(int), 1, file_bin_rw);
@@ -327,7 +332,9 @@ int print_reg_from_bin_by_rrn(char *filename, int rrn){
 
     Vehicle V = initialize_vehicle(1);
 
-    read_reg_from_bin_type1(file_bin_r, &V, rrn);
+    if (read_reg_from_bin_type1(file_bin_r, &V, rrn)){
+        return 1;
+    }
 
     print_vehicle_full(V, 1);
     printf("\n");
@@ -357,3 +364,32 @@ int add_new_reg_type1(FILE *file_bin_rw, Vehicle V){
     
     return 0;
 }
+
+int read_id_from_reg_type1(FILE *file_bin_r, int *id, int rrn){
+    
+    // Caso o arquivo de registros não esteja consistente
+    if (get_status(file_bin_r) != '1'){
+        return 1;
+    }
+
+    // Colocando o ponteiro do arquivo no ID do registro a ser buscado
+    long int id_offset = MAX_RRN * rrn + HEADER_SIZE_TYPE1 + sizeof(char)+sizeof(int);
+    fseek(file_bin_r, id_offset, SEEK_SET);
+
+    // Lê ID do registro indicado por rrn
+    // Caso não haja mais registros a serem lidos, retorna sinal de erro 1
+    if (!fread(&(*id), sizeof(int), 1, file_bin_r)) 
+        return 2;
+
+    return 0;
+}
+
+char get_status(FILE *file_bin_r){
+
+    int status;
+    fseek(file_bin_r, 0, SEEK_SET);
+    fread(&status, 1, sizeof(char), file_bin_r);
+
+    return status;
+}
+

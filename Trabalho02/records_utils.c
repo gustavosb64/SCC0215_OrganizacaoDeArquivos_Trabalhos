@@ -588,7 +588,7 @@ void binarioNaTela(char *nomeArquivoBinario) {
 	fclose(fs);
 }
 
-int add_new_reg(int f_type, char *input_bin_name, char *input_idx_name, int id, int ano, int qtt, char *sigla, char *cidade, char *marca, char *modelo){
+int add_new_reg(char *input_bin_name, int f_type, char *input_idx_name, int id, int ano, int qtt, char *sigla, char *cidade, char *marca, char *modelo){
 
     Vehicle V = initialize_vehicle(f_type);
 
@@ -607,4 +607,80 @@ int add_new_reg(int f_type, char *input_bin_name, char *input_idx_name, int id, 
     }
 
     return 0;
+}
+
+// operation = '+' ou '-'
+int update_nroRegRem(FILE *file_bin_rw, int f_type, char operation){
+
+    // Ajustando offset para o nroRegRem
+    int offset;
+    if (f_type == 1) offset = 174;
+    else offset = 185;
+
+    // Incrementa o número de registros logicamente removidos
+    fseek(file_bin_rw, offset, SEEK_SET);
+
+    int nroRegRem;
+    fread(&nroRegRem, sizeof(int), 1, file_bin_rw);
+    
+    if (operation == '+'){
+        nroRegRem += 1;
+        fwrite(&nroRegRem, sizeof(int), 1, file_bin_rw);
+
+        return 0;
+    }
+    else if (operation == '-'){
+        nroRegRem -= 1;
+        fwrite(&nroRegRem, sizeof(int), 1, file_bin_rw);
+
+        return 0;
+    }
+
+    // Caso a operação enviada seja diferente de '+' ou '-'
+    printf("Operação '%c' enviada para update_nroRegRem inválida.\n", operation);
+
+    return 1;
+}
+
+int update_stack(FILE *file_bin_rw, int f_type, long int new_value){
+
+    if (f_type != 1 && f_type != 2)
+        return -1;
+
+    int offset, size;
+    if (f_type == 1){
+        offset = sizeof(char);
+        size = sizeof(int);
+    }
+    else{
+        offset = sizeof(char) + sizeof(int);
+        size = sizeof(long int);
+    }
+
+    // Atualiza o cabeçalho com o novo topo da pilha
+    fseek(file_bin_rw, offset, SEEK_SET);
+    fwrite(&new_value, size, 1, file_bin_rw);
+
+    return 0;
+}
+
+long int get_stack_top(FILE *file_bin_rw, int f_type){
+
+    int offset;
+    long int top;
+
+    if (f_type == 1){
+        offset = sizeof(char);
+
+        fseek(file_bin_rw, offset, SEEK_SET);
+        fread(&top, sizeof(int), 1, file_bin_rw); 
+    }
+    else{
+        offset = sizeof(char) + sizeof(int);
+
+        fseek(file_bin_rw, offset, SEEK_SET);
+        fread(&top, sizeof(long int), 1, file_bin_rw); 
+    }
+
+    return top;
 }
