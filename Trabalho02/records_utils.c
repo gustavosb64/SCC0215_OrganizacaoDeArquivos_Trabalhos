@@ -669,18 +669,11 @@ long int get_stack_top(FILE *file_bin_rw, int f_type){
     int offset;
     long int top;
 
-    if (f_type == 1){
-        offset = sizeof(char);
+    offset = sizeof(char);
+    fseek(file_bin_rw, offset, SEEK_SET);
 
-        fseek(file_bin_rw, offset, SEEK_SET);
-        fread(&top, sizeof(int), 1, file_bin_rw); 
-    }
-    else{
-        offset = sizeof(char) + sizeof(int);
-
-        fseek(file_bin_rw, offset, SEEK_SET);
-        fread(&top, sizeof(long int), 1, file_bin_rw); 
-    }
+    if (f_type == 1) fread(&top, sizeof(int), 1, file_bin_rw); 
+    else if (f_type == 2) fread(&top, sizeof(long int), 1, file_bin_rw); 
 
     return top;
 }
