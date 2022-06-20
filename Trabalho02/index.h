@@ -30,6 +30,11 @@ Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices);
 /*
  * Comment section
 */
+int write_idx_in_bin_type1(FILE *file_idx_w, Index I);
+
+/*
+ * Comment section
+*/
 int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_type);
 
 /*
@@ -61,6 +66,21 @@ void swap(Index *a, Index *b);
  * Comment section
 */
 void quick_sort(Index *I, int ini, int fim);
+
+/*
+ * Comment section
+*/
+int set_status_idx(FILE *file_idx_rw, char status);
+
+/*
+ * Comment section
+*/
+Index* load_all_indices_from_idx(FILE *file_idx_r, int f_type);
+
+/*
+ * Comment section
+*/
+int add_new_index(char *index_filename, int f_type, Index I);
 
 
 #endif

@@ -6,6 +6,7 @@
 #include "./index.h"
 
 #define HEADER_SIZE_TYPE2 189
+#define TYPE 2
 struct header{
     char status;        // consistência do arquivo
     int tamanhoRegistro;    // tamanho do registro (usado apenas no tipo 2)
@@ -232,6 +233,39 @@ int read_id_from_reg_type2(FILE *file_bin_r, int *id, long int *offset){
 
     // Lê ID do registro indicado por rrn
     fread(&(*id), sizeof(int), 1, file_bin_r);
+
+    return 0;
+}
+
+int add_new_reg_type2(FILE *file_bin_rw, Vehicle V){
+
+    long int offset;
+    int flag_list = 0;
+
+    offset = get_list_top(file_bin_rw, TYPE);
+
+    if (offset == -1){
+        offset = get_prox(file_bin_rw, TYPE);
+    }
+    else{ 
+        flag_list = 1;
+
+        int new_value; 
+        fseek(file_bin_rw, offset + sizeof(char)+sizeof(int), SEEK_SET);
+        fread(&new_value, sizeof(int), 1, file_bin_rw);
+
+        // Atualizando o topo da pilha e o nroRegRem
+        update_list(file_bin_rw, TYPE, new_value);
+        update_nroRegRem(file_bin_rw, TYPE, '-');
+    }
+
+    fseek(file_bin_rw, offset, SEEK_SET);
+    write_reg_in_bin_type1(file_bin_rw, &V);
+
+    if (!flag_list){
+        rrn++;
+        update_prox(file_bin_rw, TYPE, rrn);
+    }
 
     return 0;
 }

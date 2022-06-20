@@ -31,9 +31,19 @@ struct vehicle{
 int main(int argc, char *argv[]){
 
     int f_type = 1;
-    test_remove_reg_type1(f_type);
+//    test_remove_reg_type1(f_type);
+    //write_idx_file_from_bin( "./antes/binario1.bin", "indices1.bin", f_type);
+    //read_all_indices_from_idx("indices1.bin", f_type);
 
     Vehicle V = initialize_vehicle(f_type);
+
+//    FILE *file_bin_r = fopen("./binario1.bin", "rb");
+//    add_new_reg("./binario1.bin", f_type, "./indices1.bin", 2022, 1982, 87, "AP", "Macapá", "Transformers", "bumblepee");
+
+//    read_all_reg_from_bin("./binario1.bin", f_type);
+
+//    printf("topo: %ld\n", get_list_top(file_bin_r, f_type));
+//    fclose(file_bin_r);
     //write_idx_file_from_bin("./antes/binario5.bin", "indices5.bin", f_type);
     //read_all_indices_from_idx("indices1.bin", f_type);
 

@@ -174,12 +174,27 @@ int update_nroRegRem(FILE *file_bin_rw, int f_type, char operation);
 /*
  * Comment section
 */
-int update_stack(FILE *file_bin_rw, int f_type, long int new_value);
+int update_list(FILE *file_bin_rw, int f_type, long int new_value);
 
 /*
  * Comment section
 */
-long int get_stack_top(FILE *file_bin_rw, int f_type);
+int update_prox(FILE *file_bin_rw, int f_type, long int new_value);
+
+/*
+ * Comment section
+*/
+long int get_list_top(FILE *file_bin_rw, int f_type);
+
+/*
+ * Comment section
+*/
+long int get_prox(FILE *file_bin_rw, int f_type);
+
+/*
+ * Comment section
+*/
+int set_status_bin(FILE *file_bin_rw, char status);
 
 
 #endif

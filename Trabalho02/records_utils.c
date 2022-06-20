@@ -7,10 +7,10 @@
 #include "./reg_type2.h"
 #include "./index.h"
 
+#define HEADER_SIZE_TYPE1 182
 #define HEADER_SIZE_TYPE2 189
 struct header{
     char status;        // consistência do arquivo
-    int tamanhoRegistro;    // tamanho do registro (usado apenas no tipo 2)
     union{
         int rrn;            // RRN do último registro logicamente removido (tipo 1)
         long int offset;    // offset do último registro logicamente removido (tipo 2)
@@ -284,6 +284,8 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
     }
     FILE *file_bin_w = fopen(filename_out_bin, "wb");
 
+    set_status_bin(file_bin_w, '0');
+
     write_header(file_bin_w, f_type);
     
     // Lendo e liberando linha de cabeçalho
@@ -338,6 +340,8 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
         }
     }
     
+    set_status_bin(file_bin_w, '1');
+
     // Liberando memória
     fclose(file_bin_w);
     fclose(file_csv_r);
@@ -601,10 +605,21 @@ int add_new_reg(char *input_bin_name, int f_type, char *input_idx_name, int id, 
     V.modelo = modelo;
 
     FILE *file_bin_rw = fopen(input_bin_name, "rb+"); 
+    FILE *file_idx_rw = fopen(input_idx_name, "rb+"); 
+    if (file_bin_rw == NULL || file_idx_rw == NULL){
+        return -1;
+    }
+
+    set_status_bin(file_bin_rw, '0');
+    set_status_bin(file_bin_rw, '0');
 
     if (f_type == 1){
         add_new_reg_type1(file_bin_rw, V);
+
+//        add_new_index(
     }
+
+    set_status_bin(file_bin_rw, '1');
 
     return 0;
 }
@@ -642,19 +657,41 @@ int update_nroRegRem(FILE *file_bin_rw, int f_type, char operation){
     return 1;
 }
 
-int update_stack(FILE *file_bin_rw, int f_type, long int new_value){
+int update_list(FILE *file_bin_rw, int f_type, long int new_value){
 
     if (f_type != 1 && f_type != 2)
         return -1;
 
     int offset, size;
-    if (f_type == 1){
-        offset = sizeof(char);
+
+    offset = sizeof(char);
+    if (f_type == 1) 
         size = sizeof(int);
+    else 
+        size = sizeof(long int);
+
+    // Atualiza o cabeçalho com o novo topo da pilha
+    fseek(file_bin_rw, offset, SEEK_SET);
+    fwrite(&new_value, size, 1, file_bin_rw);
+
+    return 0;
+}
+
+int update_prox(FILE *file_bin_rw, int f_type, long int new_value){
+
+    if (f_type != 1 && f_type != 2)
+        return -1;
+
+    int offset, size;
+
+    if (f_type == 1){ 
+        size = sizeof(int);
+        offset = HEADER_SIZE_TYPE1 - size;
+
     }
     else{
-        offset = sizeof(char) + sizeof(int);
         size = sizeof(long int);
+        offset = HEADER_SIZE_TYPE2 - size;
     }
 
     // Atualiza o cabeçalho com o novo topo da pilha
@@ -664,7 +701,7 @@ int update_stack(FILE *file_bin_rw, int f_type, long int new_value){
     return 0;
 }
 
-long int get_stack_top(FILE *file_bin_rw, int f_type){
+long int get_list_top(FILE *file_bin_rw, int f_type){
 
     int offset;
     long int top;
@@ -676,4 +713,48 @@ long int get_stack_top(FILE *file_bin_rw, int f_type){
     else if (f_type == 2) fread(&top, sizeof(long int), 1, file_bin_rw); 
 
     return top;
+}
+
+long int get_prox(FILE *file_bin_rw, int f_type){
+
+    int offset;
+    long int prox;
+
+    if (f_type == 1){
+        offset = HEADER_SIZE_TYPE1 - 2*sizeof(int); 
+
+        fseek(file_bin_rw, offset, SEEK_SET);
+        fread(&prox, sizeof(int), 1, file_bin_rw); 
+    }
+    else if (f_type == 2){
+        offset = HEADER_SIZE_TYPE2 - sizeof(int) - sizeof(long int); 
+
+        fseek(file_bin_rw, offset, SEEK_SET);
+        fread(&prox, sizeof(long int), 1, file_bin_rw); 
+    }
+
+    return prox;
+}
+
+int set_status_bin(FILE *file_bin_rw, char status){
+
+    if (status != '0' && status != '1')
+        return -1;
+
+    long int cur_offset = ftell(file_bin_rw);
+
+    fseek(file_bin_rw, 0, SEEK_SET);
+    fwrite(&status, sizeof(char), 1, file_bin_rw);
+
+    fseek(file_bin_rw, cur_offset, SEEK_SET);
+
+    return 0;
+}
+
+char get_status(FILE *file_bin_r){
+    int status;
+    fseek(file_bin_r, 0, SEEK_SET);
+    fread(&status, 1, sizeof(char), file_bin_r);
+
+    return status;
 }

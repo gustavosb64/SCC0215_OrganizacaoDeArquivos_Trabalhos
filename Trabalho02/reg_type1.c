@@ -8,6 +8,7 @@
 
 #define MAX_RRN 97
 #define HEADER_SIZE_TYPE1 182
+#define TYPE 1
 struct header{
     char status;        // consistência do arquivo
     int tamanhoRegistro;    // tamanho do registro (usado apenas no tipo 2)
@@ -282,13 +283,13 @@ int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, int *err){
     fseek(file_bin_rw, -1, SEEK_CUR);
 
     // Armazena o próximo valor da pilha no registro
-    int header_rrn = get_stack_top(file_bin_rw, 1);
+    int header_rrn = get_list_top(file_bin_rw, TYPE);
     aux_char = '1'; 
     fwrite(&aux_char, sizeof(char), 1, file_bin_rw);
     fwrite(&header_rrn, sizeof(char), 1, file_bin_rw);
 
     // Atualiza topo da pilha
-    update_stack(file_bin_rw, 1, rrn);
+    update_list(file_bin_rw, TYPE, rrn);
 
     // Atualiza nroRegRem
     update_nroRegRem(file_bin_rw, 1, '+');
@@ -348,20 +349,35 @@ int print_reg_from_bin_by_rrn(char *filename, int rrn){
 int add_new_reg_type1(FILE *file_bin_rw, Vehicle V){
 
     int rrn;
-    fseek(file_bin_rw, 174, SEEK_SET);
-    fread(&rrn, sizeof(int), 1, file_bin_rw);
+    int flag_stack = 0;
+
+    rrn = get_list_top(file_bin_rw, TYPE);
+
+    if (rrn == -1)
+        rrn = get_prox(file_bin_rw, TYPE);
+    else 
+        flag_stack = 1;
 
     long int offset = rrn*MAX_RRN + HEADER_SIZE_TYPE1;
+
+    if (flag_stack){
+        int new_value; 
+        fseek(file_bin_rw, offset + sizeof(char), SEEK_SET);
+        fread(&new_value, sizeof(int), 1, file_bin_rw);
+
+        // Atualizando o topo da pilha e o nroRegRem
+        update_list(file_bin_rw, TYPE, new_value);
+        update_nroRegRem(file_bin_rw, TYPE, '-');
+    }
+
     fseek(file_bin_rw, offset, SEEK_SET);
-   
     write_reg_in_bin_type1(file_bin_rw, &V);
 
-    // Atualizando proxRRN no cabeçalho
-    rrn += 1;
-    fseek(file_bin_rw, 174, SEEK_SET);
-    fwrite(&rrn, sizeof(int), 1, file_bin_rw);
-    fseek(file_bin_rw, 0, SEEK_END);
-    
+    if (!flag_stack){
+        rrn++;
+        update_prox(file_bin_rw, TYPE, rrn);
+    }
+
     return 0;
 }
 
@@ -383,13 +399,3 @@ int read_id_from_reg_type1(FILE *file_bin_r, int *id, int rrn){
 
     return 0;
 }
-
-char get_status(FILE *file_bin_r){
-
-    int status;
-    fseek(file_bin_r, 0, SEEK_SET);
-    fread(&status, 1, sizeof(char), file_bin_r);
-
-    return status;
-}
-

@@ -108,6 +108,14 @@ Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices){
     return I_list;
 }
 
+int write_idx_in_bin_type1(FILE *file_idx_w, Index I){
+
+    fwrite(&(I.id), sizeof(int), 1, file_idx_w);
+    fwrite(&(I.idx.rrn), sizeof(int), 1, file_idx_w);
+
+    return 0;
+}
+
 int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_type){
 
     // Caso haja falha na leitura do arquivo, retorna 1
@@ -116,6 +124,8 @@ int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_t
         return 1;
     }
     FILE *file_idx_w = fopen(output_filename, "wb");
+
+    set_status_idx(file_idx_w, '0');
 
     write_idx_header(file_idx_w);
 
@@ -132,19 +142,14 @@ int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_t
 
         while(I.id != -1){
 
-            fwrite(&(I.id), sizeof(int), 1, file_idx_w);
-            fwrite(&(I.idx.rrn), sizeof(int), 1, file_idx_w);
+            write_idx_in_bin_type1(file_idx_w, I);
 
-            //print_reg_from_bin_by_rrn("binario1_teste.bin", I.idx.rrn);
-            //print_index(I, 1);
             I = I_list[++i]; 
         }
         
     }
 
-    char status = '1';
-    fseek(file_idx_w, 0, SEEK_SET);
-    fwrite(&status, sizeof(char), 1, file_idx_w);
+    set_status_idx(file_idx_w, '1');
 
     fclose(file_bin_r);
     fclose(file_idx_w);
@@ -188,8 +193,8 @@ int read_all_indices_from_idx(char *input_filename, int f_type){
         int idx_rrn = 0; 
         while(!read_idx_type1(file_idx_r, &I, idx_rrn)){
             
-            print_reg_from_bin_by_rrn("binario1_teste.bin", I.idx.rrn);
-
+            //print_reg_from_bin_by_rrn("binario1_teste.bin", I.idx.rrn);
+            print_index(I, 1);
             I = create_index(f_type);
             idx_rrn++;
         }
@@ -265,4 +270,73 @@ void quick_sort(Index *I, int ini, int fim){
 
 	if(ini < j) quick_sort(I, ini, j);
 	if(i < fim) quick_sort(I, i, fim);
+}
+
+int set_status_idx(FILE *file_idx_rw, char status){
+
+    if (status != '0' && status != '1')
+        return -1;
+
+    long int cur_offset = ftell(file_idx_rw);
+
+    fseek(file_idx_rw, 0, SEEK_SET);
+    fwrite(&status, sizeof(char), 1, file_idx_rw);
+
+    fseek(file_idx_rw, cur_offset, SEEK_SET);
+
+    return 0;
+}
+
+Index* load_all_indices_from_idx(FILE *file_idx_r, int f_type){
+
+    Index *I_list = (Index *) malloc(BUFFER*sizeof(Index));
+    Index I = create_index(f_type);
+
+    // Realiza diferentes rotinas a depender do tipo a ser lido
+    if (f_type == 1){
+        
+        int rrn = 0;
+        while(!read_idx_type1(file_idx_r, &I, rrn)){
+
+            if (rrn*sizeof(Index) % (BUFFER * sizeof(Index)) == 0) 
+                I_list = (Index *) realloc(I_list, (rrn / (BUFFER*sizeof(Index)) + 1) * BUFFER*sizeof(Index));
+
+            I_list[rrn] = I;
+            rrn++;
+        }
+
+    }
+
+    return I_list;
+}
+
+int add_new_index(char *index_filename, int f_type, Index I_new){
+
+    if (f_type != 1 && f_type != 2) 
+        return -1;
+
+    FILE *file_idx_r = fopen(index_filename, "rb");
+    if (file_idx_r == NULL){
+        return -2;
+    }
+
+    // ADICIONAR O NOVO INDICE E ORDENAR
+    Index *I_list = load_all_indices_from_idx(file_idx_r, f_type);
+    Index I = I_list[0];
+
+    fclose(file_idx_r);
+
+    //sort_idx
+
+    int i = 0;
+    FILE *file_idx_w = fopen(index_filename, "wb");
+
+    while(I.id != -1){
+
+        write_idx_in_bin_type1(file_idx_w, I);
+
+        I = I_list[++i]; 
+    }
+
+    return 0;
 }
