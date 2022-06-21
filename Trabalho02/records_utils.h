@@ -196,5 +196,10 @@ long int get_prox(FILE *file_bin_rw, int f_type);
 */
 int set_status_bin(FILE *file_bin_rw, char status);
 
+/*
+ * Comment section
+*/
+char get_status(FILE *file_bin_r);
+
 
 #endif

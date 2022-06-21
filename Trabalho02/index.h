@@ -80,7 +80,7 @@ Index* load_all_indices_from_idx(FILE *file_idx_r, int f_type);
 /*
  * Comment section
 */
-int add_new_index(char *index_filename, int f_type, Index I);
+int add_new_index(char *index_filename, int f_type, Index I_new);
 
 
 #endif

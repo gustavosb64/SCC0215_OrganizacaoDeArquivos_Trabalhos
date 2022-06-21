@@ -244,27 +244,50 @@ int add_new_reg_type2(FILE *file_bin_rw, Vehicle V){
 
     offset = get_list_top(file_bin_rw, TYPE);
 
-    if (offset == -1){
+    if (offset == -1)
         offset = get_prox(file_bin_rw, TYPE);
-    }
-    else{ 
+    else 
         flag_list = 1;
 
-        int new_value; 
-        fseek(file_bin_rw, offset + sizeof(char)+sizeof(int), SEEK_SET);
-        fread(&new_value, sizeof(int), 1, file_bin_rw);
+    fseek(file_bin_rw, offset, SEEK_SET);
 
-        // Atualizando o topo da pilha e o nroRegRem
-        update_list(file_bin_rw, TYPE, new_value);
-        update_nroRegRem(file_bin_rw, TYPE, '-');
+    if (flag_list){
+        char is_removed; 
+        int tamReg = -1; 
+        long int new_list_top; 
+        long int new_offset; 
+
+        // Caso registro não conste como removido
+        fread(&is_removed, sizeof(char), 1, file_bin_rw);
+        if (is_removed != '1') 
+            return -1;
+
+        fread(&tamReg, sizeof(int), 1, file_bin_rw);
+
+        if (tamReg >= V.tamanhoRegistro){
+
+            fread(&new_list_top, sizeof(long int), 1, file_bin_rw);
+
+            // Atualizando o topo da lista e o nroRegRem
+            update_list(file_bin_rw, TYPE, new_list_top);
+            update_nroRegRem(file_bin_rw, TYPE, '-');
+
+            new_offset = ftell(file_bin_rw) - (sizeof(char)+sizeof(int)+sizeof(long int));
+        }
+        else{
+            new_offset = get_prox(file_bin_rw, TYPE);
+            flag_list = 0;
+        }
+
+        fseek(file_bin_rw, new_offset, SEEK_SET);
     }
 
-    fseek(file_bin_rw, offset, SEEK_SET);
-    write_reg_in_bin_type1(file_bin_rw, &V);
+    write_reg_in_bin_type2(file_bin_rw, &V);
 
+    // CHECAR SE ATUALIZAÇÃO ESTÁ CORRETA
     if (!flag_list){
-        rrn++;
-        update_prox(file_bin_rw, TYPE, rrn);
+        offset += V.tamanhoRegistro + sizeof(char) + sizeof(int) + 1;
+        update_prox(file_bin_rw, TYPE, offset);
     }
 
     return 0;

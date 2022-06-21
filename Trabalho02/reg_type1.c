@@ -359,18 +359,26 @@ int add_new_reg_type1(FILE *file_bin_rw, Vehicle V){
         flag_stack = 1;
 
     long int offset = rrn*MAX_RRN + HEADER_SIZE_TYPE1;
+    fseek(file_bin_rw, offset, SEEK_SET);
 
     if (flag_stack){
+        char is_removed; 
         int new_value; 
-        fseek(file_bin_rw, offset + sizeof(char), SEEK_SET);
+
+        // Caso registro não conste como removido
+        fread(&is_removed, sizeof(char), 1, file_bin_rw);
+        if (is_removed != '1') 
+            return -1;
+
         fread(&new_value, sizeof(int), 1, file_bin_rw);
 
         // Atualizando o topo da pilha e o nroRegRem
         update_list(file_bin_rw, TYPE, new_value);
         update_nroRegRem(file_bin_rw, TYPE, '-');
+
+        fseek(file_bin_rw, -(sizeof(char)+sizeof(int)), SEEK_CUR);
     }
 
-    fseek(file_bin_rw, offset, SEEK_SET);
     write_reg_in_bin_type1(file_bin_rw, &V);
 
     if (!flag_stack){

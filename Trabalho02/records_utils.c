@@ -610,8 +610,9 @@ int add_new_reg(char *input_bin_name, int f_type, char *input_idx_name, int id, 
         return -1;
     }
 
+    // Setando status para inconsistente
     set_status_bin(file_bin_rw, '0');
-    set_status_bin(file_bin_rw, '0');
+    set_status_idx(file_idx_rw, '0');
 
     if (f_type == 1){
         add_new_reg_type1(file_bin_rw, V);
@@ -619,7 +620,9 @@ int add_new_reg(char *input_bin_name, int f_type, char *input_idx_name, int id, 
 //        add_new_index(
     }
 
+    // Setando status para consistente
     set_status_bin(file_bin_rw, '1');
+    set_status_idx(file_idx_rw, '1');
 
     return 0;
 }
@@ -627,76 +630,101 @@ int add_new_reg(char *input_bin_name, int f_type, char *input_idx_name, int id, 
 // operation = '+' ou '-'
 int update_nroRegRem(FILE *file_bin_rw, int f_type, char operation){
 
-    // Ajustando offset para o nroRegRem
+    long int cur_offset = ftell(file_bin_rw);
     int offset;
-    if (f_type == 1) offset = 174;
-    else offset = 185;
 
-    // Incrementa o número de registros logicamente removidos
+    // Ajustando offset para o nroRegRem
+    if (f_type == 1) 
+        offset = HEADER_SIZE_TYPE1 - sizeof(int); 
+    else if (f_type == 2) 
+        offset = HEADER_SIZE_TYPE2 - sizeof(int); 
+    else 
+        return -1;
     fseek(file_bin_rw, offset, SEEK_SET);
 
+    // Lê nroRegRem atual
     int nroRegRem;
     fread(&nroRegRem, sizeof(int), 1, file_bin_rw);
     
+    // Decrementa ou incrementa de acordo com a opção do usuário
     if (operation == '+'){
         nroRegRem += 1;
-        fwrite(&nroRegRem, sizeof(int), 1, file_bin_rw);
-
-        return 0;
     }
     else if (operation == '-'){
         nroRegRem -= 1;
-        fwrite(&nroRegRem, sizeof(int), 1, file_bin_rw);
+    }
+    else{
+        // Caso a operação enviada seja diferente de '+' ou '-'
+        printf("Operação '%c' enviada para update_nroRegRem inválida.\n", operation);
 
-        return 0;
+        // Retorna o ponteiro para a posição que estava no início da função
+        fseek(file_bin_rw, cur_offset, SEEK_SET);
+        return -2;
     }
 
-    // Caso a operação enviada seja diferente de '+' ou '-'
-    printf("Operação '%c' enviada para update_nroRegRem inválida.\n", operation);
+    // Escreve novo nroRegRem
+    fseek(file_bin_rw, -sizeof(int), SEEK_CUR);
+    fwrite(&nroRegRem, sizeof(int), 1, file_bin_rw);
 
-    return 1;
+    // Retorna o ponteiro para a posição que estava no início da função
+    fseek(file_bin_rw, cur_offset, SEEK_SET);
+
+    return 0;
 }
 
 int update_list(FILE *file_bin_rw, int f_type, long int new_value){
 
-    if (f_type != 1 && f_type != 2)
-        return -1;
-
+    long int cur_offset = ftell(file_bin_rw);
     int offset, size;
 
     offset = sizeof(char);
     if (f_type == 1) 
         size = sizeof(int);
-    else 
+    else if (f_type == 2) 
         size = sizeof(long int);
+    else{
+        // Retorna o ponteiro para a posição que estava no início da função
+        fseek(file_bin_rw, cur_offset, SEEK_SET);
+        return -1;
+    }
 
     // Atualiza o cabeçalho com o novo topo da pilha
     fseek(file_bin_rw, offset, SEEK_SET);
     fwrite(&new_value, size, 1, file_bin_rw);
+
+    // Retorna o ponteiro para a posição que estava no início da função
+    fseek(file_bin_rw, cur_offset, SEEK_SET);
 
     return 0;
 }
 
 int update_prox(FILE *file_bin_rw, int f_type, long int new_value){
 
-    if (f_type != 1 && f_type != 2)
-        return -1;
-
+    long int cur_offset = ftell(file_bin_rw);
     int offset, size;
 
     if (f_type == 1){ 
         size = sizeof(int);
         offset = HEADER_SIZE_TYPE1 - size;
-
     }
-    else{
+    else if (f_type == 2){
         size = sizeof(long int);
         offset = HEADER_SIZE_TYPE2 - size;
     }
+    else{
 
-    // Atualiza o cabeçalho com o novo topo da pilha
+        // Retorna o ponteiro para a posição que estava no início da função
+        fseek(file_bin_rw, cur_offset, SEEK_SET);
+
+        return -1;
+    }
+
+    // Atualiza o cabeçalho com o prox rrn ou byteoffset disponível
     fseek(file_bin_rw, offset, SEEK_SET);
     fwrite(&new_value, size, 1, file_bin_rw);
+
+    // Retorna o ponteiro para a posição que estava no início da função
+    fseek(file_bin_rw, cur_offset, SEEK_SET);
 
     return 0;
 }
@@ -732,6 +760,7 @@ long int get_prox(FILE *file_bin_rw, int f_type){
         fseek(file_bin_rw, offset, SEEK_SET);
         fread(&prox, sizeof(long int), 1, file_bin_rw); 
     }
+    else return -1;
 
     return prox;
 }
