@@ -99,6 +99,7 @@ Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices){
 
         I = create_index(f_type);
         I_list[rrn] = I;
+
         I_list = (Index *) realloc(I_list, (rrn+1)*sizeof(Index));
 
         (*n_indices) = rrn;
@@ -133,7 +134,7 @@ int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_t
     // antes de efetuar a escrita
     int n_indices = 0;
     Index *I_list = load_all_idx_from_bin(file_bin_r, f_type, &n_indices);
-    //quick_sort(I_list, 0, n_indices);
+    quick_sort(I_list, 0, n_indices-1);
     
     if (f_type == 1){
         
