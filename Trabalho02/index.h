@@ -40,7 +40,7 @@ int write_idx_in_bin_type2(FILE *file_idx_w, Index I);
 /*
  * Comment section
 */
-int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_type);
+int write_idx_file_from_bin(char *input_bin_filename, char *output_idx_filename, int f_type);
 
 /*
  * Comment section

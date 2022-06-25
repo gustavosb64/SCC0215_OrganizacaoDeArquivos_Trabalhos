@@ -140,14 +140,14 @@ int write_idx_in_bin_type2(FILE *file_idx_w, Index I){
     return 0;
 }
 
-int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_type){
+int write_idx_file_from_bin(char *input_bin_filename, char *output_idx_filename, int f_type){
 
     // Caso haja falha na leitura do arquivo, retorna 1
-    FILE *file_bin_r = fopen(input_filename, "rb");
+    FILE *file_bin_r = fopen(input_bin_filename, "rb");
     if (file_bin_r == NULL){
         return 1;
     }
-    FILE *file_idx_w = fopen(output_filename, "wb");
+    FILE *file_idx_w = fopen(output_idx_filename, "wb");
 
     write_idx_header(file_idx_w);
 
@@ -346,7 +346,8 @@ int set_status_idx(FILE *file_idx_rw, char status){
 
 Index* load_all_indices_from_idx(FILE *file_idx_r, int f_type, int *n_indices){
 
-    Index *I_list = (Index *) malloc(BUFFER*sizeof(Index));
+    //Index *I_list = (Index *) malloc(BUFFER*sizeof(Index));
+    Index *I_list = (Index *) malloc(10000000);
     Index I = create_index(f_type);
 
     int counter = 0;

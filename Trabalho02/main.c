@@ -1,84 +1,328 @@
+/*
+ * Alunos:
+ *  Gustavo Siqueira Barbosa, NºUSP 10728122
+ *  Luiz Fernando Silva Eugênio dos Santos, NºUSP 10892680
+ * Código do curso: SCC0215
+ * Ano/semestre: 2022/1º semestre
+ * Título: Primeiro Trabalho Prático
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include "./records_utils.h"
 #include "./reg_type1.h"
 #include "./reg_type2.h"
 #include "./index.h"
 
-struct vehicle{
-    char removido;      // indica se o registro está logicamente removido
-    int tamanhoRegistro;    // utilizado apenas por registros tipo 2
-    union{
-        int rrn;           // armazena o RRN do próximo registro (tipo 1)
-        long int offset;   // armazena o offset do próximo registro (tipo 2)
-    }prox;
-    int id;             // código identificador
-    int ano;            // ano de fabricação
-    int tamCidade;      // tamanho do campo cidade
-    char codC5;         // descrição simplificada do campo 5
-    char *cidade;       // nome da cidade
-    int qtt;            // quantidade de veículos
-    char *sigla;        // sigla do estado no qual o veículo está cadastrado
-    int tamMarca;       // tamanho do campo marca
-    char codC6;         // descrição simplificada do campo 5
-    char *marca;        // nome da marca
-    int tamModelo;      // tamanho do campo modelo
-    char codC7;         // descrição simplificada do campo 5
-    char *modelo;       // nome do modelo
-};
+void scan_quote_string(char *str) {
+
+	/*
+	*	Use essa função para ler um campo string delimitado entre aspas (").
+	*	Chame ela na hora que for ler tal campo. Por exemplo:
+	*
+	*	A entrada está da seguinte forma:
+	*		nomeDoCampo "MARIA DA SILVA"
+	*
+	*	Para ler isso para as strings já alocadas str1 e str2 do seu programa, você faz:
+	*		scanf("%s", str1); // Vai salvar nomeDoCampo em str1
+	*		scan_quote_string(str2); // Vai salvar MARIA DA SILVA em str2 (sem as aspas)
+	*
+	*/
+
+	char R;
+
+	while((R = getchar()) != EOF && isspace(R)); // ignorar espaços, \r, \n...
+
+	if(R == 'N' || R == 'n') { // campo NULO
+		getchar(); getchar(); getchar(); // ignorar o "ULO" de NULO.
+		strcpy(str, ""); // copia string vazia
+	} else if(R == '\"') {
+		if(scanf("%[^\"]", str) != 1) { // ler até o fechamento das aspas
+			strcpy(str, "");
+		}
+		getchar(); // ignorar aspas fechando
+	} else if(R != EOF){ // vc tá tentando ler uma string que não tá entre aspas! Fazer leitura normal %s então, pois deve ser algum inteiro ou algo assim...
+		str[0] = R;
+		scanf("%s", &str[1]);
+	} else { // EOF
+		strcpy(str, "");
+	}
+}
+
+/* Operação 1
+ * Executa as funções de escrita de registros em um arquivo binário 
+ * a partir de um arquivo csv. */
+void create_table_cmd(int f_type) {
+
+    // Delimitador utilizado na leitura da string
+    char aux_delimiters[1] = " ";
+
+    // Lê nomes dos arquivos
+    char *f_input_csv = readline(stdin, aux_delimiters);
+    char *f_output_bin = readline(stdin, aux_delimiters);
+
+    // Executa função de escrita
+    write_bin_from_csv(f_input_csv, f_output_bin, f_type);
+    binarioNaTela(f_output_bin);
+
+    free(f_input_csv);
+    free(f_output_bin);
+    return;
+}
+
+/* Operação 2
+ * Executa as funções de leitura de todos os registros a partir de 
+ * um arquivo binário */
+void select_full_cmd(int f_type) {
+    
+    // Delimitador utilizado na leitura da string
+    char aux_delimiters[1] = " ";
+    char *f_bin = readline(stdin, aux_delimiters);
+
+    // Caso a função retorne sinal de erro 1, exibir mensagem
+    if (read_all_reg_from_bin(f_bin, f_type))
+        printf("Falha no processamento do arquivo.\n");
+
+    free(f_bin);
+}
+
+/* Operação 3
+ * Executa as funções de leitura de todos os registros a partir de um 
+ * arquivo binário que cumpram determinados requisitos de filtragem */
+void select_where_cmd(int f_type) {
+
+    // Delimitador utilizado na leitura da string
+    char aux_delimiters[1] = " ";
+    char *f_bin = readline(stdin, aux_delimiters);
+
+    int n;
+    scanf("%d\n", &n);
+    char** conditions = malloc(n*sizeof(char*));
+
+    // Delimitador utilizado na leitura da string
+    aux_delimiters[0] = '\0';
+    char* line;
+    for (int i=0; i<n; i++) {
+        line = readline(stdin, aux_delimiters);
+        conditions[i] = line; //armazena as condições
+    }
+
+    // Executa funções de filtragem do arquivo binário
+    read_condition_reg_from_bin(f_bin, f_type, conditions, n);
+
+    for (int i=0; i<n; i++) {
+        free(conditions[i]);
+    }
+    free(conditions);
+    free(f_bin);
+}
+
+/* Operação 4
+ * Executa as funções de leitura de um registro a partir de um arquivo
+ * binário dado seu RRN */
+void select_rrn_cmd() {
+    
+    // Delimitador utilizado na leitura da string
+    char aux_delimiters[1] = " ";
+    char *f_bin = readline(stdin, aux_delimiters);
+    
+    int rrn;
+    scanf("%d", &rrn);
+    
+    // Exibe diferentes mensagens a depender dos sinais de erro retornados
+    switch(search_vehicle_rrn(f_bin, rrn)){
+        case 1:
+            printf("Falha no processamento do arquivo.\n");
+            break;
+
+        case 2:
+            printf("Registro inexistente.\n");
+            break;
+
+        default:
+            break;
+    }
+
+    free(f_bin);
+}
+
+/* Operação 5
+ * Create Table */
+void create_index_cmd(int f_type) {
+    // Delimitador utilizado na leitura da string
+    char aux_delimiters[1] = " ";
+
+    // Lê nomes dos arquivos
+    char *f_bin = readline(stdin, aux_delimiters);
+    char *f_idx = readline(stdin, aux_delimiters);
+
+    write_idx_file_from_bin(f_bin, f_idx, f_type);
+    binarioNaTela(f_idx);
+    
+    free(f_bin);
+    free(f_idx);
+}
+
+/* Operação 6
+ * Delete */
+void delete_cmd(int f_type) {
+    // Delimitador utilizado na leitura da string
+    char aux_delimiters[1] = " ";
+
+    // Lê nomes dos arquivos
+    char *f_bin = readline(stdin, aux_delimiters);
+    char *f_idx = readline(stdin, aux_delimiters);
+
+    int n;
+    scanf("%d\n", &n);
+
+    // Delimitador utilizado na leitura da string
+    aux_delimiters[0] = '\0';
+    char* line;
+    int x;
+    for (int i=0; i<n; i++) {
+        scanf("%d ", &x);
+        line = readline(stdin, aux_delimiters);
+        //delete(f_bin, f_type, f_idx, x, line);
+        free(line);
+    }
+
+    free(f_bin);
+    free(f_idx);
+}
+
+/* Operação 7
+ * Insert */
+void insert_cmd(int f_type) {
+    // Delimitador utilizado na leitura da string
+    char aux_delimiters[1] = " ";
+
+    // Lê nomes dos arquivos
+    char *f_bin = readline(stdin, aux_delimiters);
+    char *f_idx = readline(stdin, aux_delimiters);
+
+    int n;
+    scanf("%d\n", &n);
+
+    // Delimitador utilizado na leitura da string
+    char* line;
+    int id;
+    int ano;
+    int qtt;
+    char* sigla = malloc(3*sizeof(char));
+    char* cidade = malloc(30*sizeof(char));
+    char* marca = malloc(30*sizeof(char));
+    char* modelo = malloc(30*sizeof(char));
+    for (int i=0; i<n; i++) {
+        scanf("%d %d %d ", &id, &ano, &qtt);
+        scan_quote_string(sigla);
+        scan_quote_string(cidade);
+        scan_quote_string(marca);
+        scan_quote_string(modelo);
+
+        //add_new_reg(f_bin, f_type, f_idx, id, ano, qtt, sigla, cidade, marca, modelo);
+    }
+
+    
+    free(sigla);
+    free(cidade);
+    free(marca);
+    free(modelo);
+    free(f_bin);
+    free(f_idx);
+}
+
+/* Operação 8
+ * Update */
+void update_cmd(int f_type) {
+    // Delimitador utilizado na leitura da string
+    char aux_delimiters[1] = " ";
+
+    // Lê nomes dos arquivos
+    char *f_bin = readline(stdin, aux_delimiters);
+    char *f_idx = readline(stdin, aux_delimiters);
+
+    int n;
+    scanf("%d\n", &n);
+
+    // Delimitador utilizado na leitura da string
+    aux_delimiters[0] = '\0';
+    char* line;
+    int x;
+    for (int i=0; i<n; i++) {
+        scanf("%d ", &x);
+        line = readline(stdin, aux_delimiters);
+        //update(f_bin, f_type, f_idx, x, line);
+        free(line);
+    }
+
+    free(f_bin);
+    free(f_idx);
+}
+
+
 
 int main(int argc, char *argv[]){
 
-    int f_type = 2;
-//    write_bin_from_csv("../Trabalho01/arquivoEntrada2.csv", "csv_binario2.bin", f_type);
-//    test_remove_reg_type1(f_type);
-    write_idx_file_from_bin( "./antes/binario4.bin", "indices4.bin", f_type);
-    binarioNaTela("indices4.bin");
-    /*
-    read_all_indices_from_idx("indices1.bin", f_type);
-    */
-//    write_idx_file_from_bin( "./antes/binario2.bin", "indices2.bin", f_type);
-//    read_all_indices_from_idx("indices2.bin", f_type);
-
-//    Vehicle V = initialize_vehicle(f_type);
-
-//    FILE *file_bin_r = fopen("./binario1.bin", "rb");
-//    add_new_reg("./binario1.bin", f_type, "./indices1.bin", 2022, 1982, 87, "AP", "Macapá", "Transformers", "bumblepee");
-
-//    read_all_reg_from_bin("./binario1.bin", f_type);
-
-//    printf("topo: %ld\n", get_list_top(file_bin_r, f_type));
-//    fclose(file_bin_r);
-    //write_idx_file_from_bin("./antes/binario5.bin", "indices5.bin", f_type);
-    //read_all_indices_from_idx("indices1.bin", f_type);
-
-    //int rrn = search_index_from_idx("./meu_indice5.bin", 555, f_type);
-    //printf("rrn: %d\n\n",rrn);
-
-    /*
-    FILE *file_bin_r = fopen("./meu_binario5.bin", "rb");
-    read_all_reg_from_bin("./depois/binario5.bin", f_type);
-    read_reg_from_bin_type1(file_bin_r, &V, rrn);
-    print_vehicle_full(V, f_type);
+    // Lendo os respectivos inputs do stdin
+    int operation;
+    scanf("%d\n", &operation);
+    
+    // Delimitador utilizado na leitura da string
+    char aux_delimiters[1] = " ";
+    char *f_type_str = readline(stdin, aux_delimiters);
+    int f_type = f_type_str[strlen(f_type_str)-1] - '0';
 
 
-    printf("###########\n");
+    // Executa as diferentes operações
+    switch(operation) {
+        case 1: {
+            create_table_cmd(f_type);
+            break;
+        }
 
-    read_all_indices_from_idx("indices1.bin", f_type);
+        case 2: {
+            select_full_cmd(f_type);
+            break;
+        }
 
-    printf("%d\n",search_index_from_idx("indices1.bin", 313, 1));
-    printf("###########\n");
+        case 3: {
+            select_where_cmd(f_type);
+            break;
+        }
 
-    FILE *file_bin_r = fopen("binario1.bin", "rb");
+        case 4: {
+            select_rrn_cmd();
+            break;
+        }
+        
+        case 5: {
+            create_index_cmd(f_type);
+            break;
+        }
+        
+        case 6: {
+            delete_cmd(f_type);
+            break;
+        }
+        
+        case 7: {
+            insert_cmd(f_type);
+            break;
+        }
 
-    read_all_reg_from_bin("binario1.bin", f_type);
-    read_reg_from_bin_type1(file_bin_r, &V, 999);
+        case 8: {
+            update_cmd(f_type);
+            break;
+        }
+        
+        default: {
+            break;
+        }
+    }
 
-    print_vehicle_full(V, f_type);
-    */
-
-//    add_new_reg(f_type, "binario1_teste.bin", "indices1.bin", 1001, 2001, 123, "RS", "Porto Alegre", "Chevrolet", "Agile");
-
-//    read_all_reg_from_bin("binario1_teste.bin", f_type);
+    free(f_type_str);
     return 0;
 }

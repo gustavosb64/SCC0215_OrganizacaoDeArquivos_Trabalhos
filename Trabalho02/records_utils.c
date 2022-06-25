@@ -599,7 +599,9 @@ int add_new_reg(char *input_bin_name, int f_type, char *input_idx_name, int id, 
     if (f_type == 1){
         int rrn;
         add_new_reg_type1(file_bin_rw, V, &rrn);
-        add_new_index_type1(file_idx_rw, V.id, rrn);
+
+//        write_idx_file_from_bin(input_bin_name, input_idx_name, f_type);
+//        add_new_index_type1(file_idx_rw, V.id, rrn);
 //        refresh_idx(input_idx_name, f_type);
 //        add_new_index(
     }
@@ -607,6 +609,9 @@ int add_new_reg(char *input_bin_name, int f_type, char *input_idx_name, int id, 
     // Setando status para consistente
     set_status_bin(file_bin_rw, '1');
     set_status_idx(file_idx_rw, '1');
+
+    fclose(file_bin_rw);
+    fclose(file_idx_rw);
 
     return 0;
 }
