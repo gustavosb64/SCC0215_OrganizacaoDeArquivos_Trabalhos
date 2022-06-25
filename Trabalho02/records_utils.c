@@ -123,7 +123,7 @@ int write_header(FILE *file_header_w, int f_type){
      *  Não se pode atribuir diretamente uma string a vetores de caracteres;
      *  porém, é possível declarar o vetor char já inicializado com a string desejada.
      *  Inicializando através da struct, não seria possível atribuir as strings diretamente aos seus componentes */
-    char status = '1';
+    char status = '0';
 
     int topo_t1 = -1;      //usado em arquivo tipo 1
     long int topo_t2 = -1; //usado em arquivo tipo 2
@@ -179,16 +179,6 @@ int read_all_reg_from_bin(char *filename_in_bin, int f_type){
 
     // Realiza diferentes rotinas a depender do tipo a ser lido
     if (f_type == 1){
-
-        // Caractere auxiliar para verificar se o primeiro byte a ser lido se
-        // refere a um registro. Retorna sinal de erro 1 caso não seja
-        char c_aux;
-        fread(&c_aux, sizeof(char), 1, file_bin_r);
-        if (c_aux == '0'){
-            fclose(file_bin_r);
-            return 1;
-        }
-        fseek(file_bin_r,0,SEEK_SET);
 
         int rrn = 0;
 
@@ -278,13 +268,11 @@ int read_reg_from_csv(FILE *file_csv_r, Vehicle *V){
 int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type){
 
     // Caso haja falha na leitura do arquivo, retorna 1
-    FILE *file_csv_r = fopen(filename_in_csv, "rb");
+    FILE *file_csv_r = fopen(filename_in_csv, "r");
     if (file_csv_r == NULL){
         return 1;
     }
     FILE *file_bin_w = fopen(filename_out_bin, "wb");
-
-    set_status_bin(file_bin_w, '0');
 
     write_header(file_bin_w, f_type);
     
@@ -298,46 +286,40 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
     if (f_type == 1){
 
         // Contador de RRN, usado para marcar o próximo RRN no cabeçalho
-        int rrn_counter = 1;
+        int rrn_counter = 0;
 
         // Enquanto ainda houverem dados a serem lidos
         while(!read_reg_from_csv(file_csv_r, &V)){
 
             // Escrevendo o registro 
             write_reg_in_bin_type1(file_bin_w, &V);
-            free_vehicle(&V);
 
             // Preparando um novo registro a ser escrito
+            free_vehicle(&V);
             V = initialize_vehicle(1);
 
-            // Atualizando proxRRN no cabeçalho
-            fseek(file_bin_w, 174, SEEK_SET);
-            fwrite(&rrn_counter, sizeof(int), 1, file_bin_w);
-            fseek(file_bin_w, 0, SEEK_END);
             rrn_counter++; 
         }
+
+        // Atualizando proxRRN no cabeçalho
+        update_prox(file_bin_w, 1, rrn_counter);
 
     }
     else if (f_type == 2){
 
-        // Armazena o byte offset atual para atualizar o header 
-        long int cur_prox_offset = ftell(file_bin_w);
         while(!read_reg_from_csv(file_csv_r, &V)){
 
             // Escrevendo o registro 
             write_reg_in_bin_type2(file_bin_w, &V);
 
-            // Atualizando proxByteOffset no cabeçalho
-            cur_prox_offset = ftell(file_bin_w);
-            fseek(file_bin_w, 178, SEEK_SET);
-            fwrite(&cur_prox_offset, sizeof(long int), 1, file_bin_w);
-            fseek(file_bin_w, 0, SEEK_END);
-
-            free_vehicle(&V);
-
             // Preparando um novo registro a ser escrito
+            free_vehicle(&V);
             V = initialize_vehicle(2);
         }
+
+        // Atualizando proxByteOffset no cabeçalho
+        long int cur_prox_offset = ftell(file_bin_w);
+        update_prox(file_bin_w, 2, cur_prox_offset);
     }
     
     set_status_bin(file_bin_w, '1');
@@ -617,7 +599,7 @@ int add_new_reg(char *input_bin_name, int f_type, char *input_idx_name, int id, 
     if (f_type == 1){
         int rrn;
         add_new_reg_type1(file_bin_rw, V, &rrn);
-        add_new_index(file_idx_r, V, rrn);
+        add_new_index_type1(file_idx_rw, V.id, rrn);
 //        refresh_idx(input_idx_name, f_type);
 //        add_new_index(
     }
@@ -707,11 +689,13 @@ int update_prox(FILE *file_bin_rw, int f_type, long int new_value){
 
     if (f_type == 1){ 
         size = sizeof(int);
-        offset = HEADER_SIZE_TYPE1 - size;
+        int end_offset = 2*sizeof(int);
+        offset = HEADER_SIZE_TYPE1 - end_offset;
     }
     else if (f_type == 2){
         size = sizeof(long int);
-        offset = HEADER_SIZE_TYPE2 - size;
+        int end_offset = sizeof(int) + sizeof(long int) - 1;
+        offset = HEADER_SIZE_TYPE2 - end_offset;
     }
     else{
 

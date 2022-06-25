@@ -95,7 +95,7 @@ int search_index_from_idx(char *input_idx_filename, int key_id, int f_type);
 /*
  * Comment section
 */
-int refresh_idx(char *bin_filename, char *idx_filename, int f_type);
+int add_new_index_type1(FILE *file_idx_rw, int id, int rrn);
 
 
 #endif

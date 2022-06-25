@@ -71,18 +71,6 @@ Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices){
     // Realiza diferentes rotinas a depender do tipo a ser lido
     if (f_type == 1){
 
-        /*
-        // Caractere auxiliar para verificar se o primeiro byte a ser lido se
-        // refere a um registro. Retorna caso não seja
-        char c_aux;
-        fread(&c_aux, sizeof(char), 1, file_bin_r);
-        if (c_aux == '0'){
-            fclose(file_bin_r);
-            return NULL;
-        }
-        fseek(file_bin_r,0,SEEK_SET);
-        */
-
         // Enquanto ainda houverem registros a serem lidos no arquivo de dados
         while(!read_id_from_reg_type1(file_bin_r, &id, counter)){
 
@@ -412,6 +400,7 @@ int binary_search_idx(Index *I_list, int key, int ini, int fim) {
 	if (key > I_list[c].id)  
 		return binary_search_idx(I_list, key, c+1, fim);
 
+    return -2;
 }
 
 int search_index_from_idx(char *input_idx_filename, int key_id, int f_type){
@@ -427,9 +416,32 @@ int search_index_from_idx(char *input_idx_filename, int key_id, int f_type){
     return binary_search_idx(I_list, key_id, 0, n_indices-1);
 }
 
-int add_new_index1(FILE *file_idx_r, Vehicle V, int rrn){
+// POSSÍVEL PROBLEMA: 
+//  arquivo aberto com modo rb+, sendo que, após a leitura, deve ser sobrescrito
+//  como esta função apenas adiciona, não dá problema, mas para o delete, sim
+int add_new_index_type1(FILE *file_idx_rw, int id, int rrn){
 
-    write_idx_file_from_bin(bin_filename, idx_filename, f_type);
+    int n_indices;
+    Index *I_list = load_all_indices_from_idx(file_idx_rw, 1, &n_indices);
+
+    Index I_new = create_index(1);
+    I_new.id = id;
+    I_new.idx.rrn = rrn;
+
+    I_list = (Index *) realloc(I_list, (sizeof(Index) * n_indices) + sizeof(Index));
+    I_list[n_indices] = I_new;
+
+    quick_sort(I_list, 0, n_indices);
+
+    int i = 0;
+    Index I = I_list[i];
+
+    while(I.id != -1){
+
+        write_idx_in_bin_type1(file_idx_rw, I);
+
+        I = I_list[++i]; 
+    }
 
     return 0;
 }
