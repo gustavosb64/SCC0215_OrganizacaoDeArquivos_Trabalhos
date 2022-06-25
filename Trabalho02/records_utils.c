@@ -8,7 +8,7 @@
 #include "./index.h"
 
 #define HEADER_SIZE_TYPE1 182
-#define HEADER_SIZE_TYPE2 189
+#define HEADER_SIZE_TYPE2 190
 struct header{
     char status;        // consistência do arquivo
     union{
@@ -199,7 +199,7 @@ int read_all_reg_from_bin(char *filename_in_bin, int f_type){
     }
     else if (f_type == 2){
 
-        long int offset = HEADER_SIZE_TYPE2 + 1;
+        long int offset = HEADER_SIZE_TYPE2;
 
         // Enquanto ainda houverem registros a serem lidos no arquivo de dados
         while(!read_reg_from_bin_type2(file_bin_r, &V, &offset)){
@@ -439,7 +439,7 @@ int read_condition_reg_from_bin(char *filename_in_bin, int f_type, char** condit
     }
     else if (f_type == 2){
 
-        long int offset = HEADER_SIZE_TYPE2 + 1;
+        long int offset = HEADER_SIZE_TYPE2;
 
         // Enquanto ainda houverem registros a serem lidos no arquivo de dados
         while(!read_reg_from_bin_type2(file_bin_r, &V, &offset)){
@@ -694,7 +694,7 @@ int update_prox(FILE *file_bin_rw, int f_type, long int new_value){
     }
     else if (f_type == 2){
         size = sizeof(long int);
-        int end_offset = sizeof(int) + sizeof(long int) - 1;
+        int end_offset = sizeof(int) + sizeof(long int);
         offset = HEADER_SIZE_TYPE2 - end_offset;
     }
     else{

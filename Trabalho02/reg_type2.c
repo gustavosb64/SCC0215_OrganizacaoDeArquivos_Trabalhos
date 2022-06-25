@@ -5,7 +5,7 @@
 #include "./records_utils.h"
 #include "./index.h"
 
-#define HEADER_SIZE_TYPE2 189
+#define HEADER_SIZE_TYPE2 190
 #define TYPE 2
 struct header{
     char status;        // consistência do arquivo
@@ -294,6 +294,12 @@ int read_id_from_reg_type2(FILE *file_bin_r, int *id, long int *offset){
     // Caso o registro esteja removido, retorna 
     if (is_removed == '1'){
         (*id) = -1;
+
+        // Atualizando offset
+        int tam_registro;
+        fread(&tam_registro, sizeof(int), 1, file_bin_r);
+        (*offset) += tam_registro + sizeof(int) + sizeof(char);
+
         return 0;
     }
 

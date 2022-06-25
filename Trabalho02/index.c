@@ -4,11 +4,10 @@
 #include "./reg_type1.h"
 #include "./reg_type2.h"
 #include "./index.h"
-#include "./lista_encadeada.h"
 
 #define MAX_RRN 97
 #define REG_HEADER_SIZE_TYPE1 182
-#define REG_HEADER_SIZE_TYPE2 189
+#define REG_HEADER_SIZE_TYPE2 190
 #define BUFFER 4096
 
 struct idxHeader{
@@ -93,7 +92,7 @@ Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices){
 
     else if (f_type == 2){
 
-        long int new_offset = REG_HEADER_SIZE_TYPE2 + 1;
+        long int new_offset = REG_HEADER_SIZE_TYPE2;
         long int offset = new_offset;
 
         // Enquanto ainda houverem registros a serem lidos no arquivo de dados

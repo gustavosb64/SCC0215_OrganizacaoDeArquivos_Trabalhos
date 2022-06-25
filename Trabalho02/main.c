@@ -4,7 +4,6 @@
 #include "./reg_type1.h"
 #include "./reg_type2.h"
 #include "./index.h"
-#include "./lista_encadeada.h"
 
 struct vehicle{
     char removido;      // indica se o registro está logicamente removido
@@ -31,16 +30,17 @@ struct vehicle{
 int main(int argc, char *argv[]){
 
     int f_type = 2;
-    write_bin_from_csv("../Trabalho01/arquivoEntrada2.csv", "csv_binario2.bin", f_type);
+//    write_bin_from_csv("../Trabalho01/arquivoEntrada2.csv", "csv_binario2.bin", f_type);
 //    test_remove_reg_type1(f_type);
+    write_idx_file_from_bin( "./antes/binario4.bin", "indices4.bin", f_type);
+    binarioNaTela("indices4.bin");
     /*
-    write_idx_file_from_bin( "./antes/binario1.bin", "indices1.bin", f_type);
     read_all_indices_from_idx("indices1.bin", f_type);
     */
 //    write_idx_file_from_bin( "./antes/binario2.bin", "indices2.bin", f_type);
 //    read_all_indices_from_idx("indices2.bin", f_type);
 
-    Vehicle V = initialize_vehicle(f_type);
+//    Vehicle V = initialize_vehicle(f_type);
 
 //    FILE *file_bin_r = fopen("./binario1.bin", "rb");
 //    add_new_reg("./binario1.bin", f_type, "./indices1.bin", 2022, 1982, 87, "AP", "Macapá", "Transformers", "bumblepee");
