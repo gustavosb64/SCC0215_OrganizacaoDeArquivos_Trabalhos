@@ -346,19 +346,18 @@ int print_reg_from_bin_by_rrn(char *filename, int rrn){
     return 0;
 }
 
-int add_new_reg_type1(FILE *file_bin_rw, Vehicle V){
+int add_new_reg_type1(FILE *file_bin_rw, Vehicle V, int *rrn){
 
-    int rrn;
     int flag_stack = 0;
 
-    rrn = get_list_top(file_bin_rw, TYPE);
+    (*rrn) = get_list_top(file_bin_rw, TYPE);
 
-    if (rrn == -1)
-        rrn = get_prox(file_bin_rw, TYPE);
+    if ((*rrn) == -1)
+        (*rrn) = get_prox(file_bin_rw, TYPE);
     else 
         flag_stack = 1;
 
-    long int offset = rrn*MAX_RRN + HEADER_SIZE_TYPE1;
+    long int offset = (*rrn)*MAX_RRN + HEADER_SIZE_TYPE1;
     fseek(file_bin_rw, offset, SEEK_SET);
 
     if (flag_stack){
@@ -382,8 +381,8 @@ int add_new_reg_type1(FILE *file_bin_rw, Vehicle V){
     write_reg_in_bin_type1(file_bin_rw, &V);
 
     if (!flag_stack){
-        rrn++;
-        update_prox(file_bin_rw, TYPE, rrn);
+        (*rrn)++;
+        update_prox(file_bin_rw, TYPE, (*rrn));
     }
 
     return 0;

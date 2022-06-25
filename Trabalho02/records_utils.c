@@ -615,7 +615,9 @@ int add_new_reg(char *input_bin_name, int f_type, char *input_idx_name, int id, 
     set_status_idx(file_idx_rw, '0');
 
     if (f_type == 1){
-        add_new_reg_type1(file_bin_rw, V);
+        int rrn;
+        add_new_reg_type1(file_bin_rw, V, &rrn);
+        add_new_index(file_idx_r, V, rrn);
 //        refresh_idx(input_idx_name, f_type);
 //        add_new_index(
     }

@@ -288,25 +288,19 @@ int read_id_from_reg_type2(FILE *file_bin_r, int *id, long int *offset){
     // Caso não haja mais registros a serem lidos, retorna sinal de erro 3
     char is_removed;
     if (!fread(&is_removed, sizeof(char), 1, file_bin_r)){
-        printf("falha");
         return 2;
     }
-//    printf("is_removed: %d\n",is_removed);
 
     // Caso o registro esteja removido, retorna 
     if (is_removed == '1'){
-//        printf("removed");
         (*id) = -1;
         return 0;
     }
 
     // Atualizando offset
-//    fseek(file_bin_r, offset + sizeof(char), SEEK_SET);
     int tam_registro;
     fread(&tam_registro, sizeof(int), 1, file_bin_r);
-//    printf("tam_reg: %d\n", tam_registro);
     (*offset) += tam_registro + sizeof(int) + sizeof(char);
-//    printf("offset: %ld\n", *offset);
 
     // Posicionando cursor no ID
     fseek(file_bin_r, sizeof(long int), SEEK_CUR);

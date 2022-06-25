@@ -207,12 +207,12 @@ int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_t
     return 0;
 }
 
-int read_idx_type1(FILE *file_idx_r, Index *I, int idx_rrn){
+int read_idx_type1(FILE *file_idx_r, Index *I, int idx_counter){
 
     // Posicionando o ponteiro no índice a ser lido. Como o arquivo de índices
-    // possui registros de tamanho fixo, podemos utilizar um idx_rrn
+    // possui registros de tamanho fixo, podemos utilizar um idx_counter
     int size_index = 2*sizeof(int);
-    long int offset = sizeof(char) + idx_rrn*size_index;
+    long int offset = sizeof(char) + idx_counter*size_index;
     fseek(file_idx_r, offset, SEEK_SET);
 
     // Lê ID do registro indicado por rrn
@@ -222,6 +222,25 @@ int read_idx_type1(FILE *file_idx_r, Index *I, int idx_rrn){
     }
 
     fread(&(*I).idx.rrn, sizeof(int), 1, file_idx_r);
+
+    return 0;
+}
+
+int read_idx_type2(FILE *file_idx_r, Index *I, int idx_counter){
+
+    // Posicionando o ponteiro no índice a ser lido. Como o arquivo de índices
+    // possui registros de tamanho fixo, podemos utilizar um idx_counter
+    int size_index = sizeof(int) + sizeof(long int);
+    long int offset = sizeof(char) + idx_counter*size_index;
+    fseek(file_idx_r, offset, SEEK_SET);
+
+    // Lê ID do registro indicado por rrn
+    // Caso não haja mais registros a serem lidos, retorna sinal de erro 1
+    if (!fread(&(*I).id, sizeof(int), 1, file_idx_r)){
+        return 1;
+    }
+
+    fread(&(*I).idx.byteoffset, sizeof(long int), 1, file_idx_r);
 
     return 0;
 }
@@ -255,6 +274,7 @@ int read_all_indices_from_idx(char *input_filename, int f_type){
     return 0;
 }
 
+/* AUTOTAD_PRIVATE
 int search_index_from_idx(char *input_filename, int src_id, int f_type){
 
     FILE *file_idx_r = fopen(input_filename, "rb");
@@ -281,6 +301,7 @@ int search_index_from_idx(char *input_filename, int src_id, int f_type){
 
     return -1;
 }
+*/
 
 void print_index(Index I, int f_type){
     
@@ -336,30 +357,77 @@ int set_status_idx(FILE *file_idx_rw, char status){
     return 0;
 }
 
-Index* load_all_indices_from_idx(FILE *file_idx_r, int f_type){
+Index* load_all_indices_from_idx(FILE *file_idx_r, int f_type, int *n_indices){
 
     Index *I_list = (Index *) malloc(BUFFER*sizeof(Index));
     Index I = create_index(f_type);
 
+    int counter = 0;
+
     // Realiza diferentes rotinas a depender do tipo a ser lido
     if (f_type == 1){
         
-        int rrn = 0;
-        while(!read_idx_type1(file_idx_r, &I, rrn)){
+        while(!read_idx_type1(file_idx_r, &I, counter)){
 
-            if (rrn*sizeof(Index) % (BUFFER * sizeof(Index)) == 0) 
-                I_list = (Index *) realloc(I_list, (rrn / (BUFFER*sizeof(Index)) + 1) * BUFFER*sizeof(Index));
+            if (counter*sizeof(Index) % (BUFFER * sizeof(Index)) == 0) 
+                I_list = (Index *) realloc(I_list, (counter / (BUFFER*sizeof(Index)) + 1) * BUFFER*sizeof(Index));
 
-            I_list[rrn] = I;
-            rrn++;
+            I_list[counter] = I;
+            counter++;
         }
 
     }
 
+    else if (f_type == 2){
+
+        while(!read_idx_type2(file_idx_r, &I, counter)){
+
+            if (counter*sizeof(Index) % (BUFFER * sizeof(Index)) == 0) 
+                I_list = (Index *) realloc(I_list, (counter / (BUFFER*sizeof(Index)) + 1) * BUFFER*sizeof(Index));
+
+            I_list[counter] = I;
+            counter++;
+        }
+
+    }
+
+    (*n_indices) = counter;
+
     return I_list;
 }
 
-int refresh_idx(char *bin_filename, char *idx_filename, int f_type){
+int binary_search_idx(Index *I_list, int key, int ini, int fim) {
+	
+	// caso base 1
+	if (ini > fim) return -1;	
+
+	// calcula ponto central e verifica se key foi encontrada
+	int c = (int)((ini+fim)/2);  
+
+	// caso base 2
+	if (I_list[c].id == key) return c;   
+
+	if (key < I_list[c].id) 	      
+		return binary_search_idx(I_list, key, ini, c-1); 
+	if (key > I_list[c].id)  
+		return binary_search_idx(I_list, key, c+1, fim);
+
+}
+
+int search_index_from_idx(char *input_idx_filename, int key_id, int f_type){
+
+    FILE *file_idx_r = fopen("input_idx_filename", "rb");
+    if (file_idx_r == NULL){
+        return -1;
+    }
+
+    int n_indices;
+    Index *I_list = load_all_indices_from_idx(file_idx_r, f_type, &n_indices);
+
+    return binary_search_idx(I_list, key_id, 0, n_indices-1);
+}
+
+int add_new_index1(FILE *file_idx_r, Vehicle V, int rrn){
 
     write_idx_file_from_bin(bin_filename, idx_filename, f_type);
 
