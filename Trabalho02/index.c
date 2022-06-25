@@ -45,7 +45,7 @@ int write_idx_header(FILE *file_idx_w){
 /* AUTOTAD_PRIVATE
 int read_id_from_reg_type1(FILE *file_bin_r, Index *I, int rrn){
     
-    // Colocando o ponteiro do arquivo no ID do registro a ser buscado
+    //Colocando o ponteiro do arquivo no ID do registro a ser buscado
     long int id_offset = MAX_RRN*rrn + REG_HEADER_SIZE_TYPE1 + sizeof(char)+sizeof(int);
     fseek(file_bin_r, id_offset, SEEK_SET);
 
@@ -65,46 +65,74 @@ Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices){
     Index *I_list = (Index *) malloc(BUFFER*sizeof(Index));
     Index I = create_index(f_type);
 
+    int counter = 0;
+    int id = -1;
+
     // Realiza diferentes rotinas a depender do tipo a ser lido
     if (f_type == 1){
 
-        // Caractere auxiliar para verificar se o primeiro byte a ser lido se
-        // refere a um registro. Retorna sinal de erro 1 caso não seja
         /*
+        // Caractere auxiliar para verificar se o primeiro byte a ser lido se
+        // refere a um registro. Retorna caso não seja
         char c_aux;
         fread(&c_aux, sizeof(char), 1, file_bin_r);
         if (c_aux == '0'){
             fclose(file_bin_r);
-            return 1;
+            return NULL;
         }
         fseek(file_bin_r,0,SEEK_SET);
         */
 
-        int rrn = 0;
-        int id = -1;
-
         // Enquanto ainda houverem registros a serem lidos no arquivo de dados
-        while(!read_id_from_reg_type1(file_bin_r, &id, rrn)){
+        while(!read_id_from_reg_type1(file_bin_r, &id, counter)){
 
-            // Atribuindo valores a um índice
-            I.id = id;
-            I.idx.rrn = rrn;
+            if (id != -1){
+                
+                // Atribuindo valores a um índice
+                I.id = id;
+                I.idx.rrn = counter;
 
-            if (rrn*sizeof(Index) % (BUFFER * sizeof(Index)) == 0) 
-                I_list = (Index *) realloc(I_list, (rrn / (BUFFER*sizeof(Index)) + 1) * BUFFER*sizeof(Index));
+                if (counter*sizeof(Index) % (BUFFER * sizeof(Index)) == 0) 
+                    I_list = (Index *) realloc(I_list, (counter / (BUFFER*sizeof(Index)) + 1) * BUFFER*sizeof(Index));
+                
+                I_list[counter] = I;
+            }
 
-            I_list[rrn] = I;
-            rrn++;
+            counter++;
         }
 
-        I = create_index(f_type);
-        I_list[rrn] = I;
-
-        I_list = (Index *) realloc(I_list, (rrn+1)*sizeof(Index));
-
-        (*n_indices) = rrn;
     }
-//    PrintList(IndexList);
+
+    else if (f_type == 2){
+
+        long int new_offset = REG_HEADER_SIZE_TYPE2 + 1;
+        long int offset = new_offset;
+
+        // Enquanto ainda houverem registros a serem lidos no arquivo de dados
+        while(!read_id_from_reg_type2(file_bin_r, &id, &new_offset)){
+
+            if (id != -1){
+                
+                // Atribuindo valores a um índice
+                I.id = id;
+                I.idx.byteoffset = offset;
+
+                if (counter*sizeof(Index) % (BUFFER * sizeof(Index)) == 0) 
+                    I_list = (Index *) realloc(I_list, (counter / (BUFFER*sizeof(Index)) + 1) * BUFFER*sizeof(Index));
+                
+                I_list[counter] = I;
+            }
+            counter++;
+            offset = new_offset;
+        }
+    }
+
+    I = create_index(f_type);
+    I_list[counter] = I;
+
+    I_list = (Index *) realloc(I_list, (counter+1)*sizeof(Index));
+
+    (*n_indices) = counter;
 
     return I_list;
 }
@@ -117,6 +145,14 @@ int write_idx_in_bin_type1(FILE *file_idx_w, Index I){
     return 0;
 }
 
+int write_idx_in_bin_type2(FILE *file_idx_w, Index I){
+
+    fwrite(&(I.id), sizeof(int), 1, file_idx_w);
+    fwrite(&(I.idx.byteoffset), sizeof(long int), 1, file_idx_w);
+
+    return 0;
+}
+
 int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_type){
 
     // Caso haja falha na leitura do arquivo, retorna 1
@@ -125,8 +161,6 @@ int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_t
         return 1;
     }
     FILE *file_idx_w = fopen(output_filename, "wb");
-
-    set_status_idx(file_idx_w, '0');
 
     write_idx_header(file_idx_w);
 
@@ -149,8 +183,22 @@ int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_t
         }
         
     }
+    else if (f_type == 2){
 
-    set_status_idx(file_idx_w, '1');
+        int i = 0;
+        Index I = I_list[i]; 
+
+        while(I.id != -1){
+
+            //print_index(I,2);
+            write_idx_in_bin_type2(file_idx_w, I);
+
+            I = I_list[++i]; 
+        }
+    }
+
+    // Setando o status para consistente
+    set_status_idx(file_idx_w,'1');
 
     fclose(file_bin_r);
     fclose(file_idx_w);
@@ -195,7 +243,7 @@ int read_all_indices_from_idx(char *input_filename, int f_type){
         while(!read_idx_type1(file_idx_r, &I, idx_rrn)){
             
             //print_reg_from_bin_by_rrn("binario1_teste.bin", I.idx.rrn);
-            print_index(I, 1);
+            //print_index(I, 1);
             I = create_index(f_type);
             idx_rrn++;
         }
@@ -311,33 +359,9 @@ Index* load_all_indices_from_idx(FILE *file_idx_r, int f_type){
     return I_list;
 }
 
-int add_new_index(char *index_filename, int f_type, Index I_new){
+int refresh_idx(char *bin_filename, char *idx_filename, int f_type){
 
-    if (f_type != 1 && f_type != 2) 
-        return -1;
-
-    FILE *file_idx_r = fopen(index_filename, "rb");
-    if (file_idx_r == NULL){
-        return -2;
-    }
-
-    // ADICIONAR O NOVO INDICE E ORDENAR
-    Index *I_list = load_all_indices_from_idx(file_idx_r, f_type);
-    Index I = I_list[0];
-
-    fclose(file_idx_r);
-
-    //sort_idx
-
-    int i = 0;
-    FILE *file_idx_w = fopen(index_filename, "wb");
-
-    while(I.id != -1){
-
-        write_idx_in_bin_type1(file_idx_w, I);
-
-        I = I_list[++i]; 
-    }
+    write_idx_file_from_bin(bin_filename, idx_filename, f_type);
 
     return 0;
 }

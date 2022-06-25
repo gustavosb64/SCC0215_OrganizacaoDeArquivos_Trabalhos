@@ -217,26 +217,6 @@ int read_reg_from_bin_type2(FILE *file_bin_r, Vehicle *V, long int *offset){
 
 }
 
-int read_id_from_reg_type2(FILE *file_bin_r, int *id, long int *offset){
-    
-    // Colocando o ponteiro do arquivo no ID do registro a ser buscado
-    long int id_offset = (*offset) + HEADER_SIZE_TYPE2 + sizeof(int);
-
-    fseek(file_bin_r, id_offset, SEEK_SET);
-
-    int tam_registro = 0;
-    // Lê o novo tam_registro e atualiza o offset
-    // Caso não haja mais registros a serem lidos, retorna sinal de erro 1
-    if (!fread(&tam_registro, sizeof(long int), 1, file_bin_r)) 
-        return 1;
-    (*offset) += tam_registro;
-
-    // Lê ID do registro indicado por rrn
-    fread(&(*id), sizeof(int), 1, file_bin_r);
-
-    return 0;
-}
-
 int add_new_reg_type2(FILE *file_bin_rw, Vehicle V){
 
     long int offset;
@@ -289,6 +269,50 @@ int add_new_reg_type2(FILE *file_bin_rw, Vehicle V){
         offset += V.tamanhoRegistro + sizeof(char) + sizeof(int) + 1;
         update_prox(file_bin_rw, TYPE, offset);
     }
+
+    return 0;
+}
+
+int read_id_from_reg_type2(FILE *file_bin_r, int *id, long int *offset){
+    
+    // Caso o arquivo de registros não esteja consistente
+    /*
+    if (get_status(file_bin_r) != '1'){
+        return 1;
+    }
+        */
+
+    // Colocando o ponteiro do arquivo no registro a ser buscado
+    fseek(file_bin_r, (*offset), SEEK_SET);
+
+    // Caso não haja mais registros a serem lidos, retorna sinal de erro 3
+    char is_removed;
+    if (!fread(&is_removed, sizeof(char), 1, file_bin_r)){
+        printf("falha");
+        return 2;
+    }
+//    printf("is_removed: %d\n",is_removed);
+
+    // Caso o registro esteja removido, retorna 
+    if (is_removed == '1'){
+//        printf("removed");
+        (*id) = -1;
+        return 0;
+    }
+
+    // Atualizando offset
+//    fseek(file_bin_r, offset + sizeof(char), SEEK_SET);
+    int tam_registro;
+    fread(&tam_registro, sizeof(int), 1, file_bin_r);
+//    printf("tam_reg: %d\n", tam_registro);
+    (*offset) += tam_registro + sizeof(int) + sizeof(char);
+//    printf("offset: %ld\n", *offset);
+
+    // Posicionando cursor no ID
+    fseek(file_bin_r, sizeof(long int), SEEK_CUR);
+
+    // Lê ID do registro indicado por rrn
+    fread(&(*id), sizeof(int), 1, file_bin_r);
 
     return 0;
 }

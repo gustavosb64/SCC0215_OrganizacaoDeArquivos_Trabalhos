@@ -30,10 +30,14 @@ struct vehicle{
 
 int main(int argc, char *argv[]){
 
-    int f_type = 1;
+    int f_type = 2;
 //    test_remove_reg_type1(f_type);
-    //write_idx_file_from_bin( "./antes/binario1.bin", "indices1.bin", f_type);
-    //read_all_indices_from_idx("indices1.bin", f_type);
+    /*
+    write_idx_file_from_bin( "./antes/binario1.bin", "indices1.bin", f_type);
+    read_all_indices_from_idx("indices1.bin", f_type);
+    */
+    write_idx_file_from_bin( "./antes/binario2.bin", "indices2.bin", f_type);
+//    read_all_indices_from_idx("indices2.bin", f_type);
 
     Vehicle V = initialize_vehicle(f_type);
 

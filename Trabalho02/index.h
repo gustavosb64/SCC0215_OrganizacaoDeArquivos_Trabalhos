@@ -35,6 +35,11 @@ int write_idx_in_bin_type1(FILE *file_idx_w, Index I);
 /*
  * Comment section
 */
+int write_idx_in_bin_type2(FILE *file_idx_w, Index I);
+
+/*
+ * Comment section
+*/
 int write_idx_file_from_bin(char *input_filename, char *output_filename, int f_type);
 
 /*
@@ -80,7 +85,7 @@ Index* load_all_indices_from_idx(FILE *file_idx_r, int f_type);
 /*
  * Comment section
 */
-int add_new_index(char *index_filename, int f_type, Index I_new);
+int refresh_idx(char *bin_filename, char *idx_filename, int f_type);
 
 
 #endif

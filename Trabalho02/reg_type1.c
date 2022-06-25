@@ -397,13 +397,29 @@ int read_id_from_reg_type1(FILE *file_bin_r, int *id, int rrn){
     }
 
     // Colocando o ponteiro do arquivo no ID do registro a ser buscado
-    long int id_offset = MAX_RRN * rrn + HEADER_SIZE_TYPE1 + sizeof(char)+sizeof(int);
+    //long int id_offset = MAX_RRN * rrn + HEADER_SIZE_TYPE1 + sizeof(char)+sizeof(int);
+    long int id_offset = MAX_RRN * rrn + HEADER_SIZE_TYPE1;
     fseek(file_bin_r, id_offset, SEEK_SET);
 
-    // Lê ID do registro indicado por rrn
-    // Caso não haja mais registros a serem lidos, retorna sinal de erro 1
-    if (!fread(&(*id), sizeof(int), 1, file_bin_r)) 
+    // Caso não haja mais registros a serem lidos, retorna sinal de erro 3
+    char is_removed;
+    if (!fread(&is_removed, sizeof(char), 1, file_bin_r)){
         return 2;
+    }
+
+    // Caso o registro esteja removido, retorna 
+    if (is_removed == '1'){
+        (*id) = -1;
+        return 0;
+    }
+
+    // Posicionando cursor no ID
+    fseek(file_bin_r, sizeof(int), SEEK_CUR);
+
+    // Lê ID do registro indicado por rrn
+    // Caso não haja mais registros a serem lidos, retorna sinal de erro 3
+    if (!fread(&(*id), sizeof(int), 1, file_bin_r)) 
+        return 3;
 
     return 0;
 }
