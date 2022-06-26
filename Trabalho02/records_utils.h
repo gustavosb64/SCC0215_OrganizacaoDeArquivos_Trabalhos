@@ -38,6 +38,16 @@ Vehicle initialize_vehicle(int f_type);
 int write_header(FILE *file_header_w, int f_type);
 
 /*
+ * Comment section
+*/
+Header read_header_from_bin(FILE *file_bin_r, int f_type);
+
+/*
+ * Comment section
+*/
+void print_header(Header H, int f_type);
+
+/*
  * Lê todos os registros de um arquivo binário
  *  Parâmetros:
  *      char *filename_in_bin: nome do arquivo binário de entrada
@@ -101,7 +111,7 @@ int customized_strcmp(char *v_str, char *str);
  *      0: não cumpre com o requisito (comparação retorna falso)
  *      1: cumpre com o requisito (comparação retorna verdadeiro)
 */
-int check_meets_condition(Vehicle V, char* field, char* value) ;
+int check_meets_condition(Vehicle V, char* field, char* value, int quoted) ;
 
 /*
  * Lê registros de um arquivo binário filtrando por condições passadas por parâmetro.
@@ -200,6 +210,16 @@ int set_status_bin(FILE *file_bin_rw, char status);
  * Comment section
 */
 char get_status(FILE *file_bin_r);
+
+/*
+ * Comment section
+*/
+int delete_bin(char* f_bin, int f_type, char* f_idx, int n, char** fields, char** values) ;
+
+/*
+ * Comment section
+*/
+int update_bin(char* f_bin, int f_type, char* f_idx, int x, char** fields, char** values) ;
 
 
 #endif

@@ -167,6 +167,51 @@ int write_header(FILE *file_header_w, int f_type){
     return 0;
 }
 
+Header read_header_from_bin(FILE *file_bin_r, int f_type){
+
+    Header H;
+
+    long int cur_offset = ftell(file_bin_r);
+    fseek(file_bin_r, 0, SEEK_SET);
+
+    fread(&(H.status), sizeof(char), 1, file_bin_r);
+    if (f_type == 1) fread(&(H.topo.rrn), sizeof(int), 1, file_bin_r);
+    else if (f_type == 1) fread(&(H.topo.offset), sizeof(long int), 1, file_bin_r);
+    fread(&(H.descricao), sizeof(char), 40, file_bin_r);
+    fread(&(H.desC1), sizeof(char), 22, file_bin_r);
+    fread(&(H.desC2), sizeof(char), 19, file_bin_r);
+    fread(&(H.desC3), sizeof(char), 24, file_bin_r);
+    fread(&(H.desC4), sizeof(char), 8, file_bin_r);
+    fread(&(H.codC5), sizeof(char), 1, file_bin_r);
+    fread(&(H.desC5), sizeof(char), 16, file_bin_r);
+    fread(&(H.codC6), sizeof(char), 1, file_bin_r);
+    fread(&(H.desC6), sizeof(char), 18, file_bin_r);
+    fread(&(H.codC7), sizeof(char), 1, file_bin_r);
+    fread(&(H.desC7), sizeof(char), 19, file_bin_r);
+    if (f_type == 1) fread(&(H.prox.proxRRN), sizeof(int), 1, file_bin_r);
+    else if (f_type == 1) fread(&(H.prox.proxByteOffset), sizeof(long int), 1, file_bin_r);
+    fread(&(H.nroRegRem), sizeof(int), 1, file_bin_r);
+
+    fseek(file_bin_r, cur_offset, SEEK_SET);
+
+    return H;
+}
+
+void print_header(Header H, int f_type){
+
+    printf("status: %c",H.status);
+
+    if (f_type == 1) printf("topo: %d\n", H.topo.rrn);
+    else printf("topo: %ld\n", H.topo.offset);
+
+    if (f_type == 1) printf("topo: %d\n", H.prox.proxRRN);
+    else printf("topo: %ld\n", H.prox.proxByteOffset);
+
+    printf("nroRegRem: %d",H.nroRegRem);
+    
+    return;
+}
+
 int read_all_reg_from_bin(char *filename_in_bin, int f_type){
 
     // Caso haja falha na leitura do arquivo, retorna 1
@@ -442,7 +487,7 @@ int read_condition_reg_from_bin(char *filename_in_bin, int f_type, char** condit
             // Checa se atende à todas as condições do select
             is_selected = 0;
             for (int i=0; i<n; i++) {
-                is_selected = is_selected + check_meets_condition(V, fields[i], values[i]);
+                is_selected = is_selected + check_meets_condition(V, fields[i], values[i], 1);
             }        
             if (is_selected == n) {
                 // Imprime os dados do veículo
@@ -467,7 +512,7 @@ int read_condition_reg_from_bin(char *filename_in_bin, int f_type, char** condit
             // Checa se atende à todas as condições do select
             is_selected = 0;
             for (int i=0; i<n; i++) {
-                is_selected = is_selected + check_meets_condition(V, fields[i], values[i]);
+                is_selected = is_selected + check_meets_condition(V, fields[i], values[i], 1);
             }        
             if (is_selected == n) {
                 // Imprime os dados do veículo
@@ -596,7 +641,6 @@ void binarioNaTela(char *nomeArquivoBinario) {
 
 int add_new_reg(char *input_bin_name, int f_type, char *input_idx_name, int id, int ano, int qtt, char *sigla, char *cidade, char *marca, char *modelo){
 
-
     Vehicle V = initialize_vehicle(f_type);
 
     V.tamCidade = strlen(cidade);
@@ -632,6 +676,7 @@ int add_new_reg(char *input_bin_name, int f_type, char *input_idx_name, int id, 
     */
 
     FILE *file_bin_rw = fopen(input_bin_name, "rb+"); 
+
     /*
     FILE *file_idx_rw = fopen(input_idx_name, "rb"); 
     if (file_bin_rw == NULL || file_idx_rw == NULL){
@@ -867,7 +912,7 @@ int delete_bin(char* f_bin, int f_type, char* f_idx, int n, char** fields, char*
         if(strcmp("id", fields[i])==0) {
             // Busca por id no arquivo de índice
             has_id = 1;
-            search_index_from_idx(file_idx_rw, atoi(fields[i]), f_type)
+//            search_index_from_idx(file_idx_rw, atoi(fields[i]), f_type);
         } 
      }
 
