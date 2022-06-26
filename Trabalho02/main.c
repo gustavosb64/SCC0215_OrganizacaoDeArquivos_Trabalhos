@@ -256,6 +256,9 @@ void insert_cmd(int f_type) {
         //printf("%d, %d, %d, %s, %s, %s, %s\n", id, ano, qtt, sigla, cidade, marca, modelo);
 
         /*
+        printf("##################\n");
+        printf("id: %d ano: %d qtt: %d\n",id,ano,qtt);
+        printf("##################\n");
         printf("-----\n");
         print_header(header, f_type);
         */

@@ -225,7 +225,7 @@ int update_header(FILE *file_bin_rw, Header *H, int f_type){
     fseek(file_bin_rw, 1, SEEK_SET);
 
     if (f_type == 1) fwrite(&(H->topo.rrn), sizeof(int), 1, file_bin_rw);
-    else if (f_type == 2) fread(&(H->topo.offset), sizeof(long int), 1, file_bin_rw);
+    else if (f_type == 2) fwrite(&(H->topo.offset), sizeof(long int), 1, file_bin_rw);
 
     int size;
     if (f_type == 1){
@@ -708,6 +708,7 @@ int add_new_reg(FILE *file_bin_rw, int f_type, Header *header, int id, int ano, 
     V.cidade = cidade;
     V.marca = marca;
     V.modelo = modelo;
+
     /*
     V.sigla = (char *) calloc(strlen(sigla)+1, sizeof(char));
     V.cidade = (char *) calloc(strlen(cidade)+1, sizeof(char));
@@ -735,7 +736,9 @@ int add_new_reg(FILE *file_bin_rw, int f_type, Header *header, int id, int ano, 
     }
     else if (f_type == 2){
 
-        add_new_reg_type2(file_bin_rw, V);
+        V.tamanhoRegistro = V.tamCidade+5 + V.tamMarca+5 + V.tamModelo+5 + 3*sizeof(int) + sizeof(long int) + 2;
+
+        add_new_reg_type2(file_bin_rw, V, header);
 
     }
 
