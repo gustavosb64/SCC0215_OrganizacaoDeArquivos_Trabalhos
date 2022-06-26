@@ -40,12 +40,22 @@ int write_header(FILE *file_header_w, int f_type);
 /*
  * Comment section
 */
-Header read_header_from_bin(FILE *file_bin_r, int f_type);
+Header* initialize_header(int f_type);
 
 /*
  * Comment section
 */
-void print_header(Header H, int f_type);
+Header* read_header_from_bin(FILE *file_bin_r, int f_type);
+
+/*
+ * Comment section
+*/
+int update_header(FILE *file_bin_rw, Header *H, int f_type);
+
+/*
+ * Comment section
+*/
+void print_header(Header *H, int f_type);
 
 /*
  * Lê todos os registros de um arquivo binário
@@ -174,7 +184,7 @@ void binarioNaTela(char *nomeArquivoBinario) ;
 /*
  * Comment section
 */
-int add_new_reg(char *input_bin_name, int f_type, char *input_idx_name, int id, int ano, int qtt, char *sigla, char *cidade, char *marca, char *modelo);
+int add_new_reg(FILE *file_bin_rw, int f_type, Header *header, int id, int ano, int qtt, char *sigla, char *cidade, char *marca, char *modelo);
 
 /*
  * Comment section
@@ -220,6 +230,11 @@ int delete_bin(char* f_bin, int f_type, char* f_idx, int n, char** fields, char*
  * Comment section
 */
 int update_bin(char* f_bin, int f_type, char* f_idx, int x, char** fields, char** values) ;
+
+/*
+ * Comment section
+*/
+void update_nRegRem(Header *H, char operation);
 
 
 #endif

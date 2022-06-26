@@ -15,6 +15,7 @@ struct header{
         int rrn;            // RRN do último registro logicamente removido (tipo 1)
         long int offset;    // offset do último registro logicamente removido (tipo 2)
     }topo;           
+    /*
     char descricao[40]; // descrição dos metadados
     char desC1[22];     // descrição detalhada do campo 1
     char desC2[19];     // descrição detalhada do campo 2
@@ -26,6 +27,7 @@ struct header{
     char desC6[18];     // descrição detalhada do campo 6
     char codC7;         // descrição simplificada do campo 7
     char desC7[19];     // descrição detalhada do campo 7
+    */
     union{
         int proxRRN;                // próximo RRN disponível
         long int proxByteOffset;    // próximo offset disponível
@@ -167,47 +169,96 @@ int write_header(FILE *file_header_w, int f_type){
     return 0;
 }
 
-Header read_header_from_bin(FILE *file_bin_r, int f_type){
+Header* initialize_header(int f_type){
 
-    Header H;
+    Header *H = (Header *) malloc(sizeof(Header));
 
-    long int cur_offset = ftell(file_bin_r);
-    fseek(file_bin_r, 0, SEEK_SET);
+    H->status = '0';
+    if (f_type == 1) H->topo.rrn = -1;
+    else if (f_type == 2) H->topo.offset = -1;
 
-    fread(&(H.status), sizeof(char), 1, file_bin_r);
-    if (f_type == 1) fread(&(H.topo.rrn), sizeof(int), 1, file_bin_r);
-    else if (f_type == 1) fread(&(H.topo.offset), sizeof(long int), 1, file_bin_r);
-    fread(&(H.descricao), sizeof(char), 40, file_bin_r);
-    fread(&(H.desC1), sizeof(char), 22, file_bin_r);
-    fread(&(H.desC2), sizeof(char), 19, file_bin_r);
-    fread(&(H.desC3), sizeof(char), 24, file_bin_r);
-    fread(&(H.desC4), sizeof(char), 8, file_bin_r);
-    fread(&(H.codC5), sizeof(char), 1, file_bin_r);
-    fread(&(H.desC5), sizeof(char), 16, file_bin_r);
-    fread(&(H.codC6), sizeof(char), 1, file_bin_r);
-    fread(&(H.desC6), sizeof(char), 18, file_bin_r);
-    fread(&(H.codC7), sizeof(char), 1, file_bin_r);
-    fread(&(H.desC7), sizeof(char), 19, file_bin_r);
-    if (f_type == 1) fread(&(H.prox.proxRRN), sizeof(int), 1, file_bin_r);
-    else if (f_type == 1) fread(&(H.prox.proxByteOffset), sizeof(long int), 1, file_bin_r);
-    fread(&(H.nroRegRem), sizeof(int), 1, file_bin_r);
+    if (f_type == 1) H->prox.proxRRN = 0;
+    else if (f_type == 2) H->prox.proxByteOffset = 0;
 
-    fseek(file_bin_r, cur_offset, SEEK_SET);
+    H->nroRegRem = 0;
 
     return H;
 }
 
-void print_header(Header H, int f_type){
+Header* read_header_from_bin(FILE *file_bin_r, int f_type){
 
-    printf("status: %c",H.status);
+//    Header *H = initialize_header(f_type);
+    Header *H = initialize_header(f_type); 
 
-    if (f_type == 1) printf("topo: %d\n", H.topo.rrn);
-    else printf("topo: %ld\n", H.topo.offset);
+    long int cur_offset = ftell(file_bin_r);
+    fseek(file_bin_r, 0, SEEK_SET);
 
-    if (f_type == 1) printf("topo: %d\n", H.prox.proxRRN);
-    else printf("topo: %ld\n", H.prox.proxByteOffset);
+    fread(&(H->status), sizeof(char), 1, file_bin_r);
+    if (f_type == 1) fread(&(H->topo.rrn), sizeof(int), 1, file_bin_r);
+    else if (f_type == 2) fread(&(H->topo.offset), sizeof(long int), 1, file_bin_r);
 
-    printf("nroRegRem: %d",H.nroRegRem);
+    int size;
+    if (f_type == 1){
+
+        size = HEADER_SIZE_TYPE1 - sizeof(int) - sizeof(int);
+        fseek(file_bin_r, size, SEEK_SET);
+
+        fread(&(H->prox.proxRRN), sizeof(int), 1, file_bin_r);
+    }
+    else if (f_type == 2){
+
+        size = HEADER_SIZE_TYPE2 - sizeof(int) - sizeof(long int);
+        fseek(file_bin_r, size, SEEK_SET);
+
+        fread(&(H->prox.proxByteOffset), sizeof(long int), 1, file_bin_r);
+    }
+
+    fread(&(H->nroRegRem), sizeof(int), 1, file_bin_r);
+
+    fseek(file_bin_r, cur_offset, SEEK_SET);
+    
+    return H;
+}
+
+int update_header(FILE *file_bin_rw, Header *H, int f_type){
+
+    fseek(file_bin_rw, 1, SEEK_SET);
+
+    if (f_type == 1) fwrite(&(H->topo.rrn), sizeof(int), 1, file_bin_rw);
+    else if (f_type == 2) fread(&(H->topo.offset), sizeof(long int), 1, file_bin_rw);
+
+    int size;
+    if (f_type == 1){
+
+        size = HEADER_SIZE_TYPE1 - sizeof(int) - sizeof(int);
+        fseek(file_bin_rw, size, SEEK_SET);
+
+        fwrite(&(H->prox.proxRRN), sizeof(int), 1, file_bin_rw);
+    }
+    else if (f_type == 2){
+
+        size = HEADER_SIZE_TYPE2 - sizeof(int) - sizeof(long int);
+        fseek(file_bin_rw, size, SEEK_SET);
+
+        fwrite(&(H->prox.proxByteOffset), sizeof(long int), 1, file_bin_rw);
+    }
+
+    fwrite(&(H->nroRegRem), sizeof(int), 1, file_bin_rw);
+
+    return 0;
+}
+
+void print_header(Header *H, int f_type){
+
+    printf("status: %c\n",H->status);
+
+    if (f_type == 1) printf("topo: %d\n", H->topo.rrn);
+    else printf("topo: %ld\n", H->topo.offset);
+
+    if (f_type == 1) printf("prox: %d\n", H->prox.proxRRN);
+    else printf("prox: %ld\n", H->prox.proxByteOffset);
+
+    printf("nroRegRem: %d\n",H->nroRegRem);
     
     return;
 }
@@ -639,7 +690,7 @@ void binarioNaTela(char *nomeArquivoBinario) {
 	fclose(fs);
 }
 
-int add_new_reg(char *input_bin_name, int f_type, char *input_idx_name, int id, int ano, int qtt, char *sigla, char *cidade, char *marca, char *modelo){
+int add_new_reg(FILE *file_bin_rw, int f_type, Header *header, int id, int ano, int qtt, char *sigla, char *cidade, char *marca, char *modelo){
 
     Vehicle V = initialize_vehicle(f_type);
 
@@ -675,60 +726,18 @@ int add_new_reg(char *input_bin_name, int f_type, char *input_idx_name, int id, 
     printf("-------\n");
     */
 
-    FILE *file_bin_rw = fopen(input_bin_name, "rb+"); 
-
-    /*
-    FILE *file_idx_rw = fopen(input_idx_name, "rb"); 
-    if (file_bin_rw == NULL || file_idx_rw == NULL){
-        return -1;
-    }
-    */
-
-    // Setando status para inconsistente
-    set_status_bin(file_bin_rw, '0');
 
     if (f_type == 1){
         int rrn;
 
-        add_new_reg_type1(file_bin_rw, V, &rrn);
+        add_new_reg_type1(file_bin_rw, V, &rrn, header);
 
-        fflush(file_bin_rw);
-//        add_new_index_type1(file_idx_rw, file_bin_rw, V.id, rrn);
-
-        /*
-        // Setando status para consistente
-        set_status_bin(file_bin_rw, '1');
-        fflush(file_bin_rw);
-        fclose(file_bin_rw);
-        
-        write_idx_file_from_bin(input_bin_name, input_idx_name, f_type);
-        */
-//        write_idx_file_from_bin(input_bin_name, input_idx_name, f_type);
-//        add_new_index_type1(file_idx_rw, V.id, rrn);
-//        refresh_idx(input_idx_name, f_type);
-//        add_new_index(
     }
     else if (f_type == 2){
 
         add_new_reg_type2(file_bin_rw, V);
 
-        // Setando status para consistente
-        set_status_bin(file_bin_rw, '1');
-        fflush(file_bin_rw);
-        fclose(file_bin_rw);
-
-        write_idx_file_from_bin(input_bin_name, input_idx_name, f_type);
-
     }
-
-    // Setando status para consistente
-    set_status_bin(file_bin_rw, '1');
-//    set_status_idx(file_idx_rw, '1');
-
-    fclose(file_bin_rw);
-//    fclose(file_idx_rw);
-    
-//    free_vehicle(&V);
 
     return 0;
 }
@@ -981,4 +990,11 @@ int delete_bin(char* f_bin, int f_type, char* f_idx, int n, char** fields, char*
 
 int update_bin(char* f_bin, int f_type, char* f_idx, int x, char** fields, char** values) {
     return 0;
+}
+
+void update_nRegRem(Header *H, char operation){
+
+    printf("H->nroRegRem: %d\n", H->nroRegRem);
+
+    return;
 }

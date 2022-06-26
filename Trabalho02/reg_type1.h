@@ -76,7 +76,7 @@ int print_reg_from_bin_by_rrn(char *filename, int rrn);
 /*
  * Comment section
 */
-int add_new_reg_type1(FILE *file_bin_rw, Vehicle V, int *rrn);
+int add_new_reg_type1(FILE *file_bin_rw, Vehicle V, int *rrn, Header *header);
 
 /*
  * Comment section

@@ -16,6 +16,7 @@ struct header{
         int rrn;            // RRN do último registro logicamente removido (tipo 1)
         long int offset;    // offset do último registro logicamente removido (tipo 2)
     }topo;           
+    /*
     char descricao[40]; // descrição dos metadados
     char desC1[22];     // descrição detalhada do campo 1
     char desC2[19];     // descrição detalhada do campo 2
@@ -27,6 +28,7 @@ struct header{
     char desC6[18];     // descrição detalhada do campo 6
     char codC7;         // descrição simplificada do campo 7
     char desC7[19];     // descrição detalhada do campo 7
+    */
     union{
         int proxRRN;                // próximo RRN disponível
         long int proxByteOffset;    // próximo offset disponível
@@ -346,15 +348,14 @@ int print_reg_from_bin_by_rrn(char *filename, int rrn){
     return 0;
 }
 
-int add_new_reg_type1(FILE *file_bin_rw, Vehicle V, int *rrn){
+int add_new_reg_type1(FILE *file_bin_rw, Vehicle V, int *rrn, Header *header){
 
     int flag_stack = 0;
 
-    (*rrn) = get_list_top(file_bin_rw, TYPE);
-
-    if ((*rrn) == -1)
-        (*rrn) = get_prox(file_bin_rw, TYPE);
+    if (header->topo.rrn == -1)
+        (*rrn) = header->prox.proxRRN;
     else{ 
+        (*rrn) = header->topo.rrn;
         flag_stack = 1;
     }
 
@@ -374,18 +375,17 @@ int add_new_reg_type1(FILE *file_bin_rw, Vehicle V, int *rrn){
         fread(&new_value, sizeof(int), 1, file_bin_rw);
 
         // Atualizando o topo da pilha e o nroRegRem
-        update_list(file_bin_rw, TYPE, new_value);
-        update_nroRegRem(file_bin_rw, TYPE, '-');
+        header->topo.rrn = new_value;
+        header->nroRegRem = header->nroRegRem - 1;
 
-//        fseek(file_bin_rw, -(sizeof(char)+sizeof(int)), SEEK_CUR);
+        fseek(file_bin_rw, -(sizeof(char)+sizeof(int)), SEEK_CUR);
     }
 
-    fseek(file_bin_rw, offset, SEEK_SET);
     write_reg_in_bin_type1(file_bin_rw, &V);
 
     if (!flag_stack){
         (*rrn)++;
-        update_prox(file_bin_rw, TYPE, (*rrn));
+        header->prox.proxRRN = (*rrn);
     }
 
     return 0;

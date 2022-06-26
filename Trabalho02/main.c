@@ -223,6 +223,18 @@ void insert_cmd(int f_type) {
     char *f_bin = readline(stdin, aux_delimiters);
     char *f_idx = readline(stdin, aux_delimiters);
 
+    FILE *file_bin_rw = fopen(f_bin, "rb+"); 
+
+    // Setando status para inconsistente
+    set_status_bin(file_bin_rw, '0');
+
+    Header *header = read_header_from_bin(file_bin_rw, f_type);
+
+    /*
+    printf("-----\n");
+    print_header(header, f_type);
+    */
+
     int n;
     scanf("%d\n", &n);
 
@@ -243,9 +255,19 @@ void insert_cmd(int f_type) {
 
         //printf("%d, %d, %d, %s, %s, %s, %s\n", id, ano, qtt, sigla, cidade, marca, modelo);
 
-        add_new_reg(f_bin, f_type, f_idx, id, ano, qtt, sigla, cidade, marca, modelo);
+        /*
+        printf("-----\n");
+        print_header(header, f_type);
+        */
+
+        add_new_reg(file_bin_rw, f_type, header, id, ano, qtt, sigla, cidade, marca, modelo);
+//        add_new_reg(file_bin_rw, f_type, id, ano, qtt, sigla, cidade, marca, modelo);
     }
 
+    update_header(file_bin_rw, header, f_type);
+    set_status_bin(file_bin_rw, '1');
+
+    fflush(file_bin_rw);
     // Reescrevendo arquivo de índices
     write_idx_file_from_bin(f_bin, f_idx, f_type);
 
@@ -258,6 +280,8 @@ void insert_cmd(int f_type) {
     free(modelo);
     free(f_bin);
     free(f_idx);
+
+    fclose(file_bin_rw);
 }
 
 /* Operação 8
