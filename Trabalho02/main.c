@@ -179,15 +179,35 @@ void delete_cmd(int f_type) {
     scanf("%d\n", &n);
 
     // Delimitador utilizado na leitura da string
-    aux_delimiters[0] = '\0';
-    char* line;
+    char** fields;
+    char** values;
     int x;
     for (int i=0; i<n; i++) {
         scanf("%d ", &x);
-        line = readline(stdin, aux_delimiters);
-        //delete(f_bin, f_type, f_idx, x, line);
-        free(line);
+        values = malloc(x*sizeof(char*));
+        fields = malloc(x*sizeof(char*));
+        for (int j=0; j<x; j++) {
+            fields[j] = readline(stdin, aux_delimiters);
+            if (strcmp("id", fields[j]) == 0 || strcmp("ano", fields[j]) == 0 || strcmp("qtt", fields[j]) == 0) {
+                values[j] = readline(stdin, aux_delimiters);
+            } else {
+                values[j] = malloc(30*sizeof(char));
+                scan_quote_string(values[j]);
+                getchar();
+            }
+        }
+
+        delete_bin(f_bin, f_type, f_idx, x, fields, values);
+
+        for (int j=0; j<x; j++) {
+            free(fields[j]);
+            free(values[j]);
+        }
+        free(fields);
+        free(values);
     }
+    binarioNaTela(f_bin);
+    binarioNaTela(f_idx);
 
     free(f_bin);
     free(f_idx);
@@ -207,7 +227,6 @@ void insert_cmd(int f_type) {
     scanf("%d\n", &n);
 
     // Delimitador utilizado na leitura da string
-    char* line;
     int id;
     int ano;
     int qtt;
@@ -222,9 +241,16 @@ void insert_cmd(int f_type) {
         scan_quote_string(marca);
         scan_quote_string(modelo);
 
-        //add_new_reg(f_bin, f_type, f_idx, id, ano, qtt, sigla, cidade, marca, modelo);
+        //printf("%d, %d, %d, %s, %s, %s, %s\n", id, ano, qtt, sigla, cidade, marca, modelo);
+
+        add_new_reg(f_bin, f_type, f_idx, id, ano, qtt, sigla, cidade, marca, modelo);
     }
 
+    // Reescrevendo arquivo de índices
+    write_idx_file_from_bin(f_bin, f_idx, f_type);
+
+    binarioNaTela(f_bin);
+    binarioNaTela(f_idx);
     
     free(sigla);
     free(cidade);
@@ -248,15 +274,35 @@ void update_cmd(int f_type) {
     scanf("%d\n", &n);
 
     // Delimitador utilizado na leitura da string
-    aux_delimiters[0] = '\0';
-    char* line;
+    char** fields;
+    char** values;
     int x;
     for (int i=0; i<n; i++) {
         scanf("%d ", &x);
-        line = readline(stdin, aux_delimiters);
-        //update(f_bin, f_type, f_idx, x, line);
-        free(line);
+        values = malloc(x*sizeof(char*));
+        fields = malloc(x*sizeof(char*));
+        for (int j=0; j<x; j++) {
+            fields[j] = readline(stdin, aux_delimiters);
+            if (strcmp("id", fields[j]) == 0 || strcmp("ano", fields[j]) == 0 || strcmp("qtt", fields[j]) == 0) {
+                values[j] = readline(stdin, aux_delimiters);
+            } else {
+                values[j] = malloc(30*sizeof(char));
+                scan_quote_string(values[j]);
+                getchar();
+            }
+        }
+
+        //update_bin(f_bin, f_type, f_idx, x, fields, values);
+
+        for (int j=0; j<x; j++) {
+            free(fields[j]);
+            free(values[j]);
+        }
+        free(fields);
+        free(values);
     }
+    binarioNaTela(f_bin);
+    binarioNaTela(f_idx);
 
     free(f_bin);
     free(f_idx);

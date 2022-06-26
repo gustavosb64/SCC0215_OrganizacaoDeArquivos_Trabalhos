@@ -354,8 +354,9 @@ int add_new_reg_type1(FILE *file_bin_rw, Vehicle V, int *rrn){
 
     if ((*rrn) == -1)
         (*rrn) = get_prox(file_bin_rw, TYPE);
-    else 
+    else{ 
         flag_stack = 1;
+    }
 
     long int offset = (*rrn)*MAX_RRN + HEADER_SIZE_TYPE1;
     fseek(file_bin_rw, offset, SEEK_SET);
@@ -366,8 +367,9 @@ int add_new_reg_type1(FILE *file_bin_rw, Vehicle V, int *rrn){
 
         // Caso registro não conste como removido
         fread(&is_removed, sizeof(char), 1, file_bin_rw);
-        if (is_removed != '1') 
+        if (is_removed != '1'){
             return -1;
+        }
 
         fread(&new_value, sizeof(int), 1, file_bin_rw);
 
@@ -375,9 +377,10 @@ int add_new_reg_type1(FILE *file_bin_rw, Vehicle V, int *rrn){
         update_list(file_bin_rw, TYPE, new_value);
         update_nroRegRem(file_bin_rw, TYPE, '-');
 
-        fseek(file_bin_rw, -(sizeof(char)+sizeof(int)), SEEK_CUR);
+//        fseek(file_bin_rw, -(sizeof(char)+sizeof(int)), SEEK_CUR);
     }
 
+    fseek(file_bin_rw, offset, SEEK_SET);
     write_reg_in_bin_type1(file_bin_rw, &V);
 
     if (!flag_stack){

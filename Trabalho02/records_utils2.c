@@ -442,7 +442,7 @@ int read_condition_reg_from_bin(char *filename_in_bin, int f_type, char** condit
             // Checa se atende à todas as condições do select
             is_selected = 0;
             for (int i=0; i<n; i++) {
-                is_selected = is_selected + check_meets_condition(V, fields[i], values[i]);
+                is_selected = is_selected + check_meets_condition(V, fields[i], values[i], 1);
             }        
             if (is_selected == n) {
                 // Imprime os dados do veículo
@@ -467,7 +467,7 @@ int read_condition_reg_from_bin(char *filename_in_bin, int f_type, char** condit
             // Checa se atende à todas as condições do select
             is_selected = 0;
             for (int i=0; i<n; i++) {
-                is_selected = is_selected + check_meets_condition(V, fields[i], values[i]);
+                is_selected = is_selected + check_meets_condition(V, fields[i], values[i], 1);
             }        
             if (is_selected == n) {
                 // Imprime os dados do veículo
@@ -551,6 +551,9 @@ int print_vehicle(Vehicle V, int f_type){
     printf("\nQUANTIDADE DE VEICULOS: ");
     if (V.qtt != -1) printf("%d", V.qtt); else printf("NAO PREENCHIDO"); 
 
+    printf("\nSIGLA: ");
+    if (V.sigla != NULL) print_string(V.sigla, 2); else printf("NAO PREENCHIDO"); 
+
     printf("\n");
     
     return 0;
@@ -596,94 +599,42 @@ void binarioNaTela(char *nomeArquivoBinario) {
 
 int add_new_reg(char *input_bin_name, int f_type, char *input_idx_name, int id, int ano, int qtt, char *sigla, char *cidade, char *marca, char *modelo){
 
-
     Vehicle V = initialize_vehicle(f_type);
-
-    V.tamCidade = strlen(cidade);
-    V.tamMarca = strlen(marca);
-    V.tamModelo = strlen(modelo);
 
     V.id = id;
     V.ano = ano;
     V.qtt = qtt;
-    if (strlen(sigla) == 0){
-        V.sigla = NULL;
-    }
-    else V.sigla = sigla;
+    V.sigla = sigla;
     V.cidade = cidade;
     V.marca = marca;
     V.modelo = modelo;
-    /*
-    V.sigla = (char *) calloc(strlen(sigla)+1, sizeof(char));
-    V.cidade = (char *) calloc(strlen(cidade)+1, sizeof(char));
-    V.marca = (char *) calloc(strlen(marca)+1, sizeof(char));
-    V.modelo = (char *) calloc(strlen(modelo)+1, sizeof(char));
-
-    strcpy(V.sigla, sigla);
-    strcpy(V.cidade, cidade);
-    strcpy(V.marca, marca);
-    strcpy(V.modelo, modelo);
-
-
-    printf("-------\n");
-    if (sigla == NULL) printf("niausdhfiuas\n");
-    print_vehicle_full(V,1);
-    printf("-------\n");
-    */
 
     FILE *file_bin_rw = fopen(input_bin_name, "rb+"); 
-    /*
-    FILE *file_idx_rw = fopen(input_idx_name, "rb"); 
+    FILE *file_idx_rw = fopen(input_idx_name, "rb+"); 
     if (file_bin_rw == NULL || file_idx_rw == NULL){
         return -1;
     }
-    */
 
     // Setando status para inconsistente
     set_status_bin(file_bin_rw, '0');
+    set_status_idx(file_idx_rw, '0');
 
     if (f_type == 1){
         int rrn;
-
         add_new_reg_type1(file_bin_rw, V, &rrn);
 
-        fflush(file_bin_rw);
-//        add_new_index_type1(file_idx_rw, file_bin_rw, V.id, rrn);
-
-        /*
-        // Setando status para consistente
-        set_status_bin(file_bin_rw, '1');
-        fflush(file_bin_rw);
-        fclose(file_bin_rw);
-        
-        write_idx_file_from_bin(input_bin_name, input_idx_name, f_type);
-        */
 //        write_idx_file_from_bin(input_bin_name, input_idx_name, f_type);
 //        add_new_index_type1(file_idx_rw, V.id, rrn);
 //        refresh_idx(input_idx_name, f_type);
 //        add_new_index(
     }
-    else if (f_type == 2){
-
-        add_new_reg_type2(file_bin_rw, V);
-
-        // Setando status para consistente
-        set_status_bin(file_bin_rw, '1');
-        fflush(file_bin_rw);
-        fclose(file_bin_rw);
-
-        write_idx_file_from_bin(input_bin_name, input_idx_name, f_type);
-
-    }
 
     // Setando status para consistente
     set_status_bin(file_bin_rw, '1');
-//    set_status_idx(file_idx_rw, '1');
+    set_status_idx(file_idx_rw, '1');
 
     fclose(file_bin_rw);
-//    fclose(file_idx_rw);
-    
-//    free_vehicle(&V);
+    fclose(file_idx_rw);
 
     return 0;
 }
@@ -850,6 +801,7 @@ char get_status(FILE *file_bin_r){
 
     return status;
 }
+
 
 int delete_bin(char* f_bin, int f_type, char* f_idx, int n, char** fields, char** values) {
     // Caso haja falha na leitura do arquivo, retorna 1

@@ -198,7 +198,7 @@ int read_idx_type1(FILE *file_idx_r, Index *I, int idx_counter){
 
     // Posicionando o ponteiro no índice a ser lido. Como o arquivo de índices
     // possui registros de tamanho fixo, podemos utilizar um idx_counter
-    int size_index = 2*sizeof(int);
+    int size_index = sizeof(int) + sizeof(int);
     long int offset = sizeof(char) + idx_counter*size_index;
     fseek(file_idx_r, offset, SEEK_SET);
 
@@ -357,8 +357,12 @@ Index* load_all_indices_from_idx(FILE *file_idx_r, int f_type, int *n_indices){
         
         while(!read_idx_type1(file_idx_r, &I, counter)){
 
+            print_index(I, 1);
+
+            /*
             if (counter*sizeof(Index) % (BUFFER * sizeof(Index)) == 0) 
                 I_list = (Index *) realloc(I_list, (counter / (BUFFER*sizeof(Index)) + 1) * BUFFER*sizeof(Index));
+            */
 
             I_list[counter] = I;
             counter++;
@@ -380,6 +384,8 @@ Index* load_all_indices_from_idx(FILE *file_idx_r, int f_type, int *n_indices){
     }
 
     (*n_indices) = counter;
+
+    I_list = (Index *) realloc(I_list, counter*sizeof(Index));
 
     return I_list;
 }
@@ -419,11 +425,52 @@ int search_index_from_idx(char *input_idx_filename, int key_id, int f_type){
 // POSSÍVEL PROBLEMA: 
 //  arquivo aberto com modo rb+, sendo que, após a leitura, deve ser sobrescrito
 //  como esta função apenas adiciona, não dá problema, mas para o delete, sim
-int add_new_index_type1(FILE *file_idx_rw, int id, int rrn){
+int add_new_index_type1(FILE *file_idx_rw, FILE *file_bin_rw, int id, int rrn){
 
     int n_indices;
     Index *I_list = load_all_indices_from_idx(file_idx_rw, 1, &n_indices);
 
+//    Index *I_list = load_all_idx_from_bin(file_bin_rw, 1, &n_indices);
+    Index I_new = create_index(1);
+    I_new.id = id;
+    I_new.idx.rrn = rrn;
+
+    I_list = (Index *) realloc(I_list, (sizeof(Index) * n_indices) + sizeof(Index));
+    printf("--------------------id: %d\n",id);
+    I_list[n_indices] = I_new;
+
+    quick_sort(I_list, 0, n_indices);
+        
+    int i = 0;
+//    fseek(file_idx_rw, 1, SEEK_SET);
+
+//    file_idx_rw = freopen("indice10.bin", "wb", file_idx_rw);
+
+    Index I = I_list[0];
+    while(n_indices--){
+
+        /*
+        */
+        if(I.id != -1){
+            write_idx_in_bin_type1(file_idx_rw, I);
+        }
+
+//        print_index(I,1);
+        I = I_list[++i]; 
+    }
+    /*
+    int i = 0;
+    Index I = create_index(1);
+    I = I_list[i]; 
+
+    while(I.id != -1){
+
+        write_idx_in_bin_type1(file_idx_rw, I);
+
+        I = I_list[++i]; 
+    }
+    
+//    read_all_indices_from_idx(file_idx_rw, 1);
     Index I_new = create_index(1);
     I_new.id = id;
     I_new.idx.rrn = rrn;
@@ -436,12 +483,18 @@ int add_new_index_type1(FILE *file_idx_rw, int id, int rrn){
     int i = 0;
     Index I = I_list[i];
 
-    while(I.id != -1){
+    //while(I.id != -1){
+    while(n_indices--){
 
         write_idx_in_bin_type1(file_idx_rw, I);
 
         I = I_list[++i]; 
     }
+    */
+
+    printf("-------------------------");
+
+    free(I_list);
 
     return 0;
 }
