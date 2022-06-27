@@ -959,7 +959,12 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
                 }  
                 if (is_selected == n-1) {
                     
+                    // Retorna o ponteiro do arquivo para o registro selecionado
+                    long int rem_offset = offset - V.tamanhoRegistro - 5;
+
                     // Executa remoção
+                    if (rem_offset >= 0)
+                        remove_reg_by_offset(file_bin_rw, &rem_offset, header);
 
                     //print_vehicle_full(V,2);
                     //printf("\n");
@@ -989,7 +994,7 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
                 }        
 
                 if (is_selected == n) {
-
+                    
                     // Executa remoção
                     if (rrn >= 0)
                         remove_reg_by_rrn(file_bin_rw, rrn, header);
@@ -1008,9 +1013,11 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
         else if (f_type == 2){
 
             long int offset = HEADER_SIZE_TYPE2;
+            long int rem_offset;
 
             // Enquanto ainda houverem registros a serem lidos no arquivo de dados
             while(!read_reg_from_bin_type2(file_bin_rw, &V, &offset)){
+                
                 // Checa se atende à todas as condições do select
                 is_selected = 0;
                 for (int i=0; i<n; i++) {
@@ -1019,7 +1026,12 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
                 }        
                 if (is_selected == n) {
 
+                    // Retorna o ponteiro do arquivo para o registro selecionado
+                    rem_offset = offset - V.tamanhoRegistro - 5;
+
                     // Executa remoção
+                    if (rem_offset >= 0)
+                        remove_reg_by_offset(file_bin_rw, &rem_offset, header);
                     
                     //print_vehicle(V,2);
                     //printf("\n");

@@ -195,6 +195,7 @@ void delete_cmd(int f_type) {
     char** fields;
     char** values;
     int x;
+
     for (int i=0; i<n; i++) {
         scanf("%d ", &x);
         values = malloc(x*sizeof(char*));
@@ -369,9 +370,48 @@ void update_cmd(int f_type) {
     free(f_idx);
 }
 
+struct vehicle{
+    char removido;      // indica se o registro está logicamente removido
+    int tamanhoRegistro;    // utilizado apenas por registros tipo 2
+    union{
+        int rrn;           // armazena o RRN do próximo registro (tipo 1)
+        long int offset;   // armazena o offset do próximo registro (tipo 2)
+    }prox;
+    int id;             // código identificador
+    int ano;            // ano de fabricação
+    int tamCidade;      // tamanho do campo cidade
+    char codC5;         // descrição simplificada do campo 5
+    char *cidade;       // nome da cidade
+    int qtt;            // quantidade de veículos
+    char *sigla;        // sigla do estado no qual o veículo está cadastrado
+    int tamMarca;       // tamanho do campo marca
+    char codC6;         // descrição simplificada do campo 5
+    char *marca;        // nome da marca
+    int tamModelo;      // tamanho do campo modelo
+    char codC7;         // descrição simplificada do campo 5
+    char *modelo;       // nome do modelo
+};
+
 
 
 int main(int argc, char *argv[]){
+
+    /*
+    printf("iuasdhfiu\n");
+
+    FILE *file_bin_rw = fopen("depois/binario6.bin", "rb+"); 
+//    Header *header = read_header_from_bin(file_bin_rw, 2);
+
+    long int offset = 6222;
+    Vehicle V = initialize_vehicle(2);
+    read_reg_from_bin_type2(file_bin_rw, &V, &offset);
+    print_vehicle_full(V, 2);
+    printf("---------\n");
+
+    offset = 6268;
+    read_reg_from_bin_type2(file_bin_rw, &V, &offset);
+    print_vehicle_full(V, 2);
+    */
 
     // Lendo os respectivos inputs do stdin
     int operation;

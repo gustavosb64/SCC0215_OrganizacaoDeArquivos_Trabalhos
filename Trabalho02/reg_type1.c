@@ -310,6 +310,7 @@ int remove_reg_by_rrn(FILE *file_bin_rw, int rrn, Header *header){
 
     fseek(file_bin_rw, -sizeof(char), SEEK_CUR);
 
+    // Marca registro como removido
     is_removed = '1';
     fwrite(&is_removed, sizeof(char), 1, file_bin_rw);
     
@@ -317,6 +318,7 @@ int remove_reg_by_rrn(FILE *file_bin_rw, int rrn, Header *header){
     int stack_top = header->topo.rrn;
     fwrite(&stack_top, sizeof(int), 1, file_bin_rw);
 
+    // Atualiza header
     header->topo.rrn = rrn;
     header->nroRegRem += 1;
     
