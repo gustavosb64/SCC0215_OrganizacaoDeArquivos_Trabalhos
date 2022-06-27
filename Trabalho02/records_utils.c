@@ -908,30 +908,61 @@ char get_status(FILE *file_bin_r){
     return status;
 }
 
-int delete_bin(char* f_bin, int f_type, char* f_idx, int n, char** fields, char** values) {
-    // Caso haja falha na leitura do arquivo, retorna 1
-    FILE *file_bin_rw = fopen(f_bin, "rb+");
-    if (file_bin_rw == NULL){
-        return 1;
-    }
-    FILE *file_idx_rw = fopen(f_bin, "rb+");
-    if (file_idx_rw == NULL){
-        return 1;
-    }
+int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** fields, char** values) {
 
     int has_id = 0;
+    int is_selected;
     for(int i=0; i<n; i++) {
         if(strcmp("id", fields[i])==0) {
             // Busca por id no arquivo de índice
             has_id = 1;
-//            search_index_from_idx(file_idx_rw, atoi(fields[i]), f_type);
+
+            Vehicle V = initialize_vehicle(f_type);
+            if (f_type==1) {
+                int rrn = search_index_from_idx(file_idx_rw, atoi(values[i]), f_type);
+                printf("%d\n", rrn);
+                read_reg_from_bin_type1(file_bin_rw, &V, rrn);
+
+                // Checa se atende à todas as condições do select
+                is_selected = 0;
+                for (int j=0; j<n; j++) {
+                    if (strcmp("id", fields[i])!=0) 
+                        is_selected = is_selected + check_meets_condition(V, fields[j], values[j], 0);
+                }  
+                if (is_selected == n-1) {
+
+                    // Executa remoção
+                    
+                    print_vehicle_full(V,1);
+                    printf("\n");
+                }
+            } else if(f_type==2) {
+                long int offset = search_index_from_idx(file_idx_rw, atoi(values[i]), f_type);
+                printf("%ld\n", offset);
+                read_reg_from_bin_type2(file_bin_rw, &V, &offset);
+
+                // Checa se atende à todas as condições do select
+                is_selected = 0;
+                for (int j=0; j<n; j++) {
+                    if (strcmp("id", fields[i])!=0) 
+                        is_selected = is_selected + check_meets_condition(V, fields[j], values[j], 0);
+                }  
+                if (is_selected == n-1) {
+                    
+                    // Executa remoção
+
+                    print_vehicle_full(V,2);
+                    printf("\n");
+                }
+            }
+            free_vehicle(&V);
+            
         } 
      }
 
     if(!has_id) {
         // Busca por valores nos campos
         Vehicle V = initialize_vehicle(f_type);
-        int is_selected;
 
         // Realiza diferentes rotinas a depender do tipo a ser lido
         if (f_type == 1){
@@ -948,9 +979,11 @@ int delete_bin(char* f_bin, int f_type, char* f_idx, int n, char** fields, char*
                 }        
 
                 if (is_selected == n) {
+
                     // Executa remoção
-                    print_vehicle(V,1);
-                    printf("\n");
+                    
+                    //print_vehicle(V,1);
+                    //printf("\n");
                 }
 
                 // Libera a memória alocada durante a leitura
@@ -973,9 +1006,11 @@ int delete_bin(char* f_bin, int f_type, char* f_idx, int n, char** fields, char*
                         is_selected = is_selected + check_meets_condition(V, fields[i], values[i], 0);
                 }        
                 if (is_selected == n) {
+
                     // Executa remoção
-                    print_vehicle(V,2);
-                    printf("\n");
+                    
+                    //print_vehicle(V,2);
+                    //printf("\n");
                 }
 
                 // Libera a memória alocada durante a leitura
@@ -986,8 +1021,6 @@ int delete_bin(char* f_bin, int f_type, char* f_idx, int n, char** fields, char*
         }
     }
 
-    fclose(file_bin_rw);
-    fclose(file_idx_rw);
     return 0;
 }
 

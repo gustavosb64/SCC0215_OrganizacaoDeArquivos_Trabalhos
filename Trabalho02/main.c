@@ -174,6 +174,16 @@ void delete_cmd(int f_type) {
     // Lê nomes dos arquivos
     char *f_bin = readline(stdin, aux_delimiters);
     char *f_idx = readline(stdin, aux_delimiters);
+    
+    // Caso haja falha na leitura do arquivo, retorna 1
+    FILE *file_bin_rw = fopen(f_bin, "rb+");
+    if (file_bin_rw == NULL){
+        return;
+    }
+    FILE *file_idx_rw = fopen(f_idx, "rb+");
+    if (file_idx_rw == NULL){
+        return;
+    }
 
     int n;
     scanf("%d\n", &n);
@@ -197,7 +207,7 @@ void delete_cmd(int f_type) {
             }
         }
 
-        delete_bin(f_bin, f_type, f_idx, x, fields, values);
+        delete_bin(file_bin_rw, f_type, file_idx_rw, x, fields, values);
 
         for (int j=0; j<x; j++) {
             free(fields[j]);
@@ -211,6 +221,9 @@ void delete_cmd(int f_type) {
 
     free(f_bin);
     free(f_idx);
+
+    fclose(file_bin_rw);
+    fclose(file_idx_rw);
 }
 
 /* Operação 7
@@ -228,7 +241,7 @@ void insert_cmd(int f_type) {
     // Setando status para inconsistente
     set_status_bin(file_bin_rw, '0');
 
-    Header *header = read_header_from_bin(file_bin_rw, f_type);
+    //Header *header = read_header_from_bin(file_bin_rw, f_type);
 
     /*
     printf("-----\n");
@@ -239,40 +252,44 @@ void insert_cmd(int f_type) {
     scanf("%d\n", &n);
 
     // Delimitador utilizado na leitura da string
-    int id;
-    int ano;
-    int qtt;
+    char* id;
+    char* ano;
+    char* qtt;
     char* sigla = malloc(3*sizeof(char));
     char* cidade = malloc(30*sizeof(char));
     char* marca = malloc(30*sizeof(char));
     char* modelo = malloc(30*sizeof(char));
     for (int i=0; i<n; i++) {
-        scanf("%d %d %d ", &id, &ano, &qtt);
+        id = readline(stdin, aux_delimiters);
+        ano = readline(stdin, aux_delimiters);
+        qtt = readline(stdin, aux_delimiters);
         scan_quote_string(sigla);
         scan_quote_string(cidade);
         scan_quote_string(marca);
         scan_quote_string(modelo);
+        getchar();
 
         //printf("%d, %d, %d, %s, %s, %s, %s\n", id, ano, qtt, sigla, cidade, marca, modelo);
 
-        /*
+        
         printf("##################\n");
-        printf("id: %d ano: %d qtt: %d\n",id,ano,qtt);
+        printf("id: %s ano: %s qtt: %s\n",id,ano,qtt);
+        printf("sigla: %s cidade: %s marca: %s modelo: %s \n",sigla,cidade,marca,modelo);
         printf("##################\n");
         printf("-----\n");
-        print_header(header, f_type);
-        */
+        //print_header(header, f_type);
+        
 
-        add_new_reg(file_bin_rw, f_type, header, id, ano, qtt, sigla, cidade, marca, modelo);
+        //add_new_reg(file_bin_rw, f_type, header, id, ano, qtt, sigla, cidade, marca, modelo);
 //        add_new_reg(file_bin_rw, f_type, id, ano, qtt, sigla, cidade, marca, modelo);
     }
 
-    update_header(file_bin_rw, header, f_type);
-    set_status_bin(file_bin_rw, '1');
+    //update_header(file_bin_rw, header, f_type);
+    //set_status_bin(file_bin_rw, '1');
 
-    fflush(file_bin_rw);
+    //fflush(file_bin_rw);
     // Reescrevendo arquivo de índices
-    write_idx_file_from_bin(f_bin, f_idx, f_type);
+    //write_idx_file_from_bin(f_bin, f_idx, f_type);
 
     binarioNaTela(f_bin);
     binarioNaTela(f_idx);

@@ -224,7 +224,7 @@ char get_status(FILE *file_bin_r);
 /*
  * Comment section
 */
-int delete_bin(char* f_bin, int f_type, char* f_idx, int n, char** fields, char** values) ;
+int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** fields, char** values) ;
 
 /*
  * Comment section

@@ -90,7 +90,7 @@ int binary_search_idx(Index *I_list, int key, int ini, int fim) ;
 /*
  * Comment section
 */
-int search_index_from_idx(char *input_idx_filename, int key_id, int f_type);
+long int search_index_from_idx(FILE *file_idx_r, int key_id, int f_type);
 
 /*
  * Comment section

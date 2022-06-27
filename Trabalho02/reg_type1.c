@@ -266,7 +266,8 @@ int search_vehicle_rrn(char *filename_in_bin ,int rrn) {
 
 // header_rrn -> topo da pilha
 //  header.topo.rrn
-int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, int *err){
+/* AUTOTAD_PRIVATE
+int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, Header *header, int *err){
 
     // Caso o arquivo de registros não esteja consistente
     if (get_status(file_bin_rw) != '1'){
@@ -298,7 +299,19 @@ int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, int *err){
 
     return 0;
 }
+*/
 
+int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, Header *header){
+
+    Vehicle V = initialize_vehicle(TYPE); 
+    read_reg_from_bin_type1(file_bin_rw, &V, rrn);
+
+    print_vehicle_full(V);
+
+
+}
+
+/* AUTOTAD_PRIVATE
 void test_remove_reg_type1(int f_type){
 
     Vehicle V = initialize_vehicle(f_type);
@@ -314,10 +327,8 @@ void test_remove_reg_type1(int f_type){
     read_reg_from_bin_type1(file_bin_rw, &V, rrn);
     print_vehicle_full(V, f_type);
 
-    /*
     fclose(file_bin_rw);
     file_bin_rw = fopen("meu_binario5.bin", "rb+");
-    */
 
 
     int header_rrn; 
@@ -328,6 +339,7 @@ void test_remove_reg_type1(int f_type){
 
     return;
 }
+*/
 
 int print_reg_from_bin_by_rrn(char *filename, int rrn){
 
