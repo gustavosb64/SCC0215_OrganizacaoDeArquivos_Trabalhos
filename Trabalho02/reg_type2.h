@@ -39,6 +39,16 @@ int read_reg_from_bin_type2(FILE *file_bin_r, Vehicle *V, long int *offset);
 /*
  * Comment section
 */
+void clean_reg_type2(FILE *file_bin_rw, int tamReg);
+
+/*
+ * Comment section
+*/
+int add_new_reg_type2(FILE *file_bin_rw, Vehicle V, Header *header);
+
+/*
+ * Comment section
+*/
 int read_id_from_reg_type2(FILE *file_bin_r, int *id, long int *offset);
 
 

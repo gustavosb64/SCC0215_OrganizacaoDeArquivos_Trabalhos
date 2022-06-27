@@ -38,6 +38,26 @@ Vehicle initialize_vehicle(int f_type);
 int write_header(FILE *file_header_w, int f_type);
 
 /*
+ * Comment section
+*/
+Header* initialize_header(int f_type);
+
+/*
+ * Comment section
+*/
+Header* read_header_from_bin(FILE *file_bin_r, int f_type);
+
+/*
+ * Comment section
+*/
+int update_header(FILE *file_bin_rw, Header *H, int f_type);
+
+/*
+ * Comment section
+*/
+void print_header(Header *H, int f_type);
+
+/*
  * Lê todos os registros de um arquivo binário
  *  Parâmetros:
  *      char *filename_in_bin: nome do arquivo binário de entrada
@@ -101,7 +121,7 @@ int customized_strcmp(char *v_str, char *str);
  *      0: não cumpre com o requisito (comparação retorna falso)
  *      1: cumpre com o requisito (comparação retorna verdadeiro)
 */
-int check_meets_condition(Vehicle V, char* field, char* value) ;
+int check_meets_condition(Vehicle V, char* field, char* value, int quoted) ;
 
 /*
  * Lê registros de um arquivo binário filtrando por condições passadas por parâmetro.
@@ -164,7 +184,7 @@ void binarioNaTela(char *nomeArquivoBinario) ;
 /*
  * Comment section
 */
-int add_new_reg(char *input_bin_name, int f_type, char *input_idx_name, int id, int ano, int qtt, char *sigla, char *cidade, char *marca, char *modelo);
+int add_new_reg(FILE *file_bin_rw, int f_type, Header *header, int id, int ano, int qtt, char *sigla, char *cidade, char *marca, char *modelo);
 
 /*
  * Comment section
@@ -174,12 +194,47 @@ int update_nroRegRem(FILE *file_bin_rw, int f_type, char operation);
 /*
  * Comment section
 */
-int update_stack(FILE *file_bin_rw, int f_type, long int new_value);
+int update_list(FILE *file_bin_rw, int f_type, long int new_value);
 
 /*
  * Comment section
 */
-long int get_stack_top(FILE *file_bin_rw, int f_type);
+int update_prox(FILE *file_bin_rw, int f_type, long int new_value);
+
+/*
+ * Comment section
+*/
+long int get_list_top(FILE *file_bin_rw, int f_type);
+
+/*
+ * Comment section
+*/
+long int get_prox(FILE *file_bin_rw, int f_type);
+
+/*
+ * Comment section
+*/
+int set_status_bin(FILE *file_bin_rw, char status);
+
+/*
+ * Comment section
+*/
+char get_status(FILE *file_bin_r);
+
+/*
+ * Comment section
+*/
+int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** fields, char** values) ;
+
+/*
+ * Comment section
+*/
+int update_bin(char* f_bin, int f_type, char* f_idx, int x, char** fields, char** values) ;
+
+/*
+ * Comment section
+*/
+void update_nRegRem(Header *H, char operation);
 
 
 #endif

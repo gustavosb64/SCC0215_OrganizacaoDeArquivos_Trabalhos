@@ -8,6 +8,7 @@
 
 #define MAX_RRN 97
 #define HEADER_SIZE_TYPE1 182
+#define TYPE 1
 struct header{
     char status;        // consistência do arquivo
     int tamanhoRegistro;    // tamanho do registro (usado apenas no tipo 2)
@@ -15,6 +16,7 @@ struct header{
         int rrn;            // RRN do último registro logicamente removido (tipo 1)
         long int offset;    // offset do último registro logicamente removido (tipo 2)
     }topo;           
+    /*
     char descricao[40]; // descrição dos metadados
     char desC1[22];     // descrição detalhada do campo 1
     char desC2[19];     // descrição detalhada do campo 2
@@ -26,6 +28,7 @@ struct header{
     char desC6[18];     // descrição detalhada do campo 6
     char codC7;         // descrição simplificada do campo 7
     char desC7[19];     // descrição detalhada do campo 7
+    */
     union{
         int proxRRN;                // próximo RRN disponível
         long int proxByteOffset;    // próximo offset disponível
@@ -263,7 +266,8 @@ int search_vehicle_rrn(char *filename_in_bin ,int rrn) {
 
 // header_rrn -> topo da pilha
 //  header.topo.rrn
-int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, int *err){
+/* AUTOTAD_PRIVATE
+int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, Header *header, int *err){
 
     // Caso o arquivo de registros não esteja consistente
     if (get_status(file_bin_rw) != '1'){
@@ -282,20 +286,31 @@ int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, int *err){
     fseek(file_bin_rw, -1, SEEK_CUR);
 
     // Armazena o próximo valor da pilha no registro
-    int header_rrn = get_stack_top(file_bin_rw, 1);
+    int header_rrn = get_list_top(file_bin_rw, TYPE);
     aux_char = '1'; 
     fwrite(&aux_char, sizeof(char), 1, file_bin_rw);
     fwrite(&header_rrn, sizeof(char), 1, file_bin_rw);
 
     // Atualiza topo da pilha
-    update_stack(file_bin_rw, 1, rrn);
+    update_list(file_bin_rw, TYPE, rrn);
 
     // Atualiza nroRegRem
     update_nroRegRem(file_bin_rw, 1, '+');
 
     return 0;
 }
+*/
 
+int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, Header *header){
+
+    long int offset = rrn*MAX_RRN + HEADER_SIZE_TYPE1;
+    fseek(file_bin_rw, offset, SEEK_SET);
+
+
+
+}
+
+/* AUTOTAD_PRIVATE
 void test_remove_reg_type1(int f_type){
 
     Vehicle V = initialize_vehicle(f_type);
@@ -311,10 +326,8 @@ void test_remove_reg_type1(int f_type){
     read_reg_from_bin_type1(file_bin_rw, &V, rrn);
     print_vehicle_full(V, f_type);
 
-    /*
     fclose(file_bin_rw);
     file_bin_rw = fopen("meu_binario5.bin", "rb+");
-    */
 
 
     int header_rrn; 
@@ -325,6 +338,7 @@ void test_remove_reg_type1(int f_type){
 
     return;
 }
+*/
 
 int print_reg_from_bin_by_rrn(char *filename, int rrn){
 
@@ -345,23 +359,46 @@ int print_reg_from_bin_by_rrn(char *filename, int rrn){
     return 0;
 }
 
-int add_new_reg_type1(FILE *file_bin_rw, Vehicle V){
+int add_new_reg_type1(FILE *file_bin_rw, Vehicle V, int *rrn, Header *header){
 
-    int rrn;
-    fseek(file_bin_rw, 174, SEEK_SET);
-    fread(&rrn, sizeof(int), 1, file_bin_rw);
+    int flag_stack = 0;
 
-    long int offset = rrn*MAX_RRN + HEADER_SIZE_TYPE1;
+    if (header->topo.rrn == -1)
+        (*rrn) = header->prox.proxRRN;
+    else{ 
+        (*rrn) = header->topo.rrn;
+        flag_stack = 1;
+    }
+
+    long int offset = (*rrn)*MAX_RRN + HEADER_SIZE_TYPE1;
     fseek(file_bin_rw, offset, SEEK_SET);
-   
+
+    if (flag_stack){
+        char is_removed; 
+        int new_value; 
+
+        // Caso registro não conste como removido
+        fread(&is_removed, sizeof(char), 1, file_bin_rw);
+        if (is_removed != '1'){
+            return -1;
+        }
+
+        fread(&new_value, sizeof(int), 1, file_bin_rw);
+
+        // Atualizando o topo da pilha e o nroRegRem
+        header->topo.rrn = new_value;
+        header->nroRegRem = header->nroRegRem - 1;
+
+        fseek(file_bin_rw, -(sizeof(char)+sizeof(int)), SEEK_CUR);
+    }
+
     write_reg_in_bin_type1(file_bin_rw, &V);
 
-    // Atualizando proxRRN no cabeçalho
-    rrn += 1;
-    fseek(file_bin_rw, 174, SEEK_SET);
-    fwrite(&rrn, sizeof(int), 1, file_bin_rw);
-    fseek(file_bin_rw, 0, SEEK_END);
-    
+    if (!flag_stack){
+        (*rrn)++;
+        header->prox.proxRRN = (*rrn);
+    }
+
     return 0;
 }
 
@@ -373,23 +410,29 @@ int read_id_from_reg_type1(FILE *file_bin_r, int *id, int rrn){
     }
 
     // Colocando o ponteiro do arquivo no ID do registro a ser buscado
-    long int id_offset = MAX_RRN * rrn + HEADER_SIZE_TYPE1 + sizeof(char)+sizeof(int);
+    //long int id_offset = MAX_RRN * rrn + HEADER_SIZE_TYPE1 + sizeof(char)+sizeof(int);
+    long int id_offset = MAX_RRN * rrn + HEADER_SIZE_TYPE1;
     fseek(file_bin_r, id_offset, SEEK_SET);
 
-    // Lê ID do registro indicado por rrn
-    // Caso não haja mais registros a serem lidos, retorna sinal de erro 1
-    if (!fread(&(*id), sizeof(int), 1, file_bin_r)) 
+    // Caso não haja mais registros a serem lidos, retorna sinal de erro 3
+    char is_removed;
+    if (!fread(&is_removed, sizeof(char), 1, file_bin_r)){
         return 2;
+    }
+
+    // Caso o registro esteja removido, retorna 
+    if (is_removed == '1'){
+        (*id) = -1;
+        return 0;
+    }
+
+    // Posicionando cursor no ID
+    fseek(file_bin_r, sizeof(int), SEEK_CUR);
+
+    // Lê ID do registro indicado por rrn
+    // Caso não haja mais registros a serem lidos, retorna sinal de erro 3
+    if (!fread(&(*id), sizeof(int), 1, file_bin_r)) 
+        return 3;
 
     return 0;
 }
-
-char get_status(FILE *file_bin_r){
-
-    int status;
-    fseek(file_bin_r, 0, SEEK_SET);
-    fread(&status, 1, sizeof(char), file_bin_r);
-
-    return status;
-}
-
