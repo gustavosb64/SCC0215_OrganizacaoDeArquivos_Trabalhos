@@ -303,10 +303,9 @@ int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, Header *header, int *err
 
 int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, Header *header){
 
-    Vehicle V = initialize_vehicle(TYPE); 
-    read_reg_from_bin_type1(file_bin_rw, &V, rrn);
+    long int offset = rrn*MAX_RRN + HEADER_SIZE_TYPE1;
+    fseek(file_bin_rw, offset, SEEK_SET);
 
-    print_vehicle_full(V);
 
 
 }
