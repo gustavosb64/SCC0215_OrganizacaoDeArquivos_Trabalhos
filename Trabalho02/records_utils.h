@@ -184,7 +184,7 @@ void binarioNaTela(char *nomeArquivoBinario) ;
 /*
  * Comment section
 */
-int add_new_reg(FILE *file_bin_rw, int f_type, Header *header, int id, int ano, int qtt, char *sigla, char *cidade, char *marca, char *modelo);
+int add_new_reg(FILE *file_bin_rw, int f_type, Header *header, char *id, char *ano, char *qtt, char *sigla, char *cidade, char *marca, char *modelo);
 
 /*
  * Comment section
@@ -224,7 +224,7 @@ char get_status(FILE *file_bin_r);
 /*
  * Comment section
 */
-int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** fields, char** values) ;
+int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** fields, char** values, Header *header) ;
 
 /*
  * Comment section

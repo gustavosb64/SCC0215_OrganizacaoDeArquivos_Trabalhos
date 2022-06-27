@@ -61,7 +61,7 @@ int search_vehicle_rrn(char *filename_in_bin ,int rrn) ;
 /*
  * Comment section
 */
-int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, Header *header, int *err);
+int remove_reg_by_rrn(FILE *file_bin_rw, int rrn, Header *header);
 
 /*
  * Comment section

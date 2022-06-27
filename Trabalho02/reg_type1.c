@@ -301,12 +301,33 @@ int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, Header *header, int *err
 }
 */
 
-int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, Header *header){
+int remove_reg_by_rrn(FILE *file_bin_rw, int rrn, Header *header){
 
+    // Posicionando o ponteiro no registro a ser deletado
     long int offset = rrn*MAX_RRN + HEADER_SIZE_TYPE1;
     fseek(file_bin_rw, offset, SEEK_SET);
 
+    // Checa se o arquivo já não está removido
+    char is_removed;
+    fread(&is_removed, sizeof(char), 1, file_bin_rw);
+    if (is_removed == '1') 
+        return -1;
 
+    fseek(file_bin_rw, -sizeof(char), SEEK_CUR);
+
+    // Preenche registro com '$' para indicar lixo
+    initialize_reg_type1(file_bin_rw);
+
+    is_removed = '1';
+    fwrite(&is_removed, sizeof(char), 1, file_bin_rw);
+    
+    // Atualiza pilha
+    int stack_top = header->topo.rrn;
+    fwrite(&stack_top, sizeof(char), 1, file_bin_rw);
+
+    header->topo.rrn = rrn;
+    
+    return 0;
 
 }
 

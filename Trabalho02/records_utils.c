@@ -690,7 +690,7 @@ void binarioNaTela(char *nomeArquivoBinario) {
 	fclose(fs);
 }
 
-int add_new_reg(FILE *file_bin_rw, int f_type, Header *header, int id, int ano, int qtt, char *sigla, char *cidade, char *marca, char *modelo){
+int add_new_reg(FILE *file_bin_rw, int f_type, Header *header, char *id, char *ano, char *qtt, char *sigla, char *cidade, char *marca, char *modelo){
 
     Vehicle V = initialize_vehicle(f_type);
 
@@ -698,9 +698,18 @@ int add_new_reg(FILE *file_bin_rw, int f_type, Header *header, int id, int ano, 
     V.tamMarca = strlen(marca);
     V.tamModelo = strlen(modelo);
 
-    V.id = id;
-    V.ano = ano;
-    V.qtt = qtt;
+    V.id = atoi(id);
+//    printf("id: %d\n", V.id);
+    if (strcmp("NULO", ano)){
+        V.ano = atoi(ano);
+//        printf("ano: %d\n", V.ano);
+    }
+    else V.ano = -1;
+    if (strcmp("NULO", qtt)){
+        V.qtt = atoi(qtt);
+//        printf("qtt: %d\n", V.qtt);
+    }
+    else V.qtt = -1;
     if (strlen(sigla) == 0){
         V.sigla = NULL;
     }
@@ -908,7 +917,7 @@ char get_status(FILE *file_bin_r){
     return status;
 }
 
-int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** fields, char** values) {
+int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** fields, char** values, Header *header) {
 
     int has_id = 0;
     int is_selected;
@@ -920,7 +929,7 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
             Vehicle V = initialize_vehicle(f_type);
             if (f_type==1) {
                 int rrn = search_index_from_idx(file_idx_rw, atoi(values[i]), f_type);
-                printf("%d\n", rrn);
+                //printf("%d\n", rrn);
                 read_reg_from_bin_type1(file_bin_rw, &V, rrn);
 
                 // Checa se atende à todas as condições do select
@@ -932,8 +941,8 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
                 if (is_selected == n-1) {
 
                     // Executa remoção
-                    
-                    print_vehicle_full(V,1);
+                    //remove_reg_by_rrn(file_bin_rw, rrn,  
+                    //print_vehicle_full(V,1);
                     printf("\n");
                 }
             } else if(f_type==2) {
