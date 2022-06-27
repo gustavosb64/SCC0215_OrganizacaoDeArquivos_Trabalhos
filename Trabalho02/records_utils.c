@@ -941,13 +941,14 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
                 if (is_selected == n-1) {
 
                     // Executa remoção
-                    //remove_reg_by_rrn(file_bin_rw, rrn,  
+                    if (rrn >= 0)
+                        remove_reg_by_rrn(file_bin_rw, rrn, header);
                     //print_vehicle_full(V,1);
-                    printf("\n");
+                    //printf("\n");
                 }
             } else if(f_type==2) {
                 long int offset = search_index_from_idx(file_idx_rw, atoi(values[i]), f_type);
-                printf("%ld\n", offset);
+                //printf("%ld\n", offset);
                 read_reg_from_bin_type2(file_bin_rw, &V, &offset);
 
                 // Checa se atende à todas as condições do select
@@ -960,8 +961,8 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
                     
                     // Executa remoção
 
-                    print_vehicle_full(V,2);
-                    printf("\n");
+                    //print_vehicle_full(V,2);
+                    //printf("\n");
                 }
             }
             free_vehicle(&V);
@@ -990,6 +991,8 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
                 if (is_selected == n) {
 
                     // Executa remoção
+                    if (rrn >= 0)
+                        remove_reg_by_rrn(file_bin_rw, rrn, header);
                     
                     //print_vehicle(V,1);
                     //printf("\n");

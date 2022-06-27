@@ -185,6 +185,7 @@ void delete_cmd(int f_type) {
         return;
     }
 
+    set_status_bin(file_bin_rw, '0');
     Header *header = read_header_from_bin(file_bin_rw, f_type);
 
     int n;
@@ -209,6 +210,10 @@ void delete_cmd(int f_type) {
             }
         }
 
+        /*
+        printf("######################\n");
+        print_header(header, f_type);
+        */
         delete_bin(file_bin_rw, f_type, file_idx_rw, x, fields, values, header);
 
         for (int j=0; j<x; j++) {
@@ -217,7 +222,15 @@ void delete_cmd(int f_type) {
         }
         free(fields);
         free(values);
+        fflush(file_bin_rw);
     }
+
+    update_header(file_bin_rw, header, f_type);
+    set_status_bin(file_bin_rw, '1');
+
+    // Reescrevendo arquivo de índices
+    write_idx_file_from_bin(f_bin, f_idx, f_type);
+
     binarioNaTela(f_bin);
     binarioNaTela(f_idx);
 

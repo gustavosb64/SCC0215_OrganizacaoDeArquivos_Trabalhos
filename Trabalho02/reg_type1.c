@@ -73,11 +73,6 @@ int initialize_reg_type1(FILE *file_bin_w){
 
 int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn){
 
-    // Caso o arquivo de registros não esteja consistente
-    if (get_status(file_bin_r) != '1'){
-        return 2;
-    }
-
     // Colocando o ponteiro do arquivo no início do registro a ser buscado
     fseek(file_bin_r, MAX_RRN*rrn + HEADER_SIZE_TYPE1, SEEK_SET);
 
@@ -315,20 +310,17 @@ int remove_reg_by_rrn(FILE *file_bin_rw, int rrn, Header *header){
 
     fseek(file_bin_rw, -sizeof(char), SEEK_CUR);
 
-    // Preenche registro com '$' para indicar lixo
-    initialize_reg_type1(file_bin_rw);
-
     is_removed = '1';
     fwrite(&is_removed, sizeof(char), 1, file_bin_rw);
     
     // Atualiza pilha
     int stack_top = header->topo.rrn;
-    fwrite(&stack_top, sizeof(char), 1, file_bin_rw);
+    fwrite(&stack_top, sizeof(int), 1, file_bin_rw);
 
     header->topo.rrn = rrn;
+    header->nroRegRem += 1;
     
     return 0;
-
 }
 
 /* AUTOTAD_PRIVATE
