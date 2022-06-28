@@ -185,6 +185,7 @@ void delete_cmd(int f_type) {
         return;
     }
 
+    set_status_bin(file_bin_rw, '0');
     Header *header = read_header_from_bin(file_bin_rw, f_type);
 
     int n;
@@ -194,6 +195,7 @@ void delete_cmd(int f_type) {
     char** fields;
     char** values;
     int x;
+
     for (int i=0; i<n; i++) {
         scanf("%d ", &x);
         values = malloc(x*sizeof(char*));
@@ -209,6 +211,10 @@ void delete_cmd(int f_type) {
             }
         }
 
+        /*
+        printf("######################\n");
+        print_header(header, f_type);
+        */
         delete_bin(file_bin_rw, f_type, file_idx_rw, x, fields, values, header);
 
         for (int j=0; j<x; j++) {
@@ -217,7 +223,15 @@ void delete_cmd(int f_type) {
         }
         free(fields);
         free(values);
+        fflush(file_bin_rw);
     }
+
+    update_header(file_bin_rw, header, f_type);
+    set_status_bin(file_bin_rw, '1');
+
+    // Reescrevendo arquivo de índices
+    write_idx_file_from_bin(f_bin, f_idx, f_type);
+
     binarioNaTela(f_bin);
     binarioNaTela(f_idx);
 
@@ -311,52 +325,97 @@ void insert_cmd(int f_type) {
 /* Operação 8
  * Update */
 void update_cmd(int f_type) {
+
     // Delimitador utilizado na leitura da string
     char aux_delimiters[1] = " ";
 
     // Lê nomes dos arquivos
     char *f_bin = readline(stdin, aux_delimiters);
     char *f_idx = readline(stdin, aux_delimiters);
+    
+    // Caso haja falha na leitura do arquivo, retorna 1
+    FILE *file_bin_rw = fopen(f_bin, "rb+");
+    if (file_bin_rw == NULL){
+        return;
+    }
+    FILE *file_idx_rw = fopen(f_idx, "rb+");
+    if (file_idx_rw == NULL){
+        return;
+    }
+
+    set_status_bin(file_bin_rw, '0');
+    Header *header = read_header_from_bin(file_bin_rw, f_type);
 
     int n;
     scanf("%d\n", &n);
 
     // Delimitador utilizado na leitura da string
-    char** fields;
-    char** values;
-    int x;
+    char** search_fields;
+    char** search_values;
+    char** update_fields;
+    char** update_values;
+    int x,y;
     for (int i=0; i<n; i++) {
         scanf("%d ", &x);
-        values = malloc(x*sizeof(char*));
-        fields = malloc(x*sizeof(char*));
+        search_values = malloc(x*sizeof(char*));
+        search_fields = malloc(x*sizeof(char*));
         for (int j=0; j<x; j++) {
-            fields[j] = readline(stdin, aux_delimiters);
-            if (strcmp("id", fields[j]) == 0 || strcmp("ano", fields[j]) == 0 || strcmp("qtt", fields[j]) == 0) {
-                values[j] = readline(stdin, aux_delimiters);
+            search_fields[j] = readline(stdin, aux_delimiters);
+            if (strcmp("id", search_fields[j]) == 0 || strcmp("ano", search_fields[j]) == 0 || strcmp("qtt", search_fields[j]) == 0) {
+                search_values[j] = readline(stdin, aux_delimiters);
             } else {
-                values[j] = malloc(30*sizeof(char));
-                scan_quote_string(values[j]);
+                search_values[j] = malloc(30*sizeof(char));
+                scan_quote_string(search_values[j]);
                 getchar();
             }
         }
 
-        //update_bin(f_bin, f_type, f_idx, x, fields, values);
+        scanf("%d ", &y);
+        update_values = malloc(y*sizeof(char*));
+        update_fields = malloc(y*sizeof(char*));
+        for (int j=0; j<y; j++) {
+            update_fields[j] = readline(stdin, aux_delimiters);
+            if (strcmp("id", update_fields[j]) == 0 || strcmp("ano", update_fields[j]) == 0 || strcmp("qtt", update_fields[j]) == 0) {
+                update_values[j] = readline(stdin, aux_delimiters);
+            } else {
+                update_values[j] = malloc(30*sizeof(char));
+                scan_quote_string(update_values[j]);
+                getchar();
+            }
+        }
+
+        update_bin(file_bin_rw, f_type, file_idx_rw, x, search_fields, search_values, y, update_fields, update_values, header);
 
         for (int j=0; j<x; j++) {
-            free(fields[j]);
-            free(values[j]);
+            free(search_fields[j]);
+            free(search_values[j]);
         }
-        free(fields);
-        free(values);
+        for (int j=0; j<y; j++) {
+            free(update_fields[j]);
+            free(update_values[j]);
+        }
+        free(search_fields);
+        free(search_values);
+        free(update_fields);
+        free(update_values);
+        fflush(file_bin_rw);
     }
+
+    update_header(file_bin_rw, header, f_type);
+    set_status_bin(file_bin_rw, '1');
+
+    // Reescrevendo arquivo de índices
+    write_idx_file_from_bin(f_bin, f_idx, f_type);
+
     binarioNaTela(f_bin);
     binarioNaTela(f_idx);
 
     free(f_bin);
     free(f_idx);
+
+    fclose(file_bin_rw);
+    fclose(file_idx_rw);
 }
-
-
 
 int main(int argc, char *argv[]){
 

@@ -39,6 +39,16 @@ int read_reg_from_bin_type2(FILE *file_bin_r, Vehicle *V, long int *offset);
 /*
  * Comment section
 */
+int remove_reg_by_offset(FILE *file_bin_rw, long int *offset, Header *header);
+
+/*
+ * Comment section
+*/
+void print_list_type2(FILE *file_bin_rw, Header *header);
+
+/*
+ * Comment section
+*/
 void clean_reg_type2(FILE *file_bin_rw, int tamReg);
 
 /*

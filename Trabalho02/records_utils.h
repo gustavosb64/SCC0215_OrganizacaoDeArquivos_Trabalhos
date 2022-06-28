@@ -229,7 +229,12 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
 /*
  * Comment section
 */
-int update_bin(char* f_bin, int f_type, char* f_idx, int x, char** fields, char** values) ;
+void update_vehicle(Vehicle *V, int n, char** fields, char** values) ;
+
+/*
+ * Comment section
+*/
+int update_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int x, char** search_fields, char** search_values, int y, char** update_fields, char** update_values, Header *header) ;
 
 /*
  * Comment section

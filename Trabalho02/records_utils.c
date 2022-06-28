@@ -7,6 +7,7 @@
 #include "./reg_type2.h"
 #include "./index.h"
 
+#define MAX_RRN 97
 #define HEADER_SIZE_TYPE1 182
 #define HEADER_SIZE_TYPE2 190
 struct header{
@@ -941,13 +942,14 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
                 if (is_selected == n-1) {
 
                     // Executa remoção
-                    //remove_reg_by_rrn(file_bin_rw, rrn,  
+                    if (rrn >= 0)
+                        remove_reg_by_rrn(file_bin_rw, rrn, header);
                     //print_vehicle_full(V,1);
-                    printf("\n");
+                    //printf("\n");
                 }
             } else if(f_type==2) {
                 long int offset = search_index_from_idx(file_idx_rw, atoi(values[i]), f_type);
-                printf("%ld\n", offset);
+                //printf("%ld\n", offset);
                 read_reg_from_bin_type2(file_bin_rw, &V, &offset);
 
                 // Checa se atende à todas as condições do select
@@ -958,10 +960,15 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
                 }  
                 if (is_selected == n-1) {
                     
-                    // Executa remoção
+                    // Retorna o ponteiro do arquivo para o registro selecionado
+                    long int rem_offset = offset - V.tamanhoRegistro - 5;
 
-                    print_vehicle_full(V,2);
-                    printf("\n");
+                    // Executa remoção
+                    if (rem_offset >= 0)
+                        remove_reg_by_offset(file_bin_rw, &rem_offset, header);
+
+                    //print_vehicle_full(V,2);
+                    //printf("\n");
                 }
             }
             free_vehicle(&V);
@@ -988,11 +995,180 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
                 }        
 
                 if (is_selected == n) {
-
+                    
                     // Executa remoção
+                    if (rrn >= 0)
+                        remove_reg_by_rrn(file_bin_rw, rrn, header);
                     
                     //print_vehicle(V,1);
                     //printf("\n");
+                }
+
+                // Libera a memória alocada durante a leitura
+                free_vehicle(&V);
+                V = initialize_vehicle(1);
+                rrn++;
+            }
+
+        }
+        else if (f_type == 2){
+
+            long int offset = HEADER_SIZE_TYPE2;
+            long int rem_offset;
+
+            // Enquanto ainda houverem registros a serem lidos no arquivo de dados
+            while(!read_reg_from_bin_type2(file_bin_rw, &V, &offset)){
+                
+                // Checa se atende à todas as condições do select
+                is_selected = 0;
+                for (int i=0; i<n; i++) {
+                    if (strcmp("id", fields[i])!=0) 
+                        is_selected = is_selected + check_meets_condition(V, fields[i], values[i], 0);
+                }        
+                if (is_selected == n) {
+
+                    // Retorna o ponteiro do arquivo para o registro selecionado
+                    rem_offset = offset - V.tamanhoRegistro - 5;
+
+                    // Executa remoção
+                    if (rem_offset >= 0)
+                        remove_reg_by_offset(file_bin_rw, &rem_offset, header);
+                    
+                    //print_vehicle(V,2);
+                    //printf("\n");
+                }
+
+                // Libera a memória alocada durante a leitura
+                free_vehicle(&V);
+                V = initialize_vehicle(2);
+            }
+
+        }
+    }
+
+    return 0;
+}
+
+void update_vehicle(Vehicle *V, int n, char** fields, char** values) {
+    for(int i=0; i<n; i++){
+        if (strcmp(fields[i], "id") == 0) {
+            V->id = atoi(values[i]);
+
+            } else if (strcmp(fields[i], "marca") == 0) {
+                free(V->marca);
+                V->marca = (char *) calloc(strlen(values[i])+1, sizeof(char));
+                V->marca = values[i];
+
+            } else if (strcmp(fields[i], "cidade") == 0) {
+                free(V->cidade);
+                V->cidade = (char *) calloc(strlen(values[i])+1, sizeof(char));
+                V->cidade = values[i];
+
+            } else if (strcmp(fields[i], "estado") == 0 || strcmp(fields[i], "sigla") == 0) {
+                free(V->sigla);
+                V->sigla = (char *) calloc(strlen(values[i])+1, sizeof(char));
+                V->sigla = values[i];
+
+            } else if (strcmp(fields[i], "modelo") == 0) {
+                free(V->modelo);
+                V->modelo = (char *) calloc(strlen(values[i])+1, sizeof(char));
+                V->modelo = values[i];
+
+            } else if (strcmp(fields[i], "quantidade") == 0) {
+                V->qtt = atoi(values[i]);
+
+            } else if (strcmp(fields[i], "ano") == 0) {
+                V->ano = atoi(values[i]);
+
+            }
+    }
+    return;
+}
+
+int update_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int x, char** search_fields, char** search_values, int y, char** update_fields, char** update_values, Header *header) {
+    int has_id = 0;
+    int is_selected;
+    for(int i=0; i<x; i++) {
+        if(strcmp("id", search_fields[i])==0) {
+            // Busca por id no arquivo de índice
+            has_id = 1;
+
+            Vehicle V = initialize_vehicle(f_type);
+            if (f_type==1) {
+                int rrn = search_index_from_idx(file_idx_rw, atoi(search_values[i]), f_type);
+                //printf("%d\n", rrn);
+                read_reg_from_bin_type1(file_bin_rw, &V, rrn);
+
+                // Checa se atende à todas as condições do select
+                is_selected = 0;
+                for (int j=0; j<x; j++) {
+                    if (strcmp("id", search_fields[i])!=0) 
+                        is_selected = is_selected + check_meets_condition(V, search_fields[j], search_values[j], 0);
+                }  
+                if (is_selected == x-1) {
+                    // Executa update
+                    if (rrn >= 0) {
+                        update_vehicle(&V, y, update_fields, update_values);
+                        long int file_offset = (rrn)*MAX_RRN + HEADER_SIZE_TYPE1;
+                        fseek(file_bin_rw, file_offset, SEEK_SET);
+                        write_reg_in_bin_type1(file_bin_rw, &V);
+                    }
+                    //print_vehicle_full(V,1);
+                    //printf("\n");
+                }
+            } else if(f_type==2) {
+                long int offset = search_index_from_idx(file_idx_rw, atoi(search_values[i]), f_type);
+                //printf("%ld\n", offset);
+                read_reg_from_bin_type2(file_bin_rw, &V, &offset);
+
+                // Checa se atende à todas as condições do select
+                is_selected = 0;
+                for (int j=0; j<x; j++) {
+                    if (strcmp("id", search_fields[i])!=0) 
+                        is_selected = is_selected + check_meets_condition(V, search_fields[j], search_values[j], 0);
+                }  
+                if (is_selected == x-1) {
+                    
+                    // Executa update
+                    update_vehicle(&V, y, update_fields, update_values);
+
+                    //print_vehicle_full(V,2);
+                    //printf("\n");
+                }
+            }
+            free_vehicle(&V);
+        } 
+     }
+
+    if(!has_id) {
+        // Busca por valores nos campos
+        Vehicle V = initialize_vehicle(f_type);
+
+        // Realiza diferentes rotinas a depender do tipo a ser lido
+        if (f_type == 1){
+
+            int rrn = 0;
+
+            // Enquanto ainda houverem registros a serem lidos no arquivo de dados
+            while(!read_reg_from_bin_type1(file_bin_rw, &V, rrn)){
+                // Checa se atende à todas as condições do select
+                is_selected = 0;
+                for (int i=0; i<x; i++) {
+                    if (strcmp("id", search_fields[i])!=0) 
+                        is_selected = is_selected + check_meets_condition(V, search_fields[i], search_values[i], 0);
+                }        
+
+                if (is_selected == x) {
+
+                    // Executa update
+                    if (rrn >= 0) {
+                        update_vehicle(&V, y, update_fields, update_values);
+                        long int file_offset = (rrn)*MAX_RRN + HEADER_SIZE_TYPE1;
+                        fseek(file_bin_rw, file_offset, SEEK_SET);
+                        write_reg_in_bin_type1(file_bin_rw, &V);
+                    }
+                    print_vehicle(V,1);
+                    printf("\n");
                 }
 
                 // Libera a memória alocada durante a leitura
@@ -1010,13 +1186,14 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
             while(!read_reg_from_bin_type2(file_bin_rw, &V, &offset)){
                 // Checa se atende à todas as condições do select
                 is_selected = 0;
-                for (int i=0; i<n; i++) {
-                    if (strcmp("id", fields[i])!=0) 
-                        is_selected = is_selected + check_meets_condition(V, fields[i], values[i], 0);
+                for (int i=0; i<x; i++) {
+                    if (strcmp("id", search_fields[i])!=0) 
+                        is_selected = is_selected + check_meets_condition(V, search_fields[i], search_values[i], 0);
                 }        
-                if (is_selected == n) {
+                if (is_selected == x) {
 
-                    // Executa remoção
+                    // Executa update
+                    update_vehicle(&V, y, update_fields, update_values);
                     
                     //print_vehicle(V,2);
                     //printf("\n");
@@ -1029,11 +1206,6 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
 
         }
     }
-
-    return 0;
-}
-
-int update_bin(char* f_bin, int f_type, char* f_idx, int x, char** fields, char** values) {
     return 0;
 }
 
