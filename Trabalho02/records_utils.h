@@ -1,6 +1,7 @@
 #ifndef RECORDS_UTILS_H
 #define RECORDS_UTILS_H
 
+#include "./index.h"
 
 /*
  * Estrutura contendo os dados do cabeçalho dos arquivos de registro binários
@@ -184,7 +185,7 @@ void binarioNaTela(char *nomeArquivoBinario) ;
 /*
  * Comment section
 */
-int add_new_reg(FILE *file_bin_rw, int f_type, Header *header, char *id, char *ano, char *qtt, char *sigla, char *cidade, char *marca, char *modelo);
+int add_new_reg(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, Header *header, char *id, char *ano, char *qtt, char *sigla, char *cidade, char *marca, char *modelo);
 
 /*
  * Comment section
@@ -224,7 +225,7 @@ char get_status(FILE *file_bin_r);
 /*
  * Comment section
 */
-int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** fields, char** values, Header *header) ;
+int delete_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, int n, char** fields, char** values, Header *header) ;
 
 /*
  * Comment section
@@ -234,7 +235,7 @@ void update_vehicle(Vehicle *V, int n, char** fields, char** values) ;
 /*
  * Comment section
 */
-int update_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int x, char** search_fields, char** search_values, int y, char** update_fields, char** update_values, Header *header) ;
+int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, int x, char** search_fields, char** search_values, int y, char** update_fields, char** update_values, Header *header) ;
 
 /*
  * Comment section

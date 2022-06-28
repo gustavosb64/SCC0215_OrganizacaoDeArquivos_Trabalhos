@@ -376,8 +376,9 @@ int print_reg_from_bin_by_rrn(char *filename, int rrn){
 
 int add_new_reg_type1(FILE *file_bin_rw, Vehicle V, int *rrn, Header *header){
 
-    int flag_stack = 0;
+    int flag_stack = 0; // flag para indicar se houve reaproveitamento de espaço
 
+    // Checa se a pilha de registros removidos não está vazia
     if (header->topo.rrn == -1)
         (*rrn) = header->prox.proxRRN;
     else{ 
@@ -385,33 +386,37 @@ int add_new_reg_type1(FILE *file_bin_rw, Vehicle V, int *rrn, Header *header){
         flag_stack = 1;
     }
 
+    // Posiciona o cursor onde será inserido o novo registro
     long int offset = (*rrn)*MAX_RRN + HEADER_SIZE_TYPE1;
     fseek(file_bin_rw, offset, SEEK_SET);
 
+    // Caso haja espaço a ser reaproveitado
     if (flag_stack){
         char is_removed; 
         int new_value; 
 
-        // Caso registro não conste como removido
+        // Caso registro não conste como removido, retorna
         fread(&is_removed, sizeof(char), 1, file_bin_rw);
         if (is_removed != '1'){
             return -1;
         }
 
-        fread(&new_value, sizeof(int), 1, file_bin_rw);
-
         // Atualizando o topo da pilha e o nroRegRem
+        fread(&new_value, sizeof(int), 1, file_bin_rw);
         header->topo.rrn = new_value;
         header->nroRegRem = header->nroRegRem - 1;
 
+        // Retorna o ponteiro ao início do registro
         fseek(file_bin_rw, -(sizeof(char)+sizeof(int)), SEEK_CUR);
     }
 
+    // Reescreve o registro com os dados novos
     write_reg_in_bin_type1(file_bin_rw, &V);
 
+    // Caso o registro tenha sido inserido ao final
     if (!flag_stack){
-        (*rrn)++;
-        header->prox.proxRRN = (*rrn);
+        int new_proxRRN = (*rrn)+1;
+        header->prox.proxRRN = new_proxRRN;
     }
 
     return 0;
@@ -449,5 +454,23 @@ int read_id_from_reg_type1(FILE *file_bin_r, int *id, int rrn){
     if (!fread(&(*id), sizeof(int), 1, file_bin_r)) 
         return 3;
 
+    return 0;
+}
+
+int update_reg_type1(FILE *file_bin_rw, Vehicle V, int rrn){
+
+    // Posicionando o ponteiro no registro a ser deletado
+    long int offset = rrn*MAX_RRN + HEADER_SIZE_TYPE1;
+    fseek(file_bin_rw, offset, SEEK_SET);
+
+    // Checa se registro não está removido
+    char is_removed;
+    fread(&is_removed, sizeof(char), 1, file_bin_rw);
+    if(is_removed == '1')
+        return -1;
+    fseek(file_bin_rw, -1, SEEK_CUR);
+
+    write_reg_in_bin_type1(file_bin_rw, &V);
+    
     return 0;
 }

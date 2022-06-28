@@ -44,22 +44,22 @@ int remove_reg_by_offset(FILE *file_bin_rw, long int *offset, Header *header);
 /*
  * Comment section
 */
-void print_list_type2(FILE *file_bin_rw, Header *header);
-
-/*
- * Comment section
-*/
 void clean_reg_type2(FILE *file_bin_rw, int tamReg);
 
 /*
  * Comment section
 */
-int add_new_reg_type2(FILE *file_bin_rw, Vehicle V, Header *header);
+int add_new_reg_type2(FILE *file_bin_rw, Vehicle V, Header *header, long int *offset);
 
 /*
  * Comment section
 */
 int read_id_from_reg_type2(FILE *file_bin_r, int *id, long int *offset);
+
+/*
+ * Comment section
+*/
+int update_reg_type2(FILE *file_bin_rw, Vehicle V, Header *header, long int *offset, Index **I_list, int n_indices);
 
 
 #endif

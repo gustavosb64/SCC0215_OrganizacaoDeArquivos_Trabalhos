@@ -180,10 +180,15 @@ void delete_cmd(int f_type) {
     if (file_bin_rw == NULL){
         return;
     }
-    FILE *file_idx_rw = fopen(f_idx, "rb+");
+    FILE *file_idx_rw = fopen(f_idx, "rb");
     if (file_idx_rw == NULL){
         return;
     }
+
+    int n_indices = 0;
+    Index *I_list = load_all_indices_from_idx(file_idx_rw, f_type, &n_indices);
+
+    fclose(file_idx_rw);
 
     set_status_bin(file_bin_rw, '0');
     Header *header = read_header_from_bin(file_bin_rw, f_type);
@@ -211,11 +216,7 @@ void delete_cmd(int f_type) {
             }
         }
 
-        /*
-        printf("######################\n");
-        print_header(header, f_type);
-        */
-        delete_bin(file_bin_rw, f_type, file_idx_rw, x, fields, values, header);
+        delete_bin(file_bin_rw, f_type, &I_list, &n_indices, x, fields, values, header);
 
         for (int j=0; j<x; j++) {
             free(fields[j]);
@@ -226,20 +227,20 @@ void delete_cmd(int f_type) {
         fflush(file_bin_rw);
     }
 
+    // Atualizando cabeçalho 
     update_header(file_bin_rw, header, f_type);
-    set_status_bin(file_bin_rw, '1');
+    fclose(file_bin_rw);
 
-    // Reescrevendo arquivo de índices
-    write_idx_file_from_bin(f_bin, f_idx, f_type);
+    // Atualiza arquivo de índices
+    refresh_idx_file(f_idx, I_list, n_indices, f_type);
 
     binarioNaTela(f_bin);
     binarioNaTela(f_idx);
 
     free(f_bin);
     free(f_idx);
-
-    fclose(file_bin_rw);
-    fclose(file_idx_rw);
+    free(header);
+    free(I_list);
 }
 
 /* Operação 7
@@ -252,17 +253,22 @@ void insert_cmd(int f_type) {
     char *f_bin = readline(stdin, aux_delimiters);
     char *f_idx = readline(stdin, aux_delimiters);
 
+
+    // Carregando lista de índices na memória RAM
+    FILE *file_idx_rw = fopen(f_idx, "rb+"); 
+
+    int n_indices = 0;
+    Index *I_list = load_all_indices_from_idx(file_idx_rw, f_type, &n_indices);
+
+    fclose(file_idx_rw);
+
     FILE *file_bin_rw = fopen(f_bin, "rb+"); 
+
+    // Carregando cabeçalho na memória RAM
+    Header *header = read_header_from_bin(file_bin_rw, f_type);
 
     // Setando status para inconsistente
     set_status_bin(file_bin_rw, '0');
-
-    Header *header = read_header_from_bin(file_bin_rw, f_type);
-
-    /*
-    printf("-----\n");
-    print_header(header, f_type);
-    */
 
     int n;
     scanf("%d\n", &n);
@@ -285,41 +291,33 @@ void insert_cmd(int f_type) {
         scan_quote_string(modelo);
         getchar();
 
-        //printf("%d, %d, %d, %s, %s, %s, %s\n", id, ano, qtt, sigla, cidade, marca, modelo);
+        add_new_reg(file_bin_rw, f_type, &I_list, &n_indices, header, id, ano, qtt, sigla, cidade, marca, modelo);
 
-        
-        /*
-        printf("##################\n");
-        printf("id: %s ano: %s qtt: %s\n",id,ano,qtt);
-        printf("sigla: %s cidade: %s marca: %s modelo: %s \n",sigla,cidade,marca,modelo);
-        printf("##################\n");
-        printf("-----\n");
-        //print_header(header, f_type);
-        */
-        
-
-        add_new_reg(file_bin_rw, f_type, header, id, ano, qtt, sigla, cidade, marca, modelo);
-//        add_new_reg(file_bin_rw, f_type, id, ano, qtt, sigla, cidade, marca, modelo);
     }
 
+    // Atualizando cabeçalho 
     update_header(file_bin_rw, header, f_type);
-    set_status_bin(file_bin_rw, '1');
+    fclose(file_bin_rw);
 
-    fflush(file_bin_rw);
-    // Reescrevendo arquivo de índices
-    write_idx_file_from_bin(f_bin, f_idx, f_type);
+    // Atualiza arquivo de índices
+    refresh_idx_file(f_idx, I_list, n_indices, f_type);
 
     binarioNaTela(f_bin);
     binarioNaTela(f_idx);
     
+    free(id);
+    free(ano);
+    free(qtt);
     free(sigla);
     free(cidade);
     free(marca);
     free(modelo);
     free(f_bin);
     free(f_idx);
+    free(header);
 
-    fclose(file_bin_rw);
+    free(I_list);
+
 } 
 
 /* Operação 8
@@ -338,10 +336,15 @@ void update_cmd(int f_type) {
     if (file_bin_rw == NULL){
         return;
     }
-    FILE *file_idx_rw = fopen(f_idx, "rb+");
-    if (file_idx_rw == NULL){
+    FILE *file_idx_r = fopen(f_idx, "rb");
+    if (file_idx_r == NULL){
         return;
     }
+
+    // Carregando o arquivo de índices na memória RAM
+    int n_indices = 0;
+    Index *I_list = load_all_indices_from_idx(file_idx_r, f_type, &n_indices);
+    fclose(file_idx_r);
 
     set_status_bin(file_bin_rw, '0');
     Header *header = read_header_from_bin(file_bin_rw, f_type);
@@ -384,7 +387,7 @@ void update_cmd(int f_type) {
             }
         }
 
-        update_bin(file_bin_rw, f_type, file_idx_rw, x, search_fields, search_values, y, update_fields, update_values, header);
+        update_bin(file_bin_rw, f_type, &I_list, &n_indices, x, search_fields, search_values, y, update_fields, update_values, header);
 
         for (int j=0; j<x; j++) {
             free(search_fields[j]);
@@ -401,8 +404,8 @@ void update_cmd(int f_type) {
         fflush(file_bin_rw);
     }
 
+    // Atualizando cabeçalho 
     update_header(file_bin_rw, header, f_type);
-    set_status_bin(file_bin_rw, '1');
 
     // Reescrevendo arquivo de índices
     write_idx_file_from_bin(f_bin, f_idx, f_type);
@@ -412,9 +415,9 @@ void update_cmd(int f_type) {
 
     free(f_bin);
     free(f_idx);
+    free(header);
 
     fclose(file_bin_rw);
-    fclose(file_idx_rw);
 }
 
 int main(int argc, char *argv[]){

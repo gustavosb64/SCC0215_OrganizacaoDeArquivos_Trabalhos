@@ -223,7 +223,11 @@ Header* read_header_from_bin(FILE *file_bin_r, int f_type){
 
 int update_header(FILE *file_bin_rw, Header *H, int f_type){
 
-    fseek(file_bin_rw, 1, SEEK_SET);
+    fseek(file_bin_rw, 0, SEEK_SET);
+
+    // Escrevendo status
+    H->status = '1';
+    fwrite(&(H->status), sizeof(char), 1, file_bin_rw);
 
     if (f_type == 1) fwrite(&(H->topo.rrn), sizeof(int), 1, file_bin_rw);
     else if (f_type == 2) fwrite(&(H->topo.offset), sizeof(long int), 1, file_bin_rw);
@@ -691,24 +695,22 @@ void binarioNaTela(char *nomeArquivoBinario) {
 	fclose(fs);
 }
 
-int add_new_reg(FILE *file_bin_rw, int f_type, Header *header, char *id, char *ano, char *qtt, char *sigla, char *cidade, char *marca, char *modelo){
+int add_new_reg(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, Header *header, char *id, char *ano, char *qtt, char *sigla, char *cidade, char *marca, char *modelo){
 
     Vehicle V = initialize_vehicle(f_type);
 
+    // Prepara os dados do novo veículo para inseri-lo no arquivo
     V.tamCidade = strlen(cidade);
     V.tamMarca = strlen(marca);
     V.tamModelo = strlen(modelo);
 
     V.id = atoi(id);
-//    printf("id: %d\n", V.id);
     if (strcmp("NULO", ano)){
         V.ano = atoi(ano);
-//        printf("ano: %d\n", V.ano);
     }
     else V.ano = -1;
     if (strcmp("NULO", qtt)){
         V.qtt = atoi(qtt);
-//        printf("qtt: %d\n", V.qtt);
     }
     else V.qtt = -1;
     if (strlen(sigla) == 0){
@@ -719,36 +721,19 @@ int add_new_reg(FILE *file_bin_rw, int f_type, Header *header, char *id, char *a
     V.marca = marca;
     V.modelo = modelo;
 
-    /*
-    V.sigla = (char *) calloc(strlen(sigla)+1, sizeof(char));
-    V.cidade = (char *) calloc(strlen(cidade)+1, sizeof(char));
-    V.marca = (char *) calloc(strlen(marca)+1, sizeof(char));
-    V.modelo = (char *) calloc(strlen(modelo)+1, sizeof(char));
-
-    strcpy(V.sigla, sigla);
-    strcpy(V.cidade, cidade);
-    strcpy(V.marca, marca);
-    strcpy(V.modelo, modelo);
-
-
-    printf("-------\n");
-    if (sigla == NULL) printf("niausdhfiuas\n");
-    print_vehicle_full(V,1);
-    printf("-------\n");
-    */
-
-
     if (f_type == 1){
         int rrn;
-
         add_new_reg_type1(file_bin_rw, V, &rrn, header);
-
+        add_new_index(I_list, n_indices, V.id, rrn, f_type);
     }
     else if (f_type == 2){
 
         V.tamanhoRegistro = V.tamCidade+5 + V.tamMarca+5 + V.tamModelo+5 + 3*sizeof(int) + sizeof(long int) + 2;
 
-        add_new_reg_type2(file_bin_rw, V, header);
+        long int offset = 0;
+        add_new_reg_type2(file_bin_rw, V, header, &offset);
+
+        add_new_index(I_list, n_indices, V.id, offset, f_type);
 
     }
 
@@ -918,7 +903,7 @@ char get_status(FILE *file_bin_r){
     return status;
 }
 
-int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** fields, char** values, Header *header) {
+int delete_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, int n, char** fields, char** values, Header *header) {
 
     int has_id = 0;
     int is_selected;
@@ -929,8 +914,11 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
 
             Vehicle V = initialize_vehicle(f_type);
             if (f_type==1) {
-                int rrn = search_index_from_idx(file_idx_rw, atoi(values[i]), f_type);
-                //printf("%d\n", rrn);
+                int rrn = search_index_from_idx((*I_list), (*n_indices), atoi(values[i]), f_type);
+                
+                // Caso o registro não seja encontrado
+                if (rrn == -1) return -1;
+
                 read_reg_from_bin_type1(file_bin_rw, &V, rrn);
 
                 // Checa se atende à todas as condições do select
@@ -944,12 +932,16 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
                     // Executa remoção
                     if (rrn >= 0)
                         remove_reg_by_rrn(file_bin_rw, rrn, header);
-                    //print_vehicle_full(V,1);
-                    //printf("\n");
+
+                    // Remove do arquivo de índices
+                    remove_index(I_list, n_indices, V.id);
                 }
             } else if(f_type==2) {
-                long int offset = search_index_from_idx(file_idx_rw, atoi(values[i]), f_type);
-                //printf("%ld\n", offset);
+                long int offset = search_index_from_idx((*I_list), (*n_indices), atoi(values[i]), f_type);
+
+                // Caso o registro não seja encontrado
+                if (offset == -1) return -1;
+
                 read_reg_from_bin_type2(file_bin_rw, &V, &offset);
 
                 // Checa se atende à todas as condições do select
@@ -967,8 +959,8 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
                     if (rem_offset >= 0)
                         remove_reg_by_offset(file_bin_rw, &rem_offset, header);
 
-                    //print_vehicle_full(V,2);
-                    //printf("\n");
+                    // Remove do arquivo de índices
+                    remove_index(I_list, n_indices, V.id);
                 }
             }
             free_vehicle(&V);
@@ -1000,8 +992,9 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
                     if (rrn >= 0)
                         remove_reg_by_rrn(file_bin_rw, rrn, header);
                     
-                    //print_vehicle(V,1);
-                    //printf("\n");
+                    // Remove do arquivo de índices
+                    remove_index(I_list, n_indices, V.id);
+
                 }
 
                 // Libera a memória alocada durante a leitura
@@ -1034,8 +1027,8 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
                     if (rem_offset >= 0)
                         remove_reg_by_offset(file_bin_rw, &rem_offset, header);
                     
-                    //print_vehicle(V,2);
-                    //printf("\n");
+                    // Remove do arquivo de índices
+                    remove_index(I_list, n_indices, V.id);
                 }
 
                 // Libera a memória alocada durante a leitura
@@ -1051,41 +1044,76 @@ int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** f
 
 void update_vehicle(Vehicle *V, int n, char** fields, char** values) {
     for(int i=0; i<n; i++){
+        printf("%s (%ld): %s (%ld)\n", fields[i], strlen(fields[i]), values[i], strlen(values[i]));
+
         if (strcmp(fields[i], "id") == 0) {
             V->id = atoi(values[i]);
 
             } else if (strcmp(fields[i], "marca") == 0) {
-                free(V->marca);
-                V->marca = (char *) calloc(strlen(values[i])+1, sizeof(char));
-                V->marca = values[i];
+                if(V->marca != NULL)
+                    free(V->marca);
+
+                if(strlen(values[i])!=0) {
+                    V->marca = (char *) calloc(strlen(values[i])+1, sizeof(char));
+                    strcpy(V->marca, values[i]);
+                } else {
+                    V->marca = NULL;
+                    V->tamMarca = 0;
+                }
+
 
             } else if (strcmp(fields[i], "cidade") == 0) {
-                free(V->cidade);
-                V->cidade = (char *) calloc(strlen(values[i])+1, sizeof(char));
-                V->cidade = values[i];
+                if(V->cidade != NULL)
+                    free(V->cidade);
+
+                if(strlen(values[i])!=0) {
+                    V->cidade = (char *) calloc(strlen(values[i])+1, sizeof(char));
+                    strcpy(V->cidade, values[i]);
+                } else {
+                    V->cidade = NULL;
+                    V->tamCidade = 0;
+                }
 
             } else if (strcmp(fields[i], "estado") == 0 || strcmp(fields[i], "sigla") == 0) {
-                free(V->sigla);
-                V->sigla = (char *) calloc(strlen(values[i])+1, sizeof(char));
-                V->sigla = values[i];
+                if(V->sigla != NULL)
+                    free(V->sigla);
 
+                if(strlen(values[i])!=0) {
+                    V->sigla = (char *) calloc(strlen(values[i])+1, sizeof(char));
+                    strcpy(V->sigla, values[i]);
+                } else {
+                    V->sigla = NULL;
+                }
             } else if (strcmp(fields[i], "modelo") == 0) {
-                free(V->modelo);
-                V->modelo = (char *) calloc(strlen(values[i])+1, sizeof(char));
-                V->modelo = values[i];
+                if(V->modelo != NULL)
+                    free(V->modelo);
+
+                if(strlen(values[i])!=0) {
+                    V->modelo = (char *) calloc(strlen(values[i])+1, sizeof(char));
+                    strcpy(V->modelo, values[i]);
+                } else {
+                    V->modelo = NULL;
+                    V->tamModelo = 0;
+                }
 
             } else if (strcmp(fields[i], "quantidade") == 0) {
-                V->qtt = atoi(values[i]);
+                if(strlen(values[i])!=0)
+                    V->qtt = atoi(values[i]);
+                else
+                    V->qtt = -1;
 
             } else if (strcmp(fields[i], "ano") == 0) {
-                V->ano = atoi(values[i]);
-
+                if(strcmp(values[i], "NULO")!=0)
+                    V->ano = atoi(values[i]);
+                else
+                    V->ano = -1;
             }
+
     }
     return;
 }
 
-int update_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int x, char** search_fields, char** search_values, int y, char** update_fields, char** update_values, Header *header) {
+int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, int x, char** search_fields, char** search_values, int y, char** update_fields, char** update_values, Header *header) {
     int has_id = 0;
     int is_selected;
     for(int i=0; i<x; i++) {
@@ -1095,7 +1123,7 @@ int update_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int x, char** s
 
             Vehicle V = initialize_vehicle(f_type);
             if (f_type==1) {
-                int rrn = search_index_from_idx(file_idx_rw, atoi(search_values[i]), f_type);
+                int rrn = search_index_from_idx((*I_list), (*n_indices), atoi(search_values[i]), f_type);
                 //printf("%d\n", rrn);
                 read_reg_from_bin_type1(file_bin_rw, &V, rrn);
 
@@ -1108,18 +1136,28 @@ int update_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int x, char** s
                 if (is_selected == x-1) {
                     // Executa update
                     if (rrn >= 0) {
+
+                        print_vehicle_full(V,1);
+
                         update_vehicle(&V, y, update_fields, update_values);
+
+                        printf("\n");
+                        print_vehicle_full(V,1);
+                        printf("-------------------\n");
+
                         long int file_offset = (rrn)*MAX_RRN + HEADER_SIZE_TYPE1;
                         fseek(file_bin_rw, file_offset, SEEK_SET);
+
                         write_reg_in_bin_type1(file_bin_rw, &V);
                     }
                     //print_vehicle_full(V,1);
-                    //printf("\n");
+                    printf("\n");
                 }
             } else if(f_type==2) {
-                long int offset = search_index_from_idx(file_idx_rw, atoi(search_values[i]), f_type);
+                long int offset = search_index_from_idx((*I_list), (*n_indices), atoi(search_values[i]), f_type);
                 //printf("%ld\n", offset);
                 read_reg_from_bin_type2(file_bin_rw, &V, &offset);
+                long int up_offset = offset - V.tamanhoRegistro;
 
                 // Checa se atende à todas as condições do select
                 is_selected = 0;
@@ -1128,9 +1166,12 @@ int update_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int x, char** s
                         is_selected = is_selected + check_meets_condition(V, search_fields[j], search_values[j], 0);
                 }  
                 if (is_selected == x-1) {
+
                     
                     // Executa update
                     update_vehicle(&V, y, update_fields, update_values);
+
+                    update_reg_type2(file_bin_rw, V, header, &up_offset, I_list, (*n_indices));
 
                     //print_vehicle_full(V,2);
                     //printf("\n");
@@ -1162,12 +1203,22 @@ int update_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int x, char** s
 
                     // Executa update
                     if (rrn >= 0) {
+
+                        print_vehicle_full(V,1);
+
                         update_vehicle(&V, y, update_fields, update_values);
+
+                        printf("\n");
+                        print_vehicle_full(V,1);
+                        printf("-------------------\n");
+
+                        //update_vehicle(&V, y, update_fields, update_values);
+
                         long int file_offset = (rrn)*MAX_RRN + HEADER_SIZE_TYPE1;
                         fseek(file_bin_rw, file_offset, SEEK_SET);
+
                         write_reg_in_bin_type1(file_bin_rw, &V);
                     }
-                    print_vehicle(V,1);
                     printf("\n");
                 }
 

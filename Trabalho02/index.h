@@ -90,12 +90,27 @@ int binary_search_idx(Index *I_list, int key, int ini, int fim) ;
 /*
  * Comment section
 */
-long int search_index_from_idx(FILE *file_idx_r, int key_id, int f_type);
+long int search_index_from_idx(Index *I_list, int n_indices, int key_id, int f_type);
 
 /*
  * Comment section
 */
-int add_new_index_type1(FILE *file_idx_rw, FILE *file_bin_rw, int id, int rrn);
+int add_new_index(Index **I_list, int *n_indices, int id, long int new_rrn_byteoffset, int f_type);
+
+/*
+ * Comment section
+*/
+int remove_index(Index **I_list, int *n_indices, int id);
+
+/*
+ * Comment section
+*/
+int update_index(Index **I_list, int *n_indices, int id, long int new_rrn_byteoffset, int f_type);
+
+/*
+ * Comment section
+*/
+int refresh_idx_file(char *f_idx, Index *I_list, int n_indices, int f_type);
 
 
 #endif

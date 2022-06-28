@@ -417,10 +417,7 @@ int binary_search_idx(Index *I_list, int key, int ini, int fim) {
     return -2;
 }
 
-long int search_index_from_idx(FILE *file_idx_r, int key_id, int f_type){
-
-    int n_indices;
-    Index *I_list = load_all_indices_from_idx(file_idx_r, f_type, &n_indices);
+long int search_index_from_idx(Index *I_list, int n_indices, int key_id, int f_type){
 
     int idx = binary_search_idx(I_list, key_id, 0, n_indices-1);
     if (idx == -1){
@@ -430,14 +427,12 @@ long int search_index_from_idx(FILE *file_idx_r, int key_id, int f_type){
     if (f_type == 1){
 
         int rrn = I_list[idx].idx.rrn;
-        free(I_list);
 
         return rrn;
     }
     else if (f_type == 2){
 
         long int offset = I_list[idx].idx.byteoffset;
-        free(I_list);
 
         return offset;
     }
@@ -445,79 +440,83 @@ long int search_index_from_idx(FILE *file_idx_r, int key_id, int f_type){
     return -2;
 }
 
-// POSSÍVEL PROBLEMA: 
-//  arquivo aberto com modo rb+, sendo que, após a leitura, deve ser sobrescrito
-//  como esta função apenas adiciona, não dá problema, mas para o delete, sim
-int add_new_index_type1(FILE *file_idx_rw, FILE *file_bin_rw, int id, int rrn){
+int add_new_index(Index **I_list, int *n_indices, int id, long int new_rrn_byteoffset, int f_type){
 
-    int n_indices;
-    Index *I_list = load_all_indices_from_idx(file_idx_rw, 1, &n_indices);
-
-//    Index *I_list = load_all_idx_from_bin(file_bin_rw, 1, &n_indices);
+    // Cria um novo Index com os dados fornecidos
     Index I_new = create_index(1);
     I_new.id = id;
-    I_new.idx.rrn = rrn;
+    if (f_type == 1) I_new.idx.rrn = new_rrn_byteoffset;
+    else I_new.idx.byteoffset = new_rrn_byteoffset;
 
-    I_list = (Index *) realloc(I_list, (sizeof(Index) * n_indices) + sizeof(Index));
-    printf("--------------------id: %d\n",id);
-    I_list[n_indices] = I_new;
+    // Adiciona o índice novo à lista
+    (*n_indices) += 1;
+    (*I_list) = (Index *) realloc((*I_list), sizeof(Index) * (*n_indices) );
+    (*I_list)[(*n_indices)-1] = I_new;
 
-    quick_sort(I_list, 0, n_indices);
-        
-    int i = 0;
-//    fseek(file_idx_rw, 1, SEEK_SET);
+    // Reordena os índices
+    quick_sort((*I_list), 0, (*n_indices)-1);
 
-//    file_idx_rw = freopen("indice10.bin", "wb", file_idx_rw);
+    return 0;
+}
 
-    Index I = I_list[0];
-    while(n_indices--){
+int remove_index(Index **I_list, int *n_indices, int id){
 
-        /*
-        */
-        if(I.id != -1){
-            write_idx_in_bin_type1(file_idx_rw, I);
+    int idx = binary_search_idx((*I_list), id, 0, (*n_indices)-1);
+
+    // Atribui um valor maior que o último da lista ao registro a ser removido
+    (*I_list)[idx].id = (*I_list)[(*n_indices)-1].id + 1;
+
+    // Reordena os índices, posicionando o elemento a ser removido em última posição
+    quick_sort((*I_list), 0, (*n_indices)-1);
+
+    // Realoca a lista, retirando o último elemento, 
+    (*n_indices) -= 1;
+    (*I_list) = (Index *) realloc((*I_list), sizeof(Index) * (*n_indices) );
+
+    return 0;
+}
+
+int update_index(Index **I_list, int *n_indices, int id, long int new_rrn_byteoffset, int f_type){
+
+    int idx = binary_search_idx((*I_list), id, 0, (*n_indices)-1);
+    if (f_type == 1) (*I_list)[idx].idx.rrn = new_rrn_byteoffset;
+    else if (f_type == 2) (*I_list)[idx].idx.byteoffset = new_rrn_byteoffset;
+
+    return 0;
+}
+
+int refresh_idx_file(char *f_idx, Index *I_list, int n_indices, int f_type){
+
+    FILE *file_idx_wr = fopen(f_idx, "wb+");
+    
+    // Escrevendo status como 'inconsistente' durante a escrita
+    char status = '0';
+    fwrite(&status, sizeof(char), 1, file_idx_wr);
+
+    // Escrevendo os índices sequencialmente no arquivo
+    if (f_type == 1){
+
+        for(int i=0; i<n_indices; i++){
+            fwrite(&(I_list[i].id), sizeof(int), 1, file_idx_wr);
+            fwrite(&(I_list[i].idx.rrn), sizeof(int), 1, file_idx_wr);
         }
 
-//        print_index(I,1);
-        I = I_list[++i]; 
     }
-    /*
-    int i = 0;
-    Index I = create_index(1);
-    I = I_list[i]; 
+    else if (f_type == 2){
 
-    while(I.id != -1){
+        for(int i=0; i<n_indices; i++){
+            fwrite(&(I_list[i].id), sizeof(int), 1, file_idx_wr);
+            fwrite(&(I_list[i].idx.byteoffset), sizeof(long int), 1, file_idx_wr);
+        }
 
-        write_idx_in_bin_type1(file_idx_rw, I);
-
-        I = I_list[++i]; 
     }
-    
-//    read_all_indices_from_idx(file_idx_rw, 1);
-    Index I_new = create_index(1);
-    I_new.id = id;
-    I_new.idx.rrn = rrn;
+    else 
+        return -1;
 
-    I_list = (Index *) realloc(I_list, (sizeof(Index) * n_indices) + sizeof(Index));
-    I_list[n_indices] = I_new;
+    // Setando o status do arquivo para consistente após a escrita
+    set_status_idx(file_idx_wr,'1');
 
-    quick_sort(I_list, 0, n_indices);
-
-    int i = 0;
-    Index I = I_list[i];
-
-    //while(I.id != -1){
-    while(n_indices--){
-
-        write_idx_in_bin_type1(file_idx_rw, I);
-
-        I = I_list[++i]; 
-    }
-    */
-
-    printf("-------------------------");
-
-    free(I_list);
+    fclose(file_idx_wr);
 
     return 0;
 }

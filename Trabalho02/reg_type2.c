@@ -232,16 +232,6 @@ int read_reg_from_bin_type2(FILE *file_bin_r, Vehicle *V, long int *offset){
 
 int remove_reg_by_offset(FILE *file_bin_rw, long int *offset, Header *header){
 
-    /*
-    printf("topo: %ld\n",header->topo.offset);
-    long int test_add;
-    fseek(file_bin_rw, header->topo.offset + 5, SEEK_SET);
-    fread(&test_add, sizeof(long int), 1, file_bin_rw);
-    printf("\t%ld\n",test_add);
-
-    printf("nroRegRem: %d\n",header->nroRegRem);
-    */
-
     // Posicionando o ponteiro no registro a ser deletado
     fseek(file_bin_rw, (*offset), SEEK_SET);
 
@@ -259,8 +249,6 @@ int remove_reg_by_offset(FILE *file_bin_rw, long int *offset, Header *header){
 
     int next_tamReg = -1;
     if (next_offset != -1){
-//        printf("diferente de -1\n");
-
         fseek(file_bin_rw, next_offset+1, SEEK_SET);
         fread(&next_tamReg, sizeof(int), 1, file_bin_rw);
     }
@@ -268,13 +256,10 @@ int remove_reg_by_offset(FILE *file_bin_rw, long int *offset, Header *header){
     // Caso o registro removido seja maior do que o topo da lista
     if (this_tamReg > next_tamReg){
 
-        /*
-        printf("okay offset: this: %ld next: %ld\n", (*offset), next_offset);
-        printf("  tam: this: %d next: %d\n", this_tamReg, next_tamReg);
-        */
+        // Posicionando o ponteiro no campo do próximo offset 
         fseek(file_bin_rw, (*offset)+5, SEEK_SET);
         
-        // Atualizando lista
+        // Atualizando header
         previous_offset = next_offset;
         fwrite(&previous_offset, sizeof(long int), 1, file_bin_rw);
 
@@ -284,29 +269,17 @@ int remove_reg_by_offset(FILE *file_bin_rw, long int *offset, Header *header){
         return 0;
     }
 
-    /*
-    printf("!!! this: %d next: %d\n", this_tamReg, next_tamReg);
-    printf("-----------------------\n");
-    */
-    
     // Caso o registro removido seja menor do que o topo da lista
     previous_offset = next_offset;
-
+    
     fread(&next_offset, sizeof(long int), 1, file_bin_rw);
-
     while(next_offset != -1){
 
         fseek(file_bin_rw, next_offset+1, SEEK_SET);
         fread(&next_tamReg, sizeof(int), 1, file_bin_rw);
 
-        /*
-        printf("while: offset: this: %ld next: %ld\n", (*offset), next_offset);
-        printf("  tam: this: %d next: %d\n", this_tamReg, next_tamReg);
-        */
         if(this_tamReg > next_tamReg){
 
-     //       printf("entrei\n");
-            
             //Removido aponta para next
             fseek(file_bin_rw, (*offset)+5, SEEK_SET);
             fwrite(&next_offset, sizeof(long int), 1, file_bin_rw);
@@ -323,11 +296,6 @@ int remove_reg_by_offset(FILE *file_bin_rw, long int *offset, Header *header){
         fread(&next_offset, sizeof(long int), 1, file_bin_rw);
 
     }
-    /*
-    printf("!!! tam: this: %d next: %d\n", this_tamReg, next_tamReg);
-    printf("!!! offset: this: %ld next: %ld prev: %ld\n", (*offset), next_offset, previous_offset);
-    printf("-----------------------\n");
-    */
 
     // Removido aponta para next (-1)
     fseek(file_bin_rw, (*offset)+5, SEEK_SET); 
@@ -338,12 +306,11 @@ int remove_reg_by_offset(FILE *file_bin_rw, long int *offset, Header *header){
     fwrite(&(*offset), sizeof(long int), 1, file_bin_rw);
 
     header->nroRegRem += 1;
-    /*
-    */
 
     return 0;
 }
 
+/* AUTOTAD_PRIVATE
 void print_list_type2(FILE *file_bin_rw, Header *header){
 
     long int cur_offset = header->topo.offset;
@@ -363,6 +330,7 @@ void print_list_type2(FILE *file_bin_rw, Header *header){
 
     return;
 }
+*/
 
 void clean_reg_type2(FILE *file_bin_rw, int tamReg){
 
@@ -379,25 +347,23 @@ void clean_reg_type2(FILE *file_bin_rw, int tamReg){
     return;
 }
 
-int add_new_reg_type2(FILE *file_bin_rw, Vehicle V, Header *header){
+int add_new_reg_type2(FILE *file_bin_rw, Vehicle V, Header *header, long int *offset){
 
-    long int offset;
     int flag_list = 0;
 
     if (header->topo.offset == -1){
         V.tamanhoRegistro = 0;
 
-        offset = header->prox.proxByteOffset;
+        (*offset) = header->prox.proxByteOffset;
     }
     else{ 
-        offset = header->topo.offset;
+        (*offset) = header->topo.offset;
         flag_list = 1;
     }
 
-    fseek(file_bin_rw, offset, SEEK_SET);
+    fseek(file_bin_rw, (*offset), SEEK_SET);
 
     int tamReg = -1; 
-    long int new_offset; 
     if (flag_list){
         char is_removed; 
         long int new_list_top; 
@@ -426,8 +392,8 @@ int add_new_reg_type2(FILE *file_bin_rw, Vehicle V, Header *header){
         }
         else{
 
-            new_offset = header->prox.proxByteOffset;
-            fseek(file_bin_rw, new_offset, SEEK_SET);
+            (*offset) = header->prox.proxByteOffset;
+            fseek(file_bin_rw, (*offset), SEEK_SET);
 
             V.tamanhoRegistro = 0;
             flag_list = 0;
@@ -438,8 +404,8 @@ int add_new_reg_type2(FILE *file_bin_rw, Vehicle V, Header *header){
 
     // CHECAR SE ATUALIZAÇÃO ESTÁ CORRETA
     if (!flag_list){
-        offset = ftell(file_bin_rw);
-        header->prox.proxByteOffset = offset;
+        long int prox_offset = ftell(file_bin_rw);
+        header->prox.proxByteOffset = prox_offset;
     }
 
     return 0;
@@ -447,13 +413,6 @@ int add_new_reg_type2(FILE *file_bin_rw, Vehicle V, Header *header){
 
 int read_id_from_reg_type2(FILE *file_bin_r, int *id, long int *offset){
     
-    // Caso o arquivo de registros não esteja consistente
-    /*
-    if (get_status(file_bin_r) != '1'){
-        return 1;
-    }
-        */
-
     // Colocando o ponteiro do arquivo no registro a ser buscado
     fseek(file_bin_r, (*offset), SEEK_SET);
 
@@ -485,6 +444,39 @@ int read_id_from_reg_type2(FILE *file_bin_r, int *id, long int *offset){
 
     // Lê ID do registro indicado por rrn
     fread(&(*id), sizeof(int), 1, file_bin_r);
+
+    return 0;
+}
+
+int update_reg_type2(FILE *file_bin_rw, Vehicle V, Header *header, long int *offset, Index **I_list, int n_indices){
+
+    // Checa se registro não está removido
+    char is_removed;
+    fread(&is_removed, sizeof(char), 1, file_bin_rw);
+    if(is_removed == '1')
+        return -1;
+
+    // Lê o tamanho do registro antigo
+    int tamReg;
+    fread(&tamReg, sizeof(int), 1, file_bin_rw);
+
+    // Caso o tamanho do registro atualizado seja maior do que o registro antigo
+    if (tamReg < V.tamanhoRegistro){
+
+        // Remove registro antigo e insere registro atualizado
+        remove_reg_by_offset(file_bin_rw, offset, header);
+        add_new_reg_type2(file_bin_rw, V, header, offset);
+
+        // Atualiza lista de índices
+        update_index(I_list, &n_indices, V.id, (*offset), TYPE);
+
+        return 0;
+    }
+
+    // Limpa o registro antigo e escreve registro atualizado
+    fseek(file_bin_rw, -(sizeof(char)+sizeof(int)), SEEK_CUR);
+    clean_reg_type2(file_bin_rw, tamReg);
+    write_reg_in_bin_type2(file_bin_rw, &V);
 
     return 0;
 }
