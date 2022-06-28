@@ -325,93 +325,99 @@ void insert_cmd(int f_type) {
 /* Operação 8
  * Update */
 void update_cmd(int f_type) {
+
     // Delimitador utilizado na leitura da string
     char aux_delimiters[1] = " ";
 
     // Lê nomes dos arquivos
     char *f_bin = readline(stdin, aux_delimiters);
     char *f_idx = readline(stdin, aux_delimiters);
+    
+    // Caso haja falha na leitura do arquivo, retorna 1
+    FILE *file_bin_rw = fopen(f_bin, "rb+");
+    if (file_bin_rw == NULL){
+        return;
+    }
+    FILE *file_idx_rw = fopen(f_idx, "rb+");
+    if (file_idx_rw == NULL){
+        return;
+    }
+
+    set_status_bin(file_bin_rw, '0');
+    Header *header = read_header_from_bin(file_bin_rw, f_type);
 
     int n;
     scanf("%d\n", &n);
 
     // Delimitador utilizado na leitura da string
-    char** fields;
-    char** values;
-    int x;
+    char** search_fields;
+    char** search_values;
+    char** update_fields;
+    char** update_values;
+    int x,y;
     for (int i=0; i<n; i++) {
         scanf("%d ", &x);
-        values = malloc(x*sizeof(char*));
-        fields = malloc(x*sizeof(char*));
+        search_values = malloc(x*sizeof(char*));
+        search_fields = malloc(x*sizeof(char*));
         for (int j=0; j<x; j++) {
-            fields[j] = readline(stdin, aux_delimiters);
-            if (strcmp("id", fields[j]) == 0 || strcmp("ano", fields[j]) == 0 || strcmp("qtt", fields[j]) == 0) {
-                values[j] = readline(stdin, aux_delimiters);
+            search_fields[j] = readline(stdin, aux_delimiters);
+            if (strcmp("id", search_fields[j]) == 0 || strcmp("ano", search_fields[j]) == 0 || strcmp("qtt", search_fields[j]) == 0) {
+                search_values[j] = readline(stdin, aux_delimiters);
             } else {
-                values[j] = malloc(30*sizeof(char));
-                scan_quote_string(values[j]);
+                search_values[j] = malloc(30*sizeof(char));
+                scan_quote_string(search_values[j]);
                 getchar();
             }
         }
 
-        //update_bin(f_bin, f_type, f_idx, x, fields, values);
+        scanf("%d ", &y);
+        update_values = malloc(y*sizeof(char*));
+        update_fields = malloc(y*sizeof(char*));
+        for (int j=0; j<y; j++) {
+            update_fields[j] = readline(stdin, aux_delimiters);
+            if (strcmp("id", update_fields[j]) == 0 || strcmp("ano", update_fields[j]) == 0 || strcmp("qtt", update_fields[j]) == 0) {
+                update_values[j] = readline(stdin, aux_delimiters);
+            } else {
+                update_values[j] = malloc(30*sizeof(char));
+                scan_quote_string(update_values[j]);
+                getchar();
+            }
+        }
+
+        update_bin(file_bin_rw, f_type, file_idx_rw, x, search_fields, search_values, y, update_fields, update_values, header);
 
         for (int j=0; j<x; j++) {
-            free(fields[j]);
-            free(values[j]);
+            free(search_fields[j]);
+            free(search_values[j]);
         }
-        free(fields);
-        free(values);
+        for (int j=0; j<y; j++) {
+            free(update_fields[j]);
+            free(update_values[j]);
+        }
+        free(search_fields);
+        free(search_values);
+        free(update_fields);
+        free(update_values);
+        fflush(file_bin_rw);
     }
+
+    update_header(file_bin_rw, header, f_type);
+    set_status_bin(file_bin_rw, '1');
+
+    // Reescrevendo arquivo de índices
+    write_idx_file_from_bin(f_bin, f_idx, f_type);
+
     binarioNaTela(f_bin);
     binarioNaTela(f_idx);
 
     free(f_bin);
     free(f_idx);
+
+    fclose(file_bin_rw);
+    fclose(file_idx_rw);
 }
 
-struct vehicle{
-    char removido;      // indica se o registro está logicamente removido
-    int tamanhoRegistro;    // utilizado apenas por registros tipo 2
-    union{
-        int rrn;           // armazena o RRN do próximo registro (tipo 1)
-        long int offset;   // armazena o offset do próximo registro (tipo 2)
-    }prox;
-    int id;             // código identificador
-    int ano;            // ano de fabricação
-    int tamCidade;      // tamanho do campo cidade
-    char codC5;         // descrição simplificada do campo 5
-    char *cidade;       // nome da cidade
-    int qtt;            // quantidade de veículos
-    char *sigla;        // sigla do estado no qual o veículo está cadastrado
-    int tamMarca;       // tamanho do campo marca
-    char codC6;         // descrição simplificada do campo 5
-    char *marca;        // nome da marca
-    int tamModelo;      // tamanho do campo modelo
-    char codC7;         // descrição simplificada do campo 5
-    char *modelo;       // nome do modelo
-};
-
-
-
 int main(int argc, char *argv[]){
-
-    /*
-    printf("iuasdhfiu\n");
-
-    FILE *file_bin_rw = fopen("depois/binario6.bin", "rb+"); 
-//    Header *header = read_header_from_bin(file_bin_rw, 2);
-
-    long int offset = 6222;
-    Vehicle V = initialize_vehicle(2);
-    read_reg_from_bin_type2(file_bin_rw, &V, &offset);
-    print_vehicle_full(V, 2);
-    printf("---------\n");
-
-    offset = 6268;
-    read_reg_from_bin_type2(file_bin_rw, &V, &offset);
-    print_vehicle_full(V, 2);
-    */
 
     // Lendo os respectivos inputs do stdin
     int operation;
