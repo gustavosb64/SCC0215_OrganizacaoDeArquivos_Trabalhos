@@ -45,6 +45,9 @@ struct vehicle{
     char *modelo;       // nome do modelo
 };
 
+/*
+ * Leitura de linha com delimitadores
+*/
 #define READLINE_BUFFER 4096
 char* readline(FILE *stream, char delimiters[]){
     char *string = 0;
@@ -79,7 +82,9 @@ char* readline(FILE *stream, char delimiters[]){
     return string;
 }
 
-// Inicializa dado do tipo Veículo com os valores nulos padrão
+/* 
+ * Inicializa dado do tipo Veículo com os valores nulos padrão
+*/
 Vehicle initialize_vehicle(int f_type){
 
     Vehicle V;
@@ -107,6 +112,9 @@ Vehicle initialize_vehicle(int f_type){
     return V; 
 }
 
+/*
+ * Escreve cabeçalho no arquivo de dados
+*/
 int write_header(FILE *file_header_w, int f_type){
 
     /* Motivos para não se ter utilizado a struct:
@@ -278,7 +286,6 @@ int read_all_reg_from_bin(char *filename_in_bin, int f_type){
         while(!read_reg_from_bin_type1(file_bin_r, &V, rrn)){
 
             // Imprime os dados do veículo
-            //print_vehicle(V,1);
             print_vehicle_full(V,1);
             printf("\n");
 
@@ -312,7 +319,9 @@ int read_all_reg_from_bin(char *filename_in_bin, int f_type){
     return 0;
 }
 
-
+/*
+ * Lê um registro de um arquivo csv e armazena em Vehicle V
+*/
 int read_reg_from_csv(FILE *file_csv_r, Vehicle *V){
 
     // Delimitador a ser usado na leitura das strings do csv
@@ -357,6 +366,9 @@ int read_reg_from_csv(FILE *file_csv_r, Vehicle *V){
     return 0;
 }
 
+/*
+ * Escreve um arquivo de dados binários a partir de um arquivo csv
+*/
 int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type){
 
     // Caso haja falha na leitura do arquivo, retorna 1
@@ -423,6 +435,9 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
     return 0;
 }
 
+/*
+ * Remove aspas de uma string
+*/
 char* remove_quotes_str(char* quoted_str) {
     char* unquoted_str = calloc(1, strlen(quoted_str)-1);
 
@@ -434,6 +449,9 @@ char* remove_quotes_str(char* quoted_str) {
     return unquoted_str;
 }
 
+/*
+ * Função de comparação de strings customizada para comparar strings sem '\0'    
+*/
 int customized_strcmp(char *v_str, char *str){
 
     // Adiciona '\0' ao final da string v_str para a possibilitar o uso do strcmp
@@ -442,6 +460,10 @@ int customized_strcmp(char *v_str, char *str){
 
 }
 
+/*
+ * Checa se determinado campo field de veículo V atende a 
+ * determinadas condições definidas em value
+*/
 int check_meets_condition(Vehicle V, char* field, char* value, int quoted) {
 
     char* unquoted_value;
@@ -504,6 +526,9 @@ int check_meets_condition(Vehicle V, char* field, char* value, int quoted) {
     return 0;
 }
 
+/*
+ * Leitura de registro a partir de determinadas condições presentes em conditions
+*/
 int read_condition_reg_from_bin(char *filename_in_bin, int f_type, char** conditions, int n){
     char** fields = malloc(n*sizeof(char*));
     char** values = malloc(n*sizeof(char*));
@@ -584,6 +609,9 @@ int read_condition_reg_from_bin(char *filename_in_bin, int f_type, char** condit
     return 0;
 }
 
+/*
+ * Função customizada de impressão de string sem '\0'
+*/
 int print_string(char string[], int len){
 
     // Conferindo se comprimento fornecido é maior que 0
@@ -598,6 +626,9 @@ int print_string(char string[], int len){
     return 0;
 }
 
+/*
+ * Função para imprimir todos os dados de um veículo
+*/
 int print_vehicle_full(Vehicle V, int f_type){
 
     printf("Removido: %d", V.removido);
@@ -626,6 +657,9 @@ int print_vehicle_full(Vehicle V, int f_type){
     return 0;
 }
 
+/*
+ * Função para imprimir output de um veículo
+*/
 int print_vehicle(Vehicle V, int f_type){
            
     printf("MARCA DO VEICULO: ");
@@ -648,6 +682,9 @@ int print_vehicle(Vehicle V, int f_type){
     return 0;
 }
 
+/*
+ * Libera memória de um veículo
+*/
 int free_vehicle(Vehicle *V){
 
     free((*V).sigla);
@@ -658,6 +695,9 @@ int free_vehicle(Vehicle *V){
     return 0;
 }
 
+/*
+ * FUNÇÃO FORNECIDA
+*/
 void binarioNaTela(char *nomeArquivoBinario) { 
 
 	/* Use essa função para comparação no run.codes. Lembre-se de ter fechado (fclose) o arquivo anteriormente.
@@ -686,6 +726,9 @@ void binarioNaTela(char *nomeArquivoBinario) {
 	fclose(fs);
 }
 
+/*
+ * Adiciona um novo registro ao arquivo de dados
+*/
 int add_new_reg(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, Header *header, char *id, char *ano, char *qtt, char *sigla, char *cidade, char *marca, char *modelo){
 
     Vehicle V = initialize_vehicle(f_type);
@@ -735,12 +778,16 @@ int add_new_reg(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, H
     return 0;
 }
 
-// Atualiza cabeçalho no arquivo
+/* 
+ * Atualiza prox RRN ou offset no cabeçalho no arquivo
+*/
 int update_prox(FILE *file_bin_rw, int f_type, long int new_value){
 
+    // Armazena offset atual
     long int cur_offset = ftell(file_bin_rw);
     int offset, size;
 
+    // Realiza diferentes rotinas a depender do tipo
     if (f_type == 1){ 
         size = sizeof(int);
         int end_offset = 2*sizeof(int);
@@ -768,7 +815,9 @@ int update_prox(FILE *file_bin_rw, int f_type, long int new_value){
     return 0;
 }
 
-// Seta status no arquivo
+/* 
+ * Seta status no arquivo
+*/
 int set_status_file(FILE *file_rw, char status){
 
     // Caso seja mandado um status inválido, retorna
@@ -786,7 +835,9 @@ int set_status_file(FILE *file_rw, char status){
     return 0;
 }
 
-// Lê status do arquivo 
+/* 
+ * Lê status do arquivo 
+*/
 char get_status(FILE *file_bin_r){
     int status;
     fseek(file_bin_r, 0, SEEK_SET);
@@ -795,6 +846,9 @@ char get_status(FILE *file_bin_r){
     return status;
 }
 
+/* 
+ * Remove um dado registro de um arquivo binário de dados
+*/
 int delete_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, int n, char** fields, char** values, Header *header) {
 
     int has_id = 0;
@@ -1049,6 +1103,9 @@ void update_vehicle(Vehicle *V, int n, char** fields, char** values, Index **I_l
     return;
 }
 
+/* 
+ * Atualiza um registro no arquivo binário de dados
+*/
 int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, int x, char** search_fields, char** search_values, int y, char** update_fields, char** update_values, Header *header) {
     int has_id = 0;
     int is_selected;
