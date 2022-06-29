@@ -175,11 +175,6 @@ int free_vehicle(Vehicle *V);
 /*
  * Comment section
 */
-void binarioNaTela(char *nomeArquivoBinario) ;
- 
-/*
- * Comment section
-*/
 int add_new_reg(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, Header *header, char *id, char *ano, char *qtt, char *sigla, char *cidade, char *marca, char *modelo);
 
 /*
@@ -195,7 +190,17 @@ int set_status_file(FILE *file_rw, char status);
 /*
  * Comment section
 */
+int refresh_status_header(FILE *file_r, Header *header);
+
+/*
+ * Comment section
+*/
 char get_status(FILE *file_bin_r);
+
+/*
+ * Comment section
+*/
+char get_status_from_header(Header *header);
 
 /*
  * Comment section

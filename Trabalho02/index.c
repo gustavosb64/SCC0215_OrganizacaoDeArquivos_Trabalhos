@@ -166,17 +166,11 @@ int write_idx_in_bin_type2(FILE *file_idx_w, Index I){
 /* 
  * Escreve um arquivo de índices baseado em um arquivo binário de dados
 */
-int write_idx_file_from_bin(char *input_bin_filename, char *output_idx_filename, int f_type){
+int write_idx_file_from_bin(FILE *file_bin_r, Header *header, char *output_idx_filename, int f_type){
 
-    // Caso haja falha na leitura do arquivo, retorna 1
-    FILE *file_bin_r = fopen(input_bin_filename, "rb");
-    if (file_bin_r == NULL){
-        return 1;
-    }
     FILE *file_idx_w = fopen(output_idx_filename, "wb");
 
-    Header *header = read_header_from_bin(file_bin_r, f_type);
-
+    // Escreve cabeçalho de arquivo de índices
     write_idx_header(file_idx_w);
 
     // Carrega todos os índices em uma lista na memória para ordená-los
@@ -216,7 +210,6 @@ int write_idx_file_from_bin(char *input_bin_filename, char *output_idx_filename,
     set_status_file(file_idx_w,'1');
 
     // Fecha arquivos e libera memória
-    fclose(file_bin_r);
     fclose(file_idx_w);
     free(I_list);
 
@@ -527,4 +520,29 @@ int get_rrn(Index *I_list, int *n_indices, int id){
     int idx = binary_search_idx(I_list, id, 0, (*n_indices)-1);
     return I_list[idx].idx.rrn;
   
+}
+
+char get_idx_status(FILE *file_idx_r){
+
+    /*
+     * Para esta função, foi escolhido manter o offset atual
+     * em vez de pressupor que o ponteiro esteja na posição
+     * 0 do arquivo.
+     * Esta escolha foi feita para modularizar melhor e para 
+     * que a função possa ser utilizada em mais de um contexto
+     * caso necessário
+    */
+
+    // Armazena offset atual
+    long int cur_offset = ftell(file_idx_r);
+
+    // Lê status do arquivo de índices
+    char status;
+    fseek(file_idx_r, 0, SEEK_SET);
+    fread(&status, sizeof(char), 1, file_idx_r);
+
+    // Retorna ao offset inicial
+    fseek(file_idx_r, cur_offset, SEEK_SET);
+
+    return status;
 }

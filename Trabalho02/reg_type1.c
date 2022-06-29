@@ -286,7 +286,6 @@ int remove_reg_by_rrn(FILE *file_bin_rw, int rrn, Header *header){
     fread(&is_removed, sizeof(char), 1, file_bin_rw);
     if (is_removed == '1') 
         return -1;
-
     fseek(file_bin_rw, -sizeof(char), SEEK_CUR);
 
     // Marca registro como removido

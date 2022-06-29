@@ -249,8 +249,14 @@ int remove_reg_by_offset(FILE *file_bin_rw, long int *offset, Header *header){
     // Posicionando o ponteiro no registro a ser deletado
     fseek(file_bin_rw, (*offset), SEEK_SET);
 
-    // Marcando como removido
+    // Checa se registro não está removido
     char is_removed;
+    fread(&is_removed, sizeof(char), 1, file_bin_rw);
+    if(is_removed == '1')
+        return -1;
+    fseek(file_bin_rw, -sizeof(char), SEEK_CUR);
+    
+    // Marcando como removido
     is_removed = '1';
     fwrite(&is_removed, sizeof(char), 1, file_bin_rw);
 
@@ -526,6 +532,7 @@ int update_reg_type2(FILE *file_bin_rw, Vehicle V, Header *header, long int *off
     fread(&is_removed, sizeof(char), 1, file_bin_rw);
     if(is_removed == '1')
         return -1;
+    fseek(file_bin_rw, -sizeof(char), SEEK_CUR);
 
     // Lê o tamanho do registro antigo
     int tamReg;

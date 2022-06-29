@@ -46,7 +46,7 @@ int write_idx_in_bin_type2(FILE *file_idx_w, Index I);
 /*
  * Comment section
 */
-int write_idx_file_from_bin(char *input_bin_filename, char *output_idx_filename, int f_type);
+int write_idx_file_from_bin(FILE *file_bin_r, Header *header, char *output_idx_filename, int f_type);
 
 /*
  * Comment section
@@ -112,6 +112,11 @@ int refresh_idx_file(char *f_idx, Index *I_list, int n_indices, int f_type);
  * Comment section
 */
 int get_rrn(Index *I_list, int *n_indices, int id);
+
+/*
+ * Comment section
+*/
+char get_idx_status(FILE *file_idx_r);
 
 
 #endif
