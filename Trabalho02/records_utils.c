@@ -16,19 +16,6 @@ struct header{
         int rrn;            // RRN do último registro logicamente removido (tipo 1)
         long int offset;    // offset do último registro logicamente removido (tipo 2)
     }topo;           
-    /*
-    char descricao[40]; // descrição dos metadados
-    char desC1[22];     // descrição detalhada do campo 1
-    char desC2[19];     // descrição detalhada do campo 2
-    char desC3[24];     // descrição detalhada do campo 3
-    char desC4[8];      // descrição detalhada do campo 4
-    char codC5;         // descrição simplificada do campo 5
-    char desC5[16];     // descrição detalhada do campo 5
-    char codC6;         // descrição simplificada do campo 6
-    char desC6[18];     // descrição detalhada do campo 6
-    char codC7;         // descrição simplificada do campo 7
-    char desC7[19];     // descrição detalhada do campo 7
-    */
     union{
         int proxRRN;                // próximo RRN disponível
         long int proxByteOffset;    // próximo offset disponível
@@ -172,6 +159,7 @@ int write_header(FILE *file_header_w, int f_type){
 
 Header* initialize_header(int f_type){
 
+    // Inicializa um header para utilizá-lo na memória durante o programa
     Header *H = (Header *) malloc(sizeof(Header));
 
     H->status = '0';
@@ -188,11 +176,14 @@ Header* initialize_header(int f_type){
 
 Header* read_header_from_bin(FILE *file_bin_r, int f_type){
 
+    // Inicializa um header 
     Header *H = initialize_header(f_type); 
 
+    // Guarda o offset atual
     long int cur_offset = ftell(file_bin_r);
     fseek(file_bin_r, 0, SEEK_SET);
 
+    // Lê dados do header
     fread(&(H->status), sizeof(char), 1, file_bin_r);
     if (f_type == 1) fread(&(H->topo.rrn), sizeof(int), 1, file_bin_r);
     else if (f_type == 2) fread(&(H->topo.offset), sizeof(long int), 1, file_bin_r);
