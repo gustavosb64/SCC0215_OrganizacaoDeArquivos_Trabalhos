@@ -389,8 +389,13 @@ int add_new_reg_type2(FILE *file_bin_rw, Vehicle V, Header *header, long int *of
     return 0;
 }
 
-int read_id_from_reg_type2(FILE *file_bin_r, int *id, long int *offset){
+int read_id_from_reg_type2(FILE *file_bin_r, int *id, long int *offset, Header *header){
     
+    // Caso o arquivo de registros não esteja consistente, retorna
+    if (header->status != '1'){
+        return 1;
+    }
+
     // Colocando o ponteiro do arquivo no registro a ser buscado
     fseek(file_bin_r, (*offset), SEEK_SET);
 

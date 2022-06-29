@@ -76,7 +76,7 @@ int add_new_reg_type1(FILE *file_bin_rw, Vehicle V, int *rrn, Header *header);
 /*
  * Comment section
 */
-int read_id_from_reg_type1(FILE *file_bin_r, int *id, int rrn);
+int read_id_from_reg_type1(FILE *file_bin_r, int *id, int rrn, Header *header);
 
 /*
  * Comment section

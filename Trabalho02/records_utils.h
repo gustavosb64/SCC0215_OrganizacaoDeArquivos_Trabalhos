@@ -54,11 +54,6 @@ Header* read_header_from_bin(FILE *file_bin_r, int f_type);
 int update_header(FILE *file_bin_rw, Header *H, int f_type);
 
 /*
- * Comment section
-*/
-void print_header(Header *H, int f_type);
-
-/*
  * Lê todos os registros de um arquivo binário
  *  Parâmetros:
  *      char *filename_in_bin: nome do arquivo binário de entrada
@@ -178,7 +173,7 @@ int print_vehicle(Vehicle V, int f_type);
 int free_vehicle(Vehicle *V);
 
 /*
- * Função fornecida para a comparação dos binários gerados pelas funções de escrita
+ * Comment section
 */
 void binarioNaTela(char *nomeArquivoBinario) ;
  
@@ -190,32 +185,12 @@ int add_new_reg(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, H
 /*
  * Comment section
 */
-int update_nroRegRem(FILE *file_bin_rw, int f_type, char operation);
-
-/*
- * Comment section
-*/
-int update_list(FILE *file_bin_rw, int f_type, long int new_value);
-
-/*
- * Comment section
-*/
 int update_prox(FILE *file_bin_rw, int f_type, long int new_value);
 
 /*
  * Comment section
 */
-long int get_list_top(FILE *file_bin_rw, int f_type);
-
-/*
- * Comment section
-*/
-long int get_prox(FILE *file_bin_rw, int f_type);
-
-/*
- * Comment section
-*/
-int set_status_bin(FILE *file_bin_rw, char status);
+int set_status_file(FILE *file_rw, char status);
 
 /*
  * Comment section
@@ -235,7 +210,7 @@ void setup_vehicle_strings(Vehicle *V) ;
 /*
  * Comment section
 */
-void update_vehicle(Vehicle *V, int n, char** fields, char** values) ;
+void update_vehicle(Vehicle *V, int n, char** fields, char** values, Index **I_list, int n_indices, int f_type) ;
 
 /*
  * Comment section

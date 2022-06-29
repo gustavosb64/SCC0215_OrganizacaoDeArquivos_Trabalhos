@@ -11,24 +11,10 @@
 #define TYPE 1
 struct header{
     char status;        // consistência do arquivo
-    int tamanhoRegistro;    // tamanho do registro (usado apenas no tipo 2)
     union{
         int rrn;            // RRN do último registro logicamente removido (tipo 1)
         long int offset;    // offset do último registro logicamente removido (tipo 2)
     }topo;           
-    /*
-    char descricao[40]; // descrição dos metadados
-    char desC1[22];     // descrição detalhada do campo 1
-    char desC2[19];     // descrição detalhada do campo 2
-    char desC3[24];     // descrição detalhada do campo 3
-    char desC4[8];      // descrição detalhada do campo 4
-    char codC5;         // descrição simplificada do campo 5
-    char desC5[16];     // descrição detalhada do campo 5
-    char codC6;         // descrição simplificada do campo 6
-    char desC6[18];     // descrição detalhada do campo 6
-    char codC7;         // descrição simplificada do campo 7
-    char desC7[19];     // descrição detalhada do campo 7
-    */
     union{
         int proxRRN;                // próximo RRN disponível
         long int proxByteOffset;    // próximo offset disponível
@@ -355,10 +341,10 @@ int add_new_reg_type1(FILE *file_bin_rw, Vehicle V, int *rrn, Header *header){
     return 0;
 }
 
-int read_id_from_reg_type1(FILE *file_bin_r, int *id, int rrn){
+int read_id_from_reg_type1(FILE *file_bin_r, int *id, int rrn, Header *header){
     
-    // Caso o arquivo de registros não esteja consistente
-    if (get_status(file_bin_r) != '1'){
+    // Caso o arquivo de registros não esteja consistente, retorna
+    if (header->status != '1'){
         return 1;
     }
 

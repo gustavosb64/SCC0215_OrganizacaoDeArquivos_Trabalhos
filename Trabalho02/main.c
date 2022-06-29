@@ -190,7 +190,7 @@ void delete_cmd(int f_type) {
 
     fclose(file_idx_rw);
 
-    set_status_bin(file_bin_rw, '0');
+    set_status_file(file_bin_rw, '0');
     Header *header = read_header_from_bin(file_bin_rw, f_type);
 
     int n;
@@ -268,7 +268,7 @@ void insert_cmd(int f_type) {
     Header *header = read_header_from_bin(file_bin_rw, f_type);
 
     // Setando status para inconsistente
-    set_status_bin(file_bin_rw, '0');
+    set_status_file(file_bin_rw, '0');
 
     int n;
     scanf("%d\n", &n);
@@ -345,7 +345,7 @@ void update_cmd(int f_type) {
     Index *I_list = load_all_indices_from_idx(file_idx_r, f_type, &n_indices);
     fclose(file_idx_r);
 
-    set_status_bin(file_bin_rw, '0');
+    set_status_file(file_bin_rw, '0');
     Header *header = read_header_from_bin(file_bin_rw, f_type);
 
     int n;

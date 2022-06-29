@@ -162,7 +162,7 @@ int write_header(FILE *file_header_w, int f_type){
 */
 Header* initialize_header(int f_type){
 
-    // Inicializa um header para utilizá-lo na memória durante o programa
+    // Inicializa um header com valores padrão para utilizá-lo na memória durante o programa
     Header *H = (Header *) malloc(sizeof(Header));
 
     H->status = '0';
@@ -189,11 +189,12 @@ Header* read_header_from_bin(FILE *file_bin_r, int f_type){
     long int cur_offset = ftell(file_bin_r);
     fseek(file_bin_r, 0, SEEK_SET);
 
-    // Lê dados do header
+    // Lê dados do cabeçalho do arquivo
     fread(&(H->status), sizeof(char), 1, file_bin_r);
     if (f_type == 1) fread(&(H->topo.rrn), sizeof(int), 1, file_bin_r);
     else if (f_type == 2) fread(&(H->topo.offset), sizeof(long int), 1, file_bin_r);
 
+    // Lê prox RRN ou byte offset
     int size;
     if (f_type == 1){
 
@@ -212,6 +213,7 @@ Header* read_header_from_bin(FILE *file_bin_r, int f_type){
 
     fread(&(H->nroRegRem), sizeof(int), 1, file_bin_r);
 
+    // Retorna o ponteiro à posição anterior
     fseek(file_bin_r, cur_offset, SEEK_SET);
     
     return H;
@@ -224,7 +226,7 @@ int update_header(FILE *file_bin_rw, Header *H, int f_type){
 
     fseek(file_bin_rw, 0, SEEK_SET);
 
-    // Escrevendo status
+    // Escreve status
     H->status = '1';
     fwrite(&(H->status), sizeof(char), 1, file_bin_rw);
 
@@ -412,7 +414,7 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
         update_prox(file_bin_w, 2, cur_prox_offset);
     }
     
-    set_status_bin(file_bin_w, '1');
+    set_status_file(file_bin_w, '1');
 
     // Liberando memória
     fclose(file_bin_w);
@@ -656,6 +658,34 @@ int free_vehicle(Vehicle *V){
     return 0;
 }
 
+void binarioNaTela(char *nomeArquivoBinario) { 
+
+	/* Use essa função para comparação no run.codes. Lembre-se de ter fechado (fclose) o arquivo anteriormente.
+	*  Ela vai abrir de novo para leitura e depois fechar (você não vai perder pontos por isso se usar ela). */
+
+	unsigned long i, cs;
+	unsigned char *mb;
+	size_t fl;
+	FILE *fs;
+	if(nomeArquivoBinario == NULL || !(fs = fopen(nomeArquivoBinario, "rb"))) {
+		fprintf(stderr, "ERRO AO ESCREVER O BINARIO NA TELA (função binarioNaTela): não foi possível abrir o arquivo que me passou para leitura. Ele existe e você tá passando o nome certo? Você lembrou de fechar ele com fclose depois de usar?\n");
+		return;
+	}
+	fseek(fs, 0, SEEK_END);
+	fl = ftell(fs);
+	fseek(fs, 0, SEEK_SET);
+	mb = (unsigned char *) malloc(fl);
+	fread(mb, 1, fl, fs);
+
+	cs = 0;
+	for(i = 0; i < fl; i++) {
+		cs += (unsigned long) mb[i];
+	}
+	printf("%lf\n", (cs / (double) 100));
+	free(mb);
+	fclose(fs);
+}
+
 int add_new_reg(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, Header *header, char *id, char *ano, char *qtt, char *sigla, char *cidade, char *marca, char *modelo){
 
     Vehicle V = initialize_vehicle(f_type);
@@ -665,6 +695,7 @@ int add_new_reg(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, H
     V.tamMarca = strlen(marca);
     V.tamModelo = strlen(modelo);
 
+    // Adapta dados numéricos a serem alterados
     V.id = atoi(id);
     if (strcmp("NULO", ano)){
         V.ano = atoi(ano);
@@ -682,18 +713,21 @@ int add_new_reg(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, H
     V.marca = marca;
     V.modelo = modelo;
 
+    // Realiza diferentes rotinas a depender do tipo
     if (f_type == 1){
         int rrn;
+
+        // Adiciona um novo tipo e atualiza lista de índices 
         add_new_reg_type1(file_bin_rw, V, &rrn, header);
         add_new_index(I_list, n_indices, V.id, rrn, f_type);
     }
     else if (f_type == 2){
 
         V.tamanhoRegistro = V.tamCidade+5 + V.tamMarca+5 + V.tamModelo+5 + 3*sizeof(int) + sizeof(long int) + 2;
-
         long int offset = 0;
-        add_new_reg_type2(file_bin_rw, V, header, &offset);
 
+        // Adiciona um novo tipo e atualiza lista de índices 
+        add_new_reg_type2(file_bin_rw, V, header, &offset);
         add_new_index(I_list, n_indices, V.id, offset, f_type);
 
     }
@@ -701,77 +735,7 @@ int add_new_reg(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, H
     return 0;
 }
 
-// operation = '+' ou '-'
-int update_nroRegRem(FILE *file_bin_rw, int f_type, char operation){
-
-    long int cur_offset = ftell(file_bin_rw);
-    int offset;
-
-    // Ajustando offset para o nroRegRem
-    if (f_type == 1) 
-        offset = HEADER_SIZE_TYPE1 - sizeof(int); 
-    else if (f_type == 2) 
-        offset = HEADER_SIZE_TYPE2 - sizeof(int); 
-    else 
-        return -1;
-    fseek(file_bin_rw, offset, SEEK_SET);
-
-    // Lê nroRegRem atual
-    int nroRegRem;
-    fread(&nroRegRem, sizeof(int), 1, file_bin_rw);
-    
-    // Decrementa ou incrementa de acordo com a opção do usuário
-    if (operation == '+'){
-        nroRegRem += 1;
-    }
-    else if (operation == '-'){
-        nroRegRem -= 1;
-    }
-    else{
-        // Caso a operação enviada seja diferente de '+' ou '-'
-        printf("Operação '%c' enviada para update_nroRegRem inválida.\n", operation);
-
-        // Retorna o ponteiro para a posição que estava no início da função
-        fseek(file_bin_rw, cur_offset, SEEK_SET);
-        return -2;
-    }
-
-    // Escreve novo nroRegRem
-    fseek(file_bin_rw, -sizeof(int), SEEK_CUR);
-    fwrite(&nroRegRem, sizeof(int), 1, file_bin_rw);
-
-    // Retorna o ponteiro para a posição que estava no início da função
-    fseek(file_bin_rw, cur_offset, SEEK_SET);
-
-    return 0;
-}
-
-int update_list(FILE *file_bin_rw, int f_type, long int new_value){
-
-    long int cur_offset = ftell(file_bin_rw);
-    int offset, size;
-
-    offset = sizeof(char);
-    if (f_type == 1) 
-        size = sizeof(int);
-    else if (f_type == 2) 
-        size = sizeof(long int);
-    else{
-        // Retorna o ponteiro para a posição que estava no início da função
-        fseek(file_bin_rw, cur_offset, SEEK_SET);
-        return -1;
-    }
-
-    // Atualiza o cabeçalho com o novo topo da pilha
-    fseek(file_bin_rw, offset, SEEK_SET);
-    fwrite(&new_value, size, 1, file_bin_rw);
-
-    // Retorna o ponteiro para a posição que estava no início da função
-    fseek(file_bin_rw, cur_offset, SEEK_SET);
-
-    return 0;
-}
-
+// Atualiza cabeçalho no arquivo
 int update_prox(FILE *file_bin_rw, int f_type, long int new_value){
 
     long int cur_offset = ftell(file_bin_rw);
@@ -804,57 +768,25 @@ int update_prox(FILE *file_bin_rw, int f_type, long int new_value){
     return 0;
 }
 
-long int get_list_top(FILE *file_bin_rw, int f_type){
+// Seta status no arquivo
+int set_status_file(FILE *file_rw, char status){
 
-    int offset;
-    long int top;
-
-    offset = sizeof(char);
-    fseek(file_bin_rw, offset, SEEK_SET);
-
-    if (f_type == 1) fread(&top, sizeof(int), 1, file_bin_rw); 
-    else if (f_type == 2) fread(&top, sizeof(long int), 1, file_bin_rw); 
-
-    return top;
-}
-
-long int get_prox(FILE *file_bin_rw, int f_type){
-
-    int offset;
-    long int prox;
-
-    if (f_type == 1){
-        offset = HEADER_SIZE_TYPE1 - 2*sizeof(int); 
-
-        fseek(file_bin_rw, offset, SEEK_SET);
-        fread(&prox, sizeof(int), 1, file_bin_rw); 
-    }
-    else if (f_type == 2){
-        offset = HEADER_SIZE_TYPE2 - sizeof(int) - sizeof(long int); 
-
-        fseek(file_bin_rw, offset, SEEK_SET);
-        fread(&prox, sizeof(long int), 1, file_bin_rw); 
-    }
-    else return -1;
-
-    return prox;
-}
-
-int set_status_bin(FILE *file_bin_rw, char status){
-
+    // Caso seja mandado um status inválido, retorna
     if (status != '0' && status != '1')
         return -1;
 
-    long int cur_offset = ftell(file_bin_rw);
+    // Armazena a posição inicial do ponteiro para retornar
+    long int cur_offset = ftell(file_rw);
 
-    fseek(file_bin_rw, 0, SEEK_SET);
-    fwrite(&status, sizeof(char), 1, file_bin_rw);
+    fseek(file_rw, 0, SEEK_SET);
+    fwrite(&status, sizeof(char), 1, file_rw);
 
-    fseek(file_bin_rw, cur_offset, SEEK_SET);
+    fseek(file_rw, cur_offset, SEEK_SET);
 
     return 0;
 }
 
+// Lê status do arquivo 
 char get_status(FILE *file_bin_r){
     int status;
     fseek(file_bin_r, 0, SEEK_SET);
@@ -1033,9 +965,18 @@ void setup_vehicle_strings(Vehicle *V) {
 *   Altera campos especificados do veículo
 */
 void update_vehicle(Vehicle *V, int n, char** fields, char** values, Index **I_list, int n_indices, int f_type) {
+
+    /*
+     * Itera por todos os campos para modificar o que deve ser atualizado
+    */
     for(int i=0; i<n; i++){
         if (strcmp(fields[i], "id") == 0) {
 
+            /* 
+             * Caso o ID seja um campo a ser alterado, o arquivo de índices deve ser atualizado
+            */
+            
+            // Guarda o RRN do registro a ser alterado e atualiza a lista de índices
             int rrn = get_rrn((*I_list), &n_indices, V->id);
             remove_index(I_list, &n_indices, V->id);
 
@@ -1112,6 +1053,10 @@ int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
     int has_id = 0;
     int is_selected;
     for(int i=0; i<x; i++) {
+        /*
+        *   CAMPO id PRESENTE NA BUSCA
+        *   Recuperção do vehicle por id e checagem de demais valores
+        */
         if(strcmp("id", search_fields[i])==0) {
             // Busca por id no arquivo de índice
             has_id = 1;
@@ -1138,6 +1083,8 @@ int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
                     }
 
                 }
+                
+            // Arquivo tipo 2
             } else if(f_type==2) {
                 long int offset = search_index_from_idx((*I_list), (*n_indices), atoi(search_values[i]), f_type);
                 read_reg_from_bin_type2(file_bin_rw, &V, &offset);
@@ -1150,11 +1097,9 @@ int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
                         is_selected = is_selected + check_meets_condition(V, search_fields[j], search_values[j], 0);
                 }  
                 if (is_selected == x-1) {
-
                     
                     // Executa update
                     update_vehicle(&V, y, update_fields, update_values, I_list, (*n_indices), f_type);
-
                     update_reg_type2(file_bin_rw, V, header, &up_offset, I_list, (*n_indices));
 
                 }
@@ -1163,11 +1108,17 @@ int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
         } 
      }
 
+    /*
+    *   AUSÊNCIA DO CAMPO id
+    *   Busca como a do 'select where'
+    */
     if(!has_id) {
         // Busca por valores nos campos
         Vehicle V = initialize_vehicle(f_type);
 
         // Realiza diferentes rotinas a depender do tipo a ser lido
+
+        // Arquivo tipo 1
         if (f_type == 1){
 
             int rrn = 0;
@@ -1200,6 +1151,8 @@ int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
             }
 
         }
+        
+        // Arquivo tipo 2
         else if (f_type == 2){
 
             long int offset = HEADER_SIZE_TYPE2;
@@ -1218,7 +1171,6 @@ int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
 
                     // Executa update
                     update_vehicle(&V, y, update_fields, update_values, I_list, (*n_indices), f_type);
-                    
                     update_reg_type2(file_bin_rw, V, header, &up_offset, I_list, (*n_indices));
                     
                 }
