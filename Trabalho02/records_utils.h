@@ -190,11 +190,6 @@ int set_status_file(FILE *file_rw, char status);
 /*
  * Comment section
 */
-int refresh_status_header(FILE *file_r, Header *header);
-
-/*
- * Comment section
-*/
 char get_status(FILE *file_bin_r);
 
 /*

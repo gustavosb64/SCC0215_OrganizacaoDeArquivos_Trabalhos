@@ -527,23 +527,72 @@ int read_id_from_reg_type2(FILE *file_bin_r, int *id, long int *offset, Header *
 */
 int update_reg_type2(FILE *file_bin_rw, Vehicle V, Header *header, long int *offset, Index **I_list, int n_indices){
 
+    //printf("up reg 2\n");
+
+    FILE *f_teste = fopen("depois/binario17.bin","rb");
+
+    fseek(file_bin_rw, (*offset), SEEK_SET);
+
     // Checa se registro não está removido
     char is_removed;
     fread(&is_removed, sizeof(char), 1, file_bin_rw);
     if(is_removed == '1')
         return -1;
-    fseek(file_bin_rw, -sizeof(char), SEEK_CUR);
 
     // Lê o tamanho do registro antigo
     int tamReg;
     fread(&tamReg, sizeof(int), 1, file_bin_rw);
 
+//    printf("offset: %ld tamReg: %d v.tamanho: %d\n",(*offset), tamReg, V.tamanhoRegistro);
+
+    Vehicle V_teste; 
     // Caso o tamanho do registro atualizado seja maior do que o registro antigo
     if (tamReg < V.tamanhoRegistro){
 
+        //printf("--- if\n");
+
         // Remove registro antigo e insere registro atualizado
+
+        long int offset_teste = *offset;
+
+        /*
+        printf("offset antes add: %ld\n",*offset);
+        V_teste = initialize_vehicle(2);
+        read_reg_from_bin_type2(file_bin_rw, &V_teste, &offset_teste);
+        print_vehicle_full(V_teste, 2);
+        free_vehicle(&V_teste);
+        printf("\n");
+        */
+
         remove_reg_by_offset(file_bin_rw, offset, header);
+        fflush(file_bin_rw);
+
         add_new_reg_type2(file_bin_rw, V, header, offset);
+        fflush(file_bin_rw);
+
+
+        /*
+        printf("offset depois add: %ld\n",*offset);
+        offset_teste = *offset;
+        V_teste = initialize_vehicle(2);
+        read_reg_from_bin_type2(file_bin_rw, &V_teste, &offset_teste);
+        print_vehicle_full(V_teste, 2);
+        free_vehicle(&V_teste);
+        printf("\n");
+        */
+
+        /*
+        printf("ESPERADO:\n");
+        */
+        offset_teste = *offset;
+        V_teste = initialize_vehicle(2);
+        read_reg_from_bin_type2(f_teste, &V_teste, &offset_teste);
+        print_vehicle_full(V_teste, 2);
+        free_vehicle(&V_teste);
+        printf("\n");
+
+
+        printf("-------------\n");
 
         // Atualiza lista de índices
         update_index(I_list, &n_indices, V.id, (*offset), TYPE);
@@ -551,10 +600,15 @@ int update_reg_type2(FILE *file_bin_rw, Vehicle V, Header *header, long int *off
         return 0;
     }
 
+    fclose(f_teste);
+
     // Limpa o registro antigo e escreve registro atualizado
     fseek(file_bin_rw, -(sizeof(char)+sizeof(int)), SEEK_CUR);
     clean_reg_type2(file_bin_rw, tamReg);
+
+    V.tamanhoRegistro = tamReg;
     write_reg_in_bin_type2(file_bin_rw, &V);
+    fflush(file_bin_rw);
 
     return 0;
 }

@@ -376,8 +376,12 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
     if (file_csv_r == NULL){
         return 1;
     }
-    FILE *file_bin_w = fopen(filename_out_bin, "wb");
+    FILE *file_bin_w = fopen(filename_out_bin, "wb+");
 
+    // Carregando um cabeçalho em memória RAM
+    Header *header = initialize_header(f_type);
+
+    // Escreve cabeçalho padrão no arquivo
     write_header(file_bin_w, f_type);
     
     // Lendo e liberando linha de cabeçalho
@@ -406,7 +410,7 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
         }
 
         // Atualizando proxRRN no cabeçalho
-        update_prox(file_bin_w, 1, rrn_counter);
+        header->prox.proxRRN = rrn_counter;
 
     }
     else if (f_type == 2){
@@ -423,14 +427,15 @@ int write_bin_from_csv(char *filename_in_csv, char *filename_out_bin, int f_type
 
         // Atualizando proxByteOffset no cabeçalho
         long int cur_prox_offset = ftell(file_bin_w);
-        update_prox(file_bin_w, 2, cur_prox_offset);
+        header->prox.proxByteOffset = cur_prox_offset;
     }
     
-    set_status_file(file_bin_w, '1');
+    //update_header(file_bin_w, header, f_type);
 
     // Liberando memória
     fclose(file_bin_w);
     fclose(file_csv_r);
+    free(header);
 
     return 0;
 }
@@ -804,19 +809,6 @@ int set_status_file(FILE *file_rw, char status){
     return 0;
 }
 
-int refresh_status_header(FILE *file_r, Header *header){
-    
-    // Guarda offset atual
-    long int cur_offset = ftell(file_r);
-
-    fseek(file_r, 0, SEEK_SET);
-    fread(&(header->status), sizeof(char), 1, file_r);
-
-    fseek(file_r, cur_offset, SEEK_SET);
-
-    return 0;
-}
-
 /* 
  * Lê status do arquivo 
 */
@@ -1028,11 +1020,15 @@ void update_vehicle(Vehicle *V, int n, char** fields, char** values, Index **I_l
             add_new_index(I_list, &n_indices, V->id, rrn, f_type);
 
             } else if (strcmp(fields[i], "marca") == 0) {
-                if(V->marca != NULL)
+                if(V->marca != NULL){
+                    V->tamanhoRegistro -= strlen(V->marca) + sizeof(int) + sizeof(char);
                     free(V->marca);
+                } 
 
                 if(strlen(values[i])!=0) {
                     V->marca = (char *) calloc(strlen(values[i])+1, sizeof(char));
+                    V->tamanhoRegistro += strlen(values[i]) + sizeof(int) + sizeof(char);
+                    V->tamMarca = strlen(values[i]);
                     strcpy(V->marca, values[i]);
                 } else {
                     V->marca = NULL;
@@ -1041,11 +1037,15 @@ void update_vehicle(Vehicle *V, int n, char** fields, char** values, Index **I_l
 
 
             } else if (strcmp(fields[i], "cidade") == 0) {
-                if(V->cidade != NULL)
+                if(V->cidade != NULL){
+                    V->tamanhoRegistro -= strlen(V->cidade) + sizeof(int) + sizeof(char);
                     free(V->cidade);
+                }
 
                 if(strlen(values[i])!=0) {
                     V->cidade = (char *) calloc(strlen(values[i])+1, sizeof(char));
+                    V->tamanhoRegistro += strlen(values[i]) + sizeof(int) + sizeof(char);
+                    V->tamCidade = strlen(values[i]);
                     strcpy(V->cidade, values[i]);
                 } else {
                     V->cidade = NULL;
@@ -1063,11 +1063,15 @@ void update_vehicle(Vehicle *V, int n, char** fields, char** values, Index **I_l
                     V->sigla = NULL;
                 }
             } else if (strcmp(fields[i], "modelo") == 0) {
-                if(V->modelo != NULL)
+                if(V->modelo != NULL){
+                    V->tamanhoRegistro -= strlen(V->modelo) + sizeof(int) + sizeof(char);
                     free(V->modelo);
+                }
 
                 if(strlen(values[i])!=0) {
                     V->modelo = (char *) calloc(strlen(values[i])+1, sizeof(char));
+                    V->tamanhoRegistro += strlen(values[i]) + sizeof(int) + sizeof(char);
+                    V->tamModelo = strlen(values[i]);
                     strcpy(V->modelo, values[i]);
                 } else {
                     V->modelo = NULL;
@@ -1202,6 +1206,8 @@ int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
         else if (f_type == 2){
 
             long int offset = HEADER_SIZE_TYPE2;
+            long int *offset_list = (long int*) malloc( (*n_indices) * sizeof(long int));
+            int counter = 0;
 
             // Enquanto ainda houverem registros a serem lidos no arquivo de dados
             while(!read_reg_from_bin_type2(file_bin_rw, &V, &offset)){
@@ -1213,17 +1219,38 @@ int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
                 }        
                 if (is_selected == x) {
 
-                    long int up_offset = offset - V.tamanhoRegistro - 5;
-
-                    // Executa update
-                    update_vehicle(&V, y, update_fields, update_values, I_list, (*n_indices), f_type);
-                    update_reg_type2(file_bin_rw, V, header, &up_offset, I_list, (*n_indices));
-                    
+                    offset_list[counter] = offset - V.tamanhoRegistro - 5;
+                    counter++;
+                    /*
+                    print_vehicle_full(V,2);
+                    printf("---------------\n");
+                    */
                 }
 
                 // Libera a memória alocada durante a leitura
                 free_vehicle(&V);
                 V = initialize_vehicle(2);
+            }
+
+            for (int i=0; i<counter; i++){
+
+
+                long int up_offset = offset_list[i];
+
+                V = initialize_vehicle(2);
+                read_reg_from_bin_type2(file_bin_rw, &V, &offset_list[i]);
+
+                //print_vehicle_full(V,2);
+                // Executa update
+                update_vehicle(&V, y, update_fields, update_values, I_list, (*n_indices), f_type);
+
+                /*
+                printf("\n");
+                print_vehicle_full(V,2);
+                printf("------------------------\n");
+                */
+
+                update_reg_type2(file_bin_rw, V, header, &up_offset, I_list, (*n_indices));
             }
 
         }
