@@ -230,17 +230,17 @@ int delete_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
 /*
  * Comment section
 */
+void setup_vehicle_strings(Vehicle *V) ;
+
+/*
+ * Comment section
+*/
 void update_vehicle(Vehicle *V, int n, char** fields, char** values) ;
 
 /*
  * Comment section
 */
 int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, int x, char** search_fields, char** search_values, int y, char** update_fields, char** update_values, Header *header) ;
-
-/*
- * Comment section
-*/
-void update_nRegRem(Header *H, char operation);
 
 
 #endif

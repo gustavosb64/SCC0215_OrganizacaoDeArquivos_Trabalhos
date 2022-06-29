@@ -259,43 +259,6 @@ int search_vehicle_rrn(char *filename_in_bin ,int rrn) {
     return 0;
 }
 
-// header_rrn -> topo da pilha
-//  header.topo.rrn
-/* AUTOTAD_PRIVATE
-int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, Header *header, int *err){
-
-    // Caso o arquivo de registros não esteja consistente
-    if (get_status(file_bin_rw) != '1'){
-        *err = 2;
-        return -2;
-    }
-
-    fseek(file_bin_rw, MAX_RRN*rrn + HEADER_SIZE_TYPE1, SEEK_SET);
-
-    // Caso registro não seja encontrado, retorna sinal de erro 1
-    char aux_char;
-    if (!fread(&aux_char, sizeof(char), 1, file_bin_rw)){
-        *err = 1;
-        return -1;
-    }
-    fseek(file_bin_rw, -1, SEEK_CUR);
-
-    // Armazena o próximo valor da pilha no registro
-    int header_rrn = get_list_top(file_bin_rw, TYPE);
-    aux_char = '1'; 
-    fwrite(&aux_char, sizeof(char), 1, file_bin_rw);
-    fwrite(&header_rrn, sizeof(char), 1, file_bin_rw);
-
-    // Atualiza topo da pilha
-    update_list(file_bin_rw, TYPE, rrn);
-
-    // Atualiza nroRegRem
-    update_nroRegRem(file_bin_rw, 1, '+');
-
-    return 0;
-}
-*/
-
 int remove_reg_by_rrn(FILE *file_bin_rw, int rrn, Header *header){
 
     // Posicionando o ponteiro no registro a ser deletado
@@ -324,36 +287,6 @@ int remove_reg_by_rrn(FILE *file_bin_rw, int rrn, Header *header){
     
     return 0;
 }
-
-/* AUTOTAD_PRIVATE
-void test_remove_reg_type1(int f_type){
-
-    Vehicle V = initialize_vehicle(f_type);
-    FILE *file_bin_rw = fopen("meu_binario5.bin", "rb+");
-
-    int rrn = search_index_from_idx("meu_indice5.bin", 999, f_type);
-    printf("rrn: %d\n\n",rrn);
-
-    int err = 0;
-    remove_reg_by_rrn_type1(file_bin_rw, rrn, &err);
-
-    printf("\n");
-    read_reg_from_bin_type1(file_bin_rw, &V, rrn);
-    print_vehicle_full(V, f_type);
-
-    fclose(file_bin_rw);
-    file_bin_rw = fopen("meu_binario5.bin", "rb+");
-
-
-    int header_rrn; 
-
-    fseek(file_bin_rw, 1, SEEK_SET); 
-    fread(&header_rrn, sizeof(int), 1, file_bin_rw);
-    printf("\nheader: %d\n",header_rrn);
-
-    return;
-}
-*/
 
 int print_reg_from_bin_by_rrn(char *filename, int rrn){
 
@@ -430,7 +363,6 @@ int read_id_from_reg_type1(FILE *file_bin_r, int *id, int rrn){
     }
 
     // Colocando o ponteiro do arquivo no ID do registro a ser buscado
-    //long int id_offset = MAX_RRN * rrn + HEADER_SIZE_TYPE1 + sizeof(char)+sizeof(int);
     long int id_offset = MAX_RRN * rrn + HEADER_SIZE_TYPE1;
     fseek(file_bin_r, id_offset, SEEK_SET);
 

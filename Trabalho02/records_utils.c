@@ -188,7 +188,6 @@ Header* initialize_header(int f_type){
 
 Header* read_header_from_bin(FILE *file_bin_r, int f_type){
 
-//    Header *H = initialize_header(f_type);
     Header *H = initialize_header(f_type); 
 
     long int cur_offset = ftell(file_bin_r);
@@ -483,7 +482,7 @@ int check_meets_condition(Vehicle V, char* field, char* value, int quoted) {
     } else if (strcmp(field, "estado") == 0 || strcmp(field, "sigla") == 0) {
         if(quoted)
             unquoted_value = remove_quotes_str(value);
-        else
+        else 
             unquoted_value = value;
         if (V.sigla != NULL && customized_strcmp(V.sigla, unquoted_value) == 0){
             if(quoted)
@@ -826,8 +825,7 @@ int update_prox(FILE *file_bin_rw, int f_type, long int new_value){
         int end_offset = sizeof(int) + sizeof(long int);
         offset = HEADER_SIZE_TYPE2 - end_offset;
     }
-    else{
-
+    else {
         // Retorna o ponteiro para a posição que estava no início da função
         fseek(file_bin_rw, cur_offset, SEEK_SET);
 
@@ -908,11 +906,17 @@ int delete_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
     int has_id = 0;
     int is_selected;
     for(int i=0; i<n; i++) {
+        /*
+        *   CAMPO id PRESENTE NA BUSCA
+        *   Recuperção do vehicle por id e checagem de demais valores
+        */
         if(strcmp("id", fields[i])==0) {
             // Busca por id no arquivo de índice
             has_id = 1;
 
             Vehicle V = initialize_vehicle(f_type);
+
+            // Arquivo tipo 1
             if (f_type==1) {
                 int rrn = search_index_from_idx((*I_list), (*n_indices), atoi(values[i]), f_type);
                 
@@ -936,6 +940,8 @@ int delete_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
                     // Remove do arquivo de índices
                     remove_index(I_list, n_indices, V.id);
                 }
+
+            // Arquivo tipo 2
             } else if(f_type==2) {
                 long int offset = search_index_from_idx((*I_list), (*n_indices), atoi(values[i]), f_type);
 
@@ -968,11 +974,17 @@ int delete_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
         } 
      }
 
+    /*
+    *   AUSÊNCIA DO CAMPO id
+    *   Busca como a do 'select where'
+    */
     if(!has_id) {
         // Busca por valores nos campos
         Vehicle V = initialize_vehicle(f_type);
 
         // Realiza diferentes rotinas a depender do tipo a ser lido
+
+        // Arquivo tipo 1
         if (f_type == 1){
 
             int rrn = 0;
@@ -1004,6 +1016,7 @@ int delete_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
             }
 
         }
+        // Arquivo tipo 2
         else if (f_type == 2){
 
             long int offset = HEADER_SIZE_TYPE2;
@@ -1035,17 +1048,30 @@ int delete_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
                 free_vehicle(&V);
                 V = initialize_vehicle(2);
             }
-
         }
     }
 
     return 0;
 }
 
+/*
+*   Tratamento adicional de strings do veículo lido para atualização
+*/
+void setup_vehicle_strings(Vehicle *V) {
+    if(V->marca != NULL)
+        V->marca[V->tamMarca] = '\0';
+    if(V->cidade != NULL)
+        V->cidade[V->tamCidade] = '\0';
+    if(V->modelo!= NULL)
+        V->modelo[V->tamModelo] = '\0';
+    return;
+}
+
+/*
+*   Altera campos especificados do veículo
+*/
 void update_vehicle(Vehicle *V, int n, char** fields, char** values) {
     for(int i=0; i<n; i++){
-        printf("%s (%ld): %s (%ld)\n", fields[i], strlen(fields[i]), values[i], strlen(values[i]));
-
         if (strcmp(fields[i], "id") == 0) {
             V->id = atoi(values[i]);
 
@@ -1060,7 +1086,6 @@ void update_vehicle(Vehicle *V, int n, char** fields, char** values) {
                     V->marca = NULL;
                     V->tamMarca = 0;
                 }
-
 
             } else if (strcmp(fields[i], "cidade") == 0) {
                 if(V->cidade != NULL)
@@ -1084,6 +1109,7 @@ void update_vehicle(Vehicle *V, int n, char** fields, char** values) {
                 } else {
                     V->sigla = NULL;
                 }
+
             } else if (strcmp(fields[i], "modelo") == 0) {
                 if(V->modelo != NULL)
                     free(V->modelo);
@@ -1096,8 +1122,8 @@ void update_vehicle(Vehicle *V, int n, char** fields, char** values) {
                     V->tamModelo = 0;
                 }
 
-            } else if (strcmp(fields[i], "quantidade") == 0) {
-                if(strlen(values[i])!=0)
+            } else if (strcmp(fields[i], "qtt") == 0) {
+                if(strcmp(values[i], "NULO")!=0)
                     V->qtt = atoi(values[i]);
                 else
                     V->qtt = -1;
@@ -1108,8 +1134,8 @@ void update_vehicle(Vehicle *V, int n, char** fields, char** values) {
                 else
                     V->ano = -1;
             }
-
     }
+    setup_vehicle_strings(V);
     return;
 }
 
@@ -1117,75 +1143,73 @@ int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
     int has_id = 0;
     int is_selected;
     for(int i=0; i<x; i++) {
+        /*
+        *   CAMPO id PRESENTE NA BUSCA
+        *   Recuperção do vehicle por id e checagem de demais valores
+        */
         if(strcmp("id", search_fields[i])==0) {
             // Busca por id no arquivo de índice
             has_id = 1;
 
             Vehicle V = initialize_vehicle(f_type);
+            
+            // Arquivo tipo 1
             if (f_type==1) {
                 int rrn = search_index_from_idx((*I_list), (*n_indices), atoi(search_values[i]), f_type);
-                //printf("%d\n", rrn);
                 read_reg_from_bin_type1(file_bin_rw, &V, rrn);
 
                 // Checa se atende à todas as condições do select
                 is_selected = 0;
                 for (int j=0; j<x; j++) {
-                    if (strcmp("id", search_fields[i])!=0) 
+                    if (strcmp("id", search_fields[j])!=0)
                         is_selected = is_selected + check_meets_condition(V, search_fields[j], search_values[j], 0);
                 }  
                 if (is_selected == x-1) {
                     // Executa update
                     if (rrn >= 0) {
-
-                        print_vehicle_full(V,1);
-
                         update_vehicle(&V, y, update_fields, update_values);
-
-                        printf("\n");
-                        print_vehicle_full(V,1);
-                        printf("-------------------\n");
-
                         long int file_offset = (rrn)*MAX_RRN + HEADER_SIZE_TYPE1;
                         fseek(file_bin_rw, file_offset, SEEK_SET);
 
                         write_reg_in_bin_type1(file_bin_rw, &V);
                     }
-                    //print_vehicle_full(V,1);
-                    printf("\n");
+
                 }
+            
+            // Arquivo tipo 2
             } else if(f_type==2) {
                 long int offset = search_index_from_idx((*I_list), (*n_indices), atoi(search_values[i]), f_type);
                 //printf("%ld\n", offset);
                 read_reg_from_bin_type2(file_bin_rw, &V, &offset);
-                long int up_offset = offset - V.tamanhoRegistro;
+                long int up_offset = offset - V.tamanhoRegistro - 5;
 
                 // Checa se atende à todas as condições do select
                 is_selected = 0;
                 for (int j=0; j<x; j++) {
-                    if (strcmp("id", search_fields[i])!=0) 
+                    if (strcmp("id", search_fields[j])!=0) 
                         is_selected = is_selected + check_meets_condition(V, search_fields[j], search_values[j], 0);
                 }  
                 if (is_selected == x-1) {
-
-                    
                     // Executa update
                     update_vehicle(&V, y, update_fields, update_values);
-
                     update_reg_type2(file_bin_rw, V, header, &up_offset, I_list, (*n_indices));
-
-                    //print_vehicle_full(V,2);
-                    //printf("\n");
                 }
             }
             free_vehicle(&V);
         } 
      }
 
+    /*
+    *   AUSÊNCIA DO CAMPO id
+    *   Busca como a do 'select where'
+    */
     if(!has_id) {
         // Busca por valores nos campos
         Vehicle V = initialize_vehicle(f_type);
 
         // Realiza diferentes rotinas a depender do tipo a ser lido
+
+        // Arquivo tipo 1
         if (f_type == 1){
 
             int rrn = 0;
@@ -1203,23 +1227,12 @@ int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
 
                     // Executa update
                     if (rrn >= 0) {
-
-                        print_vehicle_full(V,1);
-
                         update_vehicle(&V, y, update_fields, update_values);
-
-                        printf("\n");
-                        print_vehicle_full(V,1);
-                        printf("-------------------\n");
-
-                        //update_vehicle(&V, y, update_fields, update_values);
-
                         long int file_offset = (rrn)*MAX_RRN + HEADER_SIZE_TYPE1;
                         fseek(file_bin_rw, file_offset, SEEK_SET);
 
                         write_reg_in_bin_type1(file_bin_rw, &V);
                     }
-                    printf("\n");
                 }
 
                 // Libera a memória alocada durante a leitura
@@ -1229,6 +1242,8 @@ int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
             }
 
         }
+
+        // Arquivo tipo 2
         else if (f_type == 2){
 
             long int offset = HEADER_SIZE_TYPE2;
@@ -1243,11 +1258,11 @@ int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
                 }        
                 if (is_selected == x) {
 
+                    long int up_offset = offset - V.tamanhoRegistro - 5;
+
                     // Executa update
                     update_vehicle(&V, y, update_fields, update_values);
-                    
-                    //print_vehicle(V,2);
-                    //printf("\n");
+                    update_reg_type2(file_bin_rw, V, header, &up_offset, I_list, (*n_indices));
                 }
 
                 // Libera a memória alocada durante a leitura
@@ -1258,11 +1273,4 @@ int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
         }
     }
     return 0;
-}
-
-void update_nRegRem(Header *H, char operation){
-
-    printf("H->nroRegRem: %d\n", H->nroRegRem);
-
-    return;
 }

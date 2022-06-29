@@ -310,28 +310,6 @@ int remove_reg_by_offset(FILE *file_bin_rw, long int *offset, Header *header){
     return 0;
 }
 
-/* AUTOTAD_PRIVATE
-void print_list_type2(FILE *file_bin_rw, Header *header){
-
-    long int cur_offset = header->topo.offset;
-    int cur_size = -1;
-    
-    printf("#####################\n");
-    while(cur_offset != -1){
-
-        fseek(file_bin_rw, cur_offset+1, SEEK_SET);
-        fread(&cur_size, sizeof(int), 1, file_bin_rw);
-
-        printf("offset: %ld size: %d\n",cur_offset, cur_size);
-
-        fread(&cur_offset, sizeof(long int), 1, file_bin_rw);
-    }
-    printf("#####################\n");
-
-    return;
-}
-*/
-
 void clean_reg_type2(FILE *file_bin_rw, int tamReg){
 
     long int cur_offset = ftell(file_bin_rw);
