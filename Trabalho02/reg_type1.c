@@ -61,7 +61,7 @@ int initialize_reg_type1(FILE *file_bin_w){
 }
 
 /*
- * Lê um registro tipo 1 de um arquivo binário de dados
+ * Lê um registro tipo 1 de um arquivo binário de dados pelo rrn
 */
 int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn){
 
