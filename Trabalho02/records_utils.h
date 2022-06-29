@@ -230,6 +230,11 @@ int delete_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
 /*
  * Comment section
 */
+void setup_vehicle_strings(Vehicle *V) ;
+
+/*
+ * Comment section
+*/
 void update_vehicle(Vehicle *V, int n, char** fields, char** values) ;
 
 /*
