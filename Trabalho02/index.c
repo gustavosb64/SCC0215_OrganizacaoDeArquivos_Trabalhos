@@ -9,6 +9,18 @@
 #define REG_HEADER_SIZE_TYPE1 182
 #define REG_HEADER_SIZE_TYPE2 190
 #define BUFFER 4096
+struct header{
+    char status;        // consistência do arquivo
+    union{
+        int rrn;            // RRN do último registro logicamente removido (tipo 1)
+        long int offset;    // offset do último registro logicamente removido (tipo 2)
+    }topo;           
+    union{
+        int proxRRN;                // próximo RRN disponível
+        long int proxByteOffset;    // próximo offset disponível
+    }prox;
+    int nroRegRem;      // quantidade de registros logicamente removidos
+};
 
 struct idxHeader{
     char status;
@@ -22,6 +34,7 @@ struct index{
     }idx;
 };
 
+// Cria uma variável do tipo indice
 Index create_index(int f_type){
     
     Index I;
@@ -33,6 +46,9 @@ Index create_index(int f_type){
     return I;
 }
 
+/*
+ * Escreve cabeçalho de índices
+*/
 int write_idx_header(FILE *file_idx_w){
 
     char status = '0';
@@ -41,8 +57,12 @@ int write_idx_header(FILE *file_idx_w){
     return 0;
 }
 
-Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices){
+/*
+ * Carrega os dados do arquivo de dados em uma lista de índices na memória
+*/
+Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices, Header *header){
     
+    // Aloca uma região para lista de índices
     Index *I_list = (Index *) malloc(BUFFER*sizeof(Index));
     Index I = create_index(f_type);
 
@@ -53,7 +73,7 @@ Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices){
     if (f_type == 1){
 
         // Enquanto ainda houverem registros a serem lidos no arquivo de dados
-        while(!read_id_from_reg_type1(file_bin_r, &id, counter)){
+        while(!read_id_from_reg_type1(file_bin_r, &id, counter, header)){
 
             if (id != -1){
                 
@@ -61,6 +81,7 @@ Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices){
                 I.id = id;
                 I.idx.rrn = counter;
 
+                // Caso o tamanho da lista seja alterado, aloca mais
                 if (counter*sizeof(Index) % (BUFFER * sizeof(Index)) == 0) 
                     I_list = (Index *) realloc(I_list, (counter / (BUFFER*sizeof(Index)) + 1) * BUFFER*sizeof(Index));
                 
@@ -78,7 +99,7 @@ Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices){
         long int offset = new_offset;
 
         // Enquanto ainda houverem registros a serem lidos no arquivo de dados
-        while(!read_id_from_reg_type2(file_bin_r, &id, &new_offset)){
+        while(!read_id_from_reg_type2(file_bin_r, &id, &new_offset, header)){
 
             if (id != -1){
                 
@@ -86,6 +107,7 @@ Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices){
                 I.id = id;
                 I.idx.byteoffset = offset;
 
+                // Caso o tamanho da lista seja alterado, aloca mais
                 if (counter*sizeof(Index) % (BUFFER * sizeof(Index)) == 0) 
                     I_list = (Index *) realloc(I_list, (counter / (BUFFER*sizeof(Index)) + 1) * BUFFER*sizeof(Index));
                 
@@ -96,16 +118,22 @@ Index* load_all_idx_from_bin(FILE *file_bin_r, int f_type, int *n_indices){
         }
     }
 
+    // Adiciona um último elemento à lista com id == -1 para condição de parada
     I = create_index(f_type);
     I_list[counter] = I;
 
+    // Realoca a lista para o tamanho necessário
     I_list = (Index *) realloc(I_list, (counter+1)*sizeof(Index));
 
+    // Atualiza o número de índices
     (*n_indices) = counter;
 
     return I_list;
 }
 
+/* 
+ * Escreve um índice tipo 1 no arquivo de índices
+*/
 int write_idx_in_bin_type1(FILE *file_idx_w, Index I){
 
     fwrite(&(I.id), sizeof(int), 1, file_idx_w);
@@ -114,6 +142,9 @@ int write_idx_in_bin_type1(FILE *file_idx_w, Index I){
     return 0;
 }
 
+/* 
+ * Escreve um índice tipo 2 no arquivo de índices
+*/
 int write_idx_in_bin_type2(FILE *file_idx_w, Index I){
 
     fwrite(&(I.id), sizeof(int), 1, file_idx_w);
@@ -122,6 +153,9 @@ int write_idx_in_bin_type2(FILE *file_idx_w, Index I){
     return 0;
 }
 
+/* 
+ * Escreve um arquivo de índices baseado em um arquivo binário de dados
+*/
 int write_idx_file_from_bin(char *input_bin_filename, char *output_idx_filename, int f_type){
 
     // Caso haja falha na leitura do arquivo, retorna 1
@@ -131,19 +165,23 @@ int write_idx_file_from_bin(char *input_bin_filename, char *output_idx_filename,
     }
     FILE *file_idx_w = fopen(output_idx_filename, "wb");
 
+    Header *header = read_header_from_bin(file_bin_r, f_type);
+
     write_idx_header(file_idx_w);
 
     // Carrega todos os índices em uma lista na memória para ordená-los
     // antes de efetuar a escrita
     int n_indices = 0;
-    Index *I_list = load_all_idx_from_bin(file_bin_r, f_type, &n_indices);
+    Index *I_list = load_all_idx_from_bin(file_bin_r, f_type, &n_indices, header);
     quick_sort(I_list, 0, n_indices-1);
     
+    // Executa diferentes rotinas a depender do tipo
     if (f_type == 1){
         
         int i = 0;
         Index I = I_list[i]; 
 
+        // Equanto não atinge condição de parada, escreve índices
         while(I.id != -1){
 
             write_idx_in_bin_type1(file_idx_w, I);
@@ -157,15 +195,17 @@ int write_idx_file_from_bin(char *input_bin_filename, char *output_idx_filename,
         int i = 0;
         Index I = I_list[i]; 
 
+        // Equanto não atinge condição de parada, escreve índices
         while(I.id != -1){
             write_idx_in_bin_type2(file_idx_w, I);
             I = I_list[++i]; 
         }
     }
 
-    // Setando o status para consistente
-    set_status_idx(file_idx_w,'1');
+    // Setando o status do índice para consistente
+    set_status_file(file_idx_w,'1');
 
+    // Fecha arquivos e libera memória
     fclose(file_bin_r);
     fclose(file_idx_w);
     free(I_list);
@@ -173,10 +213,15 @@ int write_idx_file_from_bin(char *input_bin_filename, char *output_idx_filename,
     return 0;
 }
 
-int read_idx_type1(FILE *file_idx_r, Index *I, int idx_counter){
+/*
+ * Lê um índice tipo 1 do arquivo de índices 
+*/
+int read_idx_type1(FILE *file_idx_r, Index *I){
 
-    // Posicionando o ponteiro no índice a ser lido. Como o arquivo de índices
-    // possui registros de tamanho fixo, podemos utilizar um idx_counter
+    /* Atenção!
+     * Esta função pressupõe que o ponteiro do arquivo já 
+     * esteja posicionado corretamente
+    */
 
     // Lê ID do registro indicado por rrn
     // Caso não haja mais registros a serem lidos, retorna sinal de erro 1
@@ -189,13 +234,15 @@ int read_idx_type1(FILE *file_idx_r, Index *I, int idx_counter){
     return 0;
 }
 
-int read_idx_type2(FILE *file_idx_r, Index *I, int idx_counter){
+/*
+ * Lê um índice tipo 2 do arquivo de índices 
+*/
+int read_idx_type2(FILE *file_idx_r, Index *I){
 
-    // Posicionando o ponteiro no índice a ser lido. Como o arquivo de índices
-    // possui registros de tamanho fixo, podemos utilizar um idx_counter
-    int size_index = sizeof(int) + sizeof(long int);
-    long int offset = sizeof(char) + idx_counter*size_index;
-    fseek(file_idx_r, offset, SEEK_SET);
+    /* Atenção!
+     * Esta função pressupõe que o ponteiro do arquivo já 
+     * esteja posicionado corretamente
+    */
 
     // Lê ID do registro indicado por rrn
     // Caso não haja mais registros a serem lidos, retorna sinal de erro 1
@@ -208,32 +255,9 @@ int read_idx_type2(FILE *file_idx_r, Index *I, int idx_counter){
     return 0;
 }
 
-int read_all_indices_from_idx(char *input_filename, int f_type){
-
-    FILE *file_idx_r = fopen(input_filename, "rb");
-    if (file_idx_r == NULL){
-        return 1;
-    }
-
-    Index I = create_index(f_type);
-
-    if (f_type == 1){
-        
-        fseek(file_idx_r, 1, SEEK_SET);
-
-        int idx_rrn = 0; 
-        while(!read_idx_type1(file_idx_r, &I, idx_rrn)){
-            I = create_index(f_type);
-            idx_rrn++;
-        }
-        
-    }
-    
-    fclose(file_idx_r);
-
-    return 0;
-}
-
+/*
+ * Imprime uma variável do tipo Index
+*/
 void print_index(Index I, int f_type){
     
     printf("Id: %d\n", I.id);
@@ -243,6 +267,9 @@ void print_index(Index I, int f_type){
     return;
 }
 
+/*
+ * Troca índices passados por parâmetro
+*/
 void swap(Index *a, Index *b){
     Index aux = *a;
     *a = *b;
@@ -251,6 +278,9 @@ void swap(Index *a, Index *b){
     return;
 }
 
+/*
+ * Ordena através do método quick_sort
+*/
 void quick_sort(Index *I, int ini, int fim){
 
 	int meio = (int) ((ini + fim) / 2);
@@ -273,35 +303,26 @@ void quick_sort(Index *I, int ini, int fim){
 	if(i < fim) quick_sort(I, i, fim);
 }
 
-int set_status_idx(FILE *file_idx_rw, char status){
-
-    if (status != '0' && status != '1')
-        return -1;
-
-    long int cur_offset = ftell(file_idx_rw);
-
-    fseek(file_idx_rw, 0, SEEK_SET);
-    fwrite(&status, sizeof(char), 1, file_idx_rw);
-
-    fseek(file_idx_rw, cur_offset, SEEK_SET);
-
-    return 0;
-}
-
+/*
+ * Carrega todos os índices do arquivo de índices em uma lista na memória RAM
+*/
 Index* load_all_indices_from_idx(FILE *file_idx_r, int f_type, int *n_indices){
 
+    // Aloca uma região de memória para a lista de índices
     Index *I_list = (Index *) malloc(BUFFER*sizeof(Index));
     Index I = create_index(f_type);
 
-    int counter = 0;
-
+    // Posiciona o ponteiro para ser os índices do arquivo
     fseek(file_idx_r, 1, SEEK_SET);
 
     // Realiza diferentes rotinas a depender do tipo a ser lido
+    int counter = 0;
     if (f_type == 1){
         
-        while(!read_idx_type1(file_idx_r, &I, counter)){
+        // Enquanto ainda há índices a serem lidos, continua
+        while(!read_idx_type1(file_idx_r, &I)){
 
+            // Caso o tamanho da lista seja alterado, aloca mais
             if (counter*sizeof(Index) % (BUFFER * sizeof(Index)) == 0) 
                 I_list = (Index *) realloc(I_list, (counter / (BUFFER*sizeof(Index)) + 1) * BUFFER*sizeof(Index));
 
@@ -311,15 +332,17 @@ Index* load_all_indices_from_idx(FILE *file_idx_r, int f_type, int *n_indices){
         }
 
     }
-
     else if (f_type == 2){
 
-        while(!read_idx_type2(file_idx_r, &I, counter)){
+        // Enquanto ainda há índices a serem lidos, continua
+        while(!read_idx_type2(file_idx_r, &I)){
 
+            // Caso o tamanho da lista seja alterado, aloca mais
             if (counter*sizeof(Index) % (BUFFER * sizeof(Index)) == 0) 
                 I_list = (Index *) realloc(I_list, (counter / (BUFFER*sizeof(Index)) + 1) * BUFFER*sizeof(Index));
 
             I_list[counter] = I;
+            I = create_index(f_type);
             counter++;
         }
 
@@ -332,6 +355,9 @@ Index* load_all_indices_from_idx(FILE *file_idx_r, int f_type, int *n_indices){
     return I_list;
 }
 
+/*
+ * Realiza uma busca binária por key em uma lista de índices I_list
+*/
 int binary_search_idx(Index *I_list, int key, int ini, int fim) {
 	
 	// caso base 1
@@ -351,13 +377,17 @@ int binary_search_idx(Index *I_list, int key, int ini, int fim) {
     return -2;
 }
 
+/*
+ * Busca por um determinado índice key_id e retorna seu RRN ou offset
+*/
 long int search_index_from_idx(Index *I_list, int n_indices, int key_id, int f_type){
 
     int idx = binary_search_idx(I_list, key_id, 0, n_indices-1);
-    if (idx == -1){
-        return -1;
-    }
 
+    // Caso não seja encontrado, retorna -1
+    if (idx == -1) return -1;
+
+    // Retorno depende do tipo do arquivo
     if (f_type == 1){
 
         int rrn = I_list[idx].idx.rrn;
@@ -374,6 +404,9 @@ long int search_index_from_idx(Index *I_list, int n_indices, int key_id, int f_t
     return -2;
 }
 
+/*
+ * Adiciona um novo índice à lista de índices
+*/
 int add_new_index(Index **I_list, int *n_indices, int id, long int new_rrn_byteoffset, int f_type){
 
     // Cria um novo Index com os dados fornecidos
@@ -393,6 +426,9 @@ int add_new_index(Index **I_list, int *n_indices, int id, long int new_rrn_byteo
     return 0;
 }
 
+/*
+ * Remove um índice da lista de índices
+*/
 int remove_index(Index **I_list, int *n_indices, int id){
 
     int idx = binary_search_idx((*I_list), id, 0, (*n_indices)-1);
@@ -410,15 +446,26 @@ int remove_index(Index **I_list, int *n_indices, int id){
     return 0;
 }
 
+/*
+ * Atualiza o RRN ou offset de um índice específico na lista de índices
+*/
 int update_index(Index **I_list, int *n_indices, int id, long int new_rrn_byteoffset, int f_type){
 
+    // Busca o índice na lista de índices do registro cujo RRN ou offset
+    // será atualizado
     int idx = binary_search_idx((*I_list), id, 0, (*n_indices)-1);
+
+    // Atualiza o valor do RRN ou do offset
     if (f_type == 1) (*I_list)[idx].idx.rrn = new_rrn_byteoffset;
     else if (f_type == 2) (*I_list)[idx].idx.byteoffset = new_rrn_byteoffset;
 
     return 0;
 }
 
+/*
+ * Atualiza o arquivo de índices sobrescrevendo o antigo com os dados presentes em
+ * I_list
+*/
 int refresh_idx_file(char *f_idx, Index *I_list, int n_indices, int f_type){
 
     FILE *file_idx_wr = fopen(f_idx, "wb+");
@@ -428,6 +475,7 @@ int refresh_idx_file(char *f_idx, Index *I_list, int n_indices, int f_type){
     fwrite(&status, sizeof(char), 1, file_idx_wr);
 
     // Escrevendo os índices sequencialmente no arquivo
+    // Diferentes rotinas a depender do tipo
     if (f_type == 1){
 
         for(int i=0; i<n_indices; i++){
@@ -448,9 +496,25 @@ int refresh_idx_file(char *f_idx, Index *I_list, int n_indices, int f_type){
         return -1;
 
     // Setando o status do arquivo para consistente após a escrita
-    set_status_idx(file_idx_wr,'1');
+    set_status_file(file_idx_wr,'1');
 
     fclose(file_idx_wr);
 
     return 0;
+}
+
+/*
+ * Retorna o RRN de um dado índice em uma lista de índices I_list
+*/
+int get_rrn(Index *I_list, int *n_indices, int id){
+
+    /* Atenção!
+     * Esta função pressupõe que o registro seja
+     * do tipo 1
+    */
+
+    // Busca o RRN da lista de índices e retorna
+    int idx = binary_search_idx(I_list, id, 0, (*n_indices)-1);
+    return I_list[idx].idx.rrn;
+  
 }
