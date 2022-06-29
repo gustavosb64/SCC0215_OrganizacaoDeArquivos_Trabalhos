@@ -61,11 +61,6 @@ int read_idx_type2(FILE *file_idx_r, Index *I);
 /*
  * Comment section
 */
-int read_all_indices_from_idx(char *input_filename, int f_type);
-
-/*
- * Comment section
-*/
 void print_index(Index I, int f_type);
 
 /*

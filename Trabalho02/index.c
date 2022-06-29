@@ -23,18 +23,28 @@ struct header{
 };
 
 struct idxHeader{
-    char status;
+    char status;    // consistência do arquivo de índices
 };
 
 struct index{
-    int id;
+    int id;         // id do registro no arquivo de índices
     union{
-        int rrn;
-        long int byteoffset;
+        int rrn;                // rrn do registro
+        long int byteoffset;    // offset do registro
     }idx;
 };
 
-// Cria uma variável do tipo indice
+
+/*
+ * OBSERVAÇÃO
+ *  Foi optado por manter todas as operações de índices 
+ *  em um único arquivo devido à quantidade pequena de 
+ *  funções específicas de cada tipo de dados
+*/
+
+/*
+ * Cria uma variável do tipo indice
+*/
 Index create_index(int f_type){
     
     Index I;
