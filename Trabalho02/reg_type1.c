@@ -11,24 +11,10 @@
 #define TYPE 1
 struct header{
     char status;        // consistência do arquivo
-    int tamanhoRegistro;    // tamanho do registro (usado apenas no tipo 2)
     union{
         int rrn;            // RRN do último registro logicamente removido (tipo 1)
         long int offset;    // offset do último registro logicamente removido (tipo 2)
     }topo;           
-    /*
-    char descricao[40]; // descrição dos metadados
-    char desC1[22];     // descrição detalhada do campo 1
-    char desC2[19];     // descrição detalhada do campo 2
-    char desC3[24];     // descrição detalhada do campo 3
-    char desC4[8];      // descrição detalhada do campo 4
-    char codC5;         // descrição simplificada do campo 5
-    char desC5[16];     // descrição detalhada do campo 5
-    char codC6;         // descrição simplificada do campo 6
-    char desC6[18];     // descrição detalhada do campo 6
-    char codC7;         // descrição simplificada do campo 7
-    char desC7[19];     // descrição detalhada do campo 7
-    */
     union{
         int proxRRN;                // próximo RRN disponível
         long int proxByteOffset;    // próximo offset disponível
@@ -58,6 +44,9 @@ struct vehicle{
     char *modelo;       // nome do modelo
 };
 
+/*
+ * Inicializa um campo de 97 bytes com valor '$'
+*/
 int initialize_reg_type1(FILE *file_bin_w){
 
     // Preenche o espaço do registro com '$'
@@ -71,6 +60,9 @@ int initialize_reg_type1(FILE *file_bin_w){
     return 0;
 }
 
+/*
+ * Lê um registro tipo 1 de um arquivo binário de dados pelo rrn
+*/
 int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn){
 
     // Colocando o ponteiro do arquivo no início do registro a ser buscado
@@ -97,15 +89,19 @@ int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn){
 
     byte_counter += sizeof(int)*4 + sizeof(char)*3;
 
+    /* 
+     * Itera 3 vezes, referente aos 3 possíveis campos de 
+     * tamanho variável de Vehicle
+    */
     for(int i=0; i<3; i++){
 
         // Caso a quantidade de bytes restantes ultrapasse MAX_RRN-5,
-        // não há espaço para outro campo ter sido armazenado
+        // não há espaço para outro campo ter sido armazenado, então retorna
         if (byte_counter > MAX_RRN-5) return 0;
 
         // Avança o ponteiro o tamanho de um inteiro para ler o caractere de 
         // descrição simplificada do campo
-        // Caso fread() retorne 0, o arquivo atingiu o fim
+        // Caso fread() retorne 0, o arquivo atingiu o fim e retorna
         fseek(file_bin_r, 4, SEEK_CUR);
         if (!fread(&aux_char, sizeof(char), 1, file_bin_r)){
             // Retorna o ponteiro do arquivo para o início do registro
@@ -123,6 +119,8 @@ int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn){
             return 0;
         }
 
+        // Compara o aux_char para realizar a leitura correta de cada campo
+        // de tamanho variável
         switch(aux_char){
 
             // Lê a cidade
@@ -169,6 +167,9 @@ int read_reg_from_bin_type1(FILE *file_bin_r, Vehicle *V, int rrn){
 
 }
 
+/*
+ * Escreve um registro tipo 1 em um arquivo binário de dados
+*/
 int write_reg_in_bin_type1(FILE *file_bin_w, Vehicle *V){
 
     // Inicializa o espaço dos próximos MAX_RRN bytes com o caractere '$'
@@ -177,6 +178,8 @@ int write_reg_in_bin_type1(FILE *file_bin_w, Vehicle *V){
     // Conta quantos bytes devem ser pulados ao final devido ao padding
     int offset = 0;
 
+    // Checa se os campos de tamanho variável existem para tratá-los de maneira
+    // correta
     if ((*V).cidade != NULL){
         (*V).tamCidade = strlen((*V).cidade);
         (*V).codC5 = '0';
@@ -200,6 +203,7 @@ int write_reg_in_bin_type1(FILE *file_bin_w, Vehicle *V){
     fwrite(&(*V).ano, sizeof(int), 1, file_bin_w);
     fwrite(&(*V).qtt, sizeof(int), 1, file_bin_w);
 
+    // Caso sigla esteja vazia, preenche o campo com lixo
     if ((*V).sigla == NULL){
         (*V).sigla = (char *) calloc (3, sizeof(char));
         strcpy((*V).sigla, "$$");
@@ -208,31 +212,40 @@ int write_reg_in_bin_type1(FILE *file_bin_w, Vehicle *V){
 
     offset += (sizeof(char) + 4*sizeof(int) + 2*sizeof(char));
 
+    // Escreve cidade, caso haja
     if ((*V).tamCidade){
         fwrite(&(*V).tamCidade, sizeof(int), 1, file_bin_w);
         fwrite(&(*V).codC5, sizeof(char), 1, file_bin_w);
         fwrite((*V).cidade, sizeof(char), (*V).tamCidade, file_bin_w);
     }
 
+    // Escreve marca, caso haja
     if ((*V).tamMarca){
         fwrite(&(*V).tamMarca, sizeof(int), 1, file_bin_w);
         fwrite(&(*V).codC6, sizeof(char), 1, file_bin_w);
         fwrite((*V).marca, sizeof(char), (*V).tamMarca, file_bin_w);
     }
 
+    // Escreve modelo, caso haja
     if ((*V).tamModelo){
         fwrite(&(*V).tamModelo, sizeof(int), 1, file_bin_w);
         fwrite(&(*V).codC7, sizeof(char), 1, file_bin_w);
         fwrite((*V).modelo, sizeof(char), (*V).tamModelo, file_bin_w);
     }
 
-    // Posiciona o ponteiro do arquivo ao final do registro com padding
+    /* 
+     * Como o registro tem tamanho fixo, ao terminar a escrita, o ponteiro 
+     * pode não estar ao final do registro. Utiliza o offset para posicioná-lo 
+    */
     offset = MAX_RRN - offset;
     fseek(file_bin_w, offset, SEEK_CUR);
 
     return 0;
 }
 
+/*
+ * Busca veículo tipo 1 pelo seu RRN
+*/
 int search_vehicle_rrn(char *filename_in_bin ,int rrn) {
 
     // Caso haja falha na leitura do arquivo, retorna 1
@@ -259,43 +272,9 @@ int search_vehicle_rrn(char *filename_in_bin ,int rrn) {
     return 0;
 }
 
-// header_rrn -> topo da pilha
-//  header.topo.rrn
-/* AUTOTAD_PRIVATE
-int remove_reg_by_rrn_type1(FILE *file_bin_rw, int rrn, Header *header, int *err){
-
-    // Caso o arquivo de registros não esteja consistente
-    if (get_status(file_bin_rw) != '1'){
-        *err = 2;
-        return -2;
-    }
-
-    fseek(file_bin_rw, MAX_RRN*rrn + HEADER_SIZE_TYPE1, SEEK_SET);
-
-    // Caso registro não seja encontrado, retorna sinal de erro 1
-    char aux_char;
-    if (!fread(&aux_char, sizeof(char), 1, file_bin_rw)){
-        *err = 1;
-        return -1;
-    }
-    fseek(file_bin_rw, -1, SEEK_CUR);
-
-    // Armazena o próximo valor da pilha no registro
-    int header_rrn = get_list_top(file_bin_rw, TYPE);
-    aux_char = '1'; 
-    fwrite(&aux_char, sizeof(char), 1, file_bin_rw);
-    fwrite(&header_rrn, sizeof(char), 1, file_bin_rw);
-
-    // Atualiza topo da pilha
-    update_list(file_bin_rw, TYPE, rrn);
-
-    // Atualiza nroRegRem
-    update_nroRegRem(file_bin_rw, 1, '+');
-
-    return 0;
-}
+/*
+ * Remove um registro tipo 1 do arquivo de dados pelo RRN
 */
-
 int remove_reg_by_rrn(FILE *file_bin_rw, int rrn, Header *header){
 
     // Posicionando o ponteiro no registro a ser deletado
@@ -307,7 +286,6 @@ int remove_reg_by_rrn(FILE *file_bin_rw, int rrn, Header *header){
     fread(&is_removed, sizeof(char), 1, file_bin_rw);
     if (is_removed == '1') 
         return -1;
-
     fseek(file_bin_rw, -sizeof(char), SEEK_CUR);
 
     // Marca registro como removido
@@ -325,36 +303,9 @@ int remove_reg_by_rrn(FILE *file_bin_rw, int rrn, Header *header){
     return 0;
 }
 
-/* AUTOTAD_PRIVATE
-void test_remove_reg_type1(int f_type){
-
-    Vehicle V = initialize_vehicle(f_type);
-    FILE *file_bin_rw = fopen("meu_binario5.bin", "rb+");
-
-    int rrn = search_index_from_idx("meu_indice5.bin", 999, f_type);
-    printf("rrn: %d\n\n",rrn);
-
-    int err = 0;
-    remove_reg_by_rrn_type1(file_bin_rw, rrn, &err);
-
-    printf("\n");
-    read_reg_from_bin_type1(file_bin_rw, &V, rrn);
-    print_vehicle_full(V, f_type);
-
-    fclose(file_bin_rw);
-    file_bin_rw = fopen("meu_binario5.bin", "rb+");
-
-
-    int header_rrn; 
-
-    fseek(file_bin_rw, 1, SEEK_SET); 
-    fread(&header_rrn, sizeof(int), 1, file_bin_rw);
-    printf("\nheader: %d\n",header_rrn);
-
-    return;
-}
+/*
+ * Imprime um registro tipo 1 o lendo do arquivo de dados pelo RRN
 */
-
 int print_reg_from_bin_by_rrn(char *filename, int rrn){
 
     FILE *file_bin_r = fopen(filename, "rb");
@@ -374,58 +325,79 @@ int print_reg_from_bin_by_rrn(char *filename, int rrn){
     return 0;
 }
 
+/*
+ * Adiciona um novo registro tipo 1 ao arquivo de dados
+*/
 int add_new_reg_type1(FILE *file_bin_rw, Vehicle V, int *rrn, Header *header){
 
-    int flag_stack = 0;
+    int flag_stack = 0; // flag para indicar se houve reaproveitamento de espaço
 
+    // Checa se a pilha de registros removidos não está vazia
     if (header->topo.rrn == -1)
+        // Caso esteja vazia, rrn recebe o próximo RRN disponível
         (*rrn) = header->prox.proxRRN;
     else{ 
+        // Caso não esteja vazia, rrn recebe valor da pilha e flag_stack é marcada 
         (*rrn) = header->topo.rrn;
         flag_stack = 1;
     }
 
+    // Posiciona o cursor onde será inserido o novo registro
     long int offset = (*rrn)*MAX_RRN + HEADER_SIZE_TYPE1;
     fseek(file_bin_rw, offset, SEEK_SET);
 
+
+    // Caso haja espaço a ser reaproveitado
     if (flag_stack){
         char is_removed; 
-        int new_value; 
+        int new_stack_top; 
 
-        // Caso registro não conste como removido
+        // Caso registro não conste como removido, retorna
         fread(&is_removed, sizeof(char), 1, file_bin_rw);
         if (is_removed != '1'){
             return -1;
         }
 
-        fread(&new_value, sizeof(int), 1, file_bin_rw);
-
-        // Atualizando o topo da pilha e o nroRegRem
-        header->topo.rrn = new_value;
+        // Atualiza o topo da pilha e o nroRegRem
+        fread(&new_stack_top, sizeof(int), 1, file_bin_rw);
+        header->topo.rrn = new_stack_top;
         header->nroRegRem = header->nroRegRem - 1;
 
+        /* 
+         * Retorna o ponteiro ao início do registro
+         *  Este retorno é necessário para se reutilizar a função de
+         *  escrita de registro tipo 1 implementada anteriormente
+        */
         fseek(file_bin_rw, -(sizeof(char)+sizeof(int)), SEEK_CUR);
     }
 
+    /* 
+     * Escreve novo registro
+     *  Para favorecer a modularização do programa, optou-se por reutilizar
+     *  a função write_reg_in_bin_type1
+    */
     write_reg_in_bin_type1(file_bin_rw, &V);
 
+    // Caso não tenha tido reaproveitamento de espaço, proxRRN é atualizado
     if (!flag_stack){
-        (*rrn)++;
-        header->prox.proxRRN = (*rrn);
+        int new_proxRRN = (*rrn)+1;
+        header->prox.proxRRN = new_proxRRN;
     }
 
     return 0;
 }
 
-int read_id_from_reg_type1(FILE *file_bin_r, int *id, int rrn){
+/*
+ * Lê um id de um registro tipo 1 dado seu RRN
+*/
+int read_id_from_reg_type1(FILE *file_bin_r, int *id, int rrn, Header *header){
     
-    // Caso o arquivo de registros não esteja consistente
-    if (get_status(file_bin_r) != '1'){
+    // Caso o arquivo de registros não esteja consistente, retorna
+    if (header->status != '1'){
         return 1;
     }
 
     // Colocando o ponteiro do arquivo no ID do registro a ser buscado
-    //long int id_offset = MAX_RRN * rrn + HEADER_SIZE_TYPE1 + sizeof(char)+sizeof(int);
     long int id_offset = MAX_RRN * rrn + HEADER_SIZE_TYPE1;
     fseek(file_bin_r, id_offset, SEEK_SET);
 
@@ -449,5 +421,27 @@ int read_id_from_reg_type1(FILE *file_bin_r, int *id, int rrn){
     if (!fread(&(*id), sizeof(int), 1, file_bin_r)) 
         return 3;
 
+    return 0;
+}
+
+/*
+ * Atualiza campo de registro tipo 1 identificado por seu rrn
+ * com dados presentes em Vehicle V
+*/
+int update_reg_type1(FILE *file_bin_rw, Vehicle V, int rrn){
+
+    // Posicionando o ponteiro no registro a ser deletado
+    long int offset = rrn*MAX_RRN + HEADER_SIZE_TYPE1;
+    fseek(file_bin_rw, offset, SEEK_SET);
+
+    // Checa se registro não está removido
+    char is_removed;
+    fread(&is_removed, sizeof(char), 1, file_bin_rw);
+    if(is_removed == '1')
+        return -1;
+    fseek(file_bin_rw, -1, SEEK_CUR);
+
+    write_reg_in_bin_type1(file_bin_rw, &V);
+    
     return 0;
 }

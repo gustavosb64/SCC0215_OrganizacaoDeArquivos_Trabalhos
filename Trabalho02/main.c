@@ -16,6 +16,40 @@
 #include "./reg_type2.h"
 #include "./index.h"
 
+/*
+ * FUNÇÃO FORNECIDA
+*/
+void binarioNaTela(char *nomeArquivoBinario) { 
+
+	/* Use essa função para comparação no run.codes. Lembre-se de ter fechado (fclose) o arquivo anteriormente.
+	*  Ela vai abrir de novo para leitura e depois fechar (você não vai perder pontos por isso se usar ela). */
+
+	unsigned long i, cs;
+	unsigned char *mb;
+	size_t fl;
+	FILE *fs;
+	if(nomeArquivoBinario == NULL || !(fs = fopen(nomeArquivoBinario, "rb"))) {
+		fprintf(stderr, "ERRO AO ESCREVER O BINARIO NA TELA (função binarioNaTela): não foi possível abrir o arquivo que me passou para leitura. Ele existe e você tá passando o nome certo? Você lembrou de fechar ele com fclose depois de usar?\n");
+		return;
+	}
+	fseek(fs, 0, SEEK_END);
+	fl = ftell(fs);
+	fseek(fs, 0, SEEK_SET);
+	mb = (unsigned char *) malloc(fl);
+	fread(mb, 1, fl, fs);
+
+	cs = 0;
+	for(i = 0; i < fl; i++) {
+		cs += (unsigned long) mb[i];
+	}
+	printf("%lf\n", (cs / (double) 100));
+	free(mb);
+	fclose(fs);
+}
+
+/*
+ * FUNÇÃO FORNECIDA
+*/
 void scan_quote_string(char *str) {
 
 	/*
@@ -158,7 +192,31 @@ void create_index_cmd(int f_type) {
     char *f_bin = readline(stdin, aux_delimiters);
     char *f_idx = readline(stdin, aux_delimiters);
 
-    write_idx_file_from_bin(f_bin, f_idx, f_type);
+    // Caso haja falha na leitura do arquivo, retorna um erro 
+    FILE *file_bin_r = fopen(f_bin, "rb");
+    if (file_bin_r == NULL){
+        printf("Falha no processamento do arquivo.");
+        return;
+    }
+    Header *header = read_header_from_bin(file_bin_r, f_type);
+
+    // Caso arquivo conste como inconsistente, retorna sinal de erro
+    if (get_status_from_header(header) != '1'){
+
+        printf("Falha no processamento do arquivo.");
+
+        free(f_bin);
+        free(f_idx);
+        free(header);
+        fclose(file_bin_r);
+
+        return;
+    }
+
+    write_idx_file_from_bin(file_bin_r, header, f_idx, f_type);
+
+    fclose(file_bin_r);
+
     binarioNaTela(f_idx);
     
     free(f_bin);
@@ -175,28 +233,45 @@ void delete_cmd(int f_type) {
     char *f_bin = readline(stdin, aux_delimiters);
     char *f_idx = readline(stdin, aux_delimiters);
     
-    // Caso haja falha na leitura do arquivo, retorna 1
+    // Caso haja falha na leitura do arquivo, retorna sinal de erro
     FILE *file_bin_rw = fopen(f_bin, "rb+");
     if (file_bin_rw == NULL){
+        printf("Falha no processamento do arquivo.");
         return;
     }
-    FILE *file_idx_rw = fopen(f_idx, "rb+");
+    Header *header = read_header_from_bin(file_bin_rw, f_type);
+    
+    // Caso arquivo conste como inconsistente, retorna sinal de erro
+    if (get_status_from_header(header) != '1'){
+
+        printf("Falha no processamento do arquivo.");
+
+        free(f_bin);
+        free(f_idx);
+        free(header);
+        fclose(file_bin_rw);
+    }
+
+    FILE *file_idx_rw = fopen(f_idx, "rb");
     if (file_idx_rw == NULL){
         return;
     }
+    int n_indices = 0;
+    Index *I_list = load_all_indices_from_idx(file_idx_rw, f_type, &n_indices);
 
-    set_status_bin(file_bin_rw, '0');
-    Header *header = read_header_from_bin(file_bin_rw, f_type);
+    fclose(file_idx_rw);
+
+    set_status_file(file_bin_rw, '0');
 
     int n;
     scanf("%d\n", &n);
 
-    // Delimitador utilizado na leitura da string
     char** fields;
     char** values;
     int x;
 
     for (int i=0; i<n; i++) {
+        // Obtendo campos e valores de busca para delete
         scanf("%d ", &x);
         values = malloc(x*sizeof(char*));
         fields = malloc(x*sizeof(char*));
@@ -211,11 +286,7 @@ void delete_cmd(int f_type) {
             }
         }
 
-        /*
-        printf("######################\n");
-        print_header(header, f_type);
-        */
-        delete_bin(file_bin_rw, f_type, file_idx_rw, x, fields, values, header);
+        delete_bin(file_bin_rw, f_type, &I_list, &n_indices, x, fields, values, header);
 
         for (int j=0; j<x; j++) {
             free(fields[j]);
@@ -226,20 +297,20 @@ void delete_cmd(int f_type) {
         fflush(file_bin_rw);
     }
 
+    // Atualizando cabeçalho 
     update_header(file_bin_rw, header, f_type);
-    set_status_bin(file_bin_rw, '1');
+    fclose(file_bin_rw);
 
-    // Reescrevendo arquivo de índices
-    write_idx_file_from_bin(f_bin, f_idx, f_type);
+    // Atualiza arquivo de índices
+    refresh_idx_file(f_idx, I_list, n_indices, f_type);
 
     binarioNaTela(f_bin);
     binarioNaTela(f_idx);
 
     free(f_bin);
     free(f_idx);
-
-    fclose(file_bin_rw);
-    fclose(file_idx_rw);
+    free(header);
+    free(I_list);
 }
 
 /* Operação 7
@@ -252,22 +323,61 @@ void insert_cmd(int f_type) {
     char *f_bin = readline(stdin, aux_delimiters);
     char *f_idx = readline(stdin, aux_delimiters);
 
-    FILE *file_bin_rw = fopen(f_bin, "rb+"); 
+    /* 
+     * Abre arquivo de índices e checa seu status
+    */ 
+    FILE *file_idx_r = fopen(f_idx, "rb"); 
+    if (file_idx_r == NULL){
+        printf("Falha no processamento do arquivo.");
+        return;
+    }
 
-    // Setando status para inconsistente
-    set_status_bin(file_bin_rw, '0');
+    // Caso arquivo conste como inconsistente, retorna sinal de erro
+    char idx_status = get_idx_status(file_idx_r);
+    if (idx_status != '1'){
 
-    Header *header = read_header_from_bin(file_bin_rw, f_type);
+        printf("Falha no processamento do arquivo.");
 
-    /*
-    printf("-----\n");
-    print_header(header, f_type);
+        free(f_bin);
+        free(f_idx);
+        fclose(file_idx_r);
+    }
+    
+    // Carrega os índices em uma lista em memória RAM
+    int n_indices = 0;
+    Index *I_list = load_all_indices_from_idx(file_idx_r, f_type, &n_indices);
+
+    fclose(file_idx_r);
+
+    /* 
+     * Abrindo arquivos de dados e checando status
     */
+    FILE *file_bin_rw = fopen(f_bin, "rb+"); 
+    if (file_bin_rw == NULL){
+        printf("Falha no processamento do arquivo.");
+        return;
+    }
+
+    // Caso arquivo conste como inconsistente, retorna sinal de erro
+    char bin_status = get_status(file_bin_rw);
+    if (bin_status != '1'){
+
+        printf("Falha no processamento do arquivo.");
+
+        free(f_bin);
+        free(f_idx);
+        fclose(file_bin_rw);
+    }
+
+    // Setando status de arquivo binário para inconsistente
+    set_status_file(file_bin_rw, '0');
+
+    // Carregando cabeçalho na memória RAM
+    Header *header = read_header_from_bin(file_bin_rw, f_type);
 
     int n;
     scanf("%d\n", &n);
 
-    // Delimitador utilizado na leitura da string
     char* id;
     char* ano;
     char* qtt;
@@ -285,41 +395,33 @@ void insert_cmd(int f_type) {
         scan_quote_string(modelo);
         getchar();
 
-        //printf("%d, %d, %d, %s, %s, %s, %s\n", id, ano, qtt, sigla, cidade, marca, modelo);
+        add_new_reg(file_bin_rw, f_type, &I_list, &n_indices, header, id, ano, qtt, sigla, cidade, marca, modelo);
 
-        
-        /*
-        printf("##################\n");
-        printf("id: %s ano: %s qtt: %s\n",id,ano,qtt);
-        printf("sigla: %s cidade: %s marca: %s modelo: %s \n",sigla,cidade,marca,modelo);
-        printf("##################\n");
-        printf("-----\n");
-        //print_header(header, f_type);
-        */
-        
-
-        add_new_reg(file_bin_rw, f_type, header, id, ano, qtt, sigla, cidade, marca, modelo);
-//        add_new_reg(file_bin_rw, f_type, id, ano, qtt, sigla, cidade, marca, modelo);
     }
 
+    // Atualizando cabeçalho de arquivo binário de dados
     update_header(file_bin_rw, header, f_type);
-    set_status_bin(file_bin_rw, '1');
+    fclose(file_bin_rw);
 
-    fflush(file_bin_rw);
-    // Reescrevendo arquivo de índices
-    write_idx_file_from_bin(f_bin, f_idx, f_type);
+    // Atualiza arquivo de índices
+    refresh_idx_file(f_idx, I_list, n_indices, f_type);
 
     binarioNaTela(f_bin);
     binarioNaTela(f_idx);
     
+    free(id);
+    free(ano);
+    free(qtt);
     free(sigla);
     free(cidade);
     free(marca);
     free(modelo);
     free(f_bin);
     free(f_idx);
+    free(header);
 
-    fclose(file_bin_rw);
+    free(I_list);
+
 } 
 
 /* Operação 8
@@ -333,29 +435,68 @@ void update_cmd(int f_type) {
     char *f_bin = readline(stdin, aux_delimiters);
     char *f_idx = readline(stdin, aux_delimiters);
     
-    // Caso haja falha na leitura do arquivo, retorna 1
-    FILE *file_bin_rw = fopen(f_bin, "rb+");
-    if (file_bin_rw == NULL){
-        return;
-    }
-    FILE *file_idx_rw = fopen(f_idx, "rb+");
-    if (file_idx_rw == NULL){
+    /* 
+     * Abre arquivo de índices e checa seu status
+    */ 
+    FILE *file_idx_r = fopen(f_idx, "rb"); 
+    if (file_idx_r == NULL){
+        printf("Falha no processamento do arquivo.");
         return;
     }
 
-    set_status_bin(file_bin_rw, '0');
+    // Caso arquivo conste como inconsistente, retorna sinal de erro
+    char idx_status = get_idx_status(file_idx_r);
+    if (idx_status != '1'){
+
+        printf("Falha no processamento do arquivo.");
+
+        free(f_bin);
+        free(f_idx);
+        fclose(file_idx_r);
+    }
+    
+    // Carrega os índices em uma lista em memória RAM
+    int n_indices = 0;
+    Index *I_list = load_all_indices_from_idx(file_idx_r, f_type, &n_indices);
+
+    fclose(file_idx_r);
+
+    /* 
+     * Abrindo arquivos de dados e checando status
+    */
+    FILE *file_bin_rw = fopen(f_bin, "rb+"); 
+    if (file_bin_rw == NULL){
+        printf("Falha no processamento do arquivo.");
+        return;
+    }
+
+    // Caso arquivo conste como inconsistente, retorna sinal de erro
+    char bin_status = get_status(file_bin_rw);
+    if (bin_status != '1'){
+
+        printf("Falha no processamento do arquivo.");
+
+        free(f_bin);
+        free(f_idx);
+        fclose(file_bin_rw);
+    }
+
+    // Setando status de arquivo binário para inconsistente
+    set_status_file(file_bin_rw, '0');
+
+    // Carregando cabeçalho na memória RAM
     Header *header = read_header_from_bin(file_bin_rw, f_type);
 
     int n;
     scanf("%d\n", &n);
 
-    // Delimitador utilizado na leitura da string
     char** search_fields;
     char** search_values;
     char** update_fields;
     char** update_values;
     int x,y;
     for (int i=0; i<n; i++) {
+        // Obtendo campos e valores para busca
         scanf("%d ", &x);
         search_values = malloc(x*sizeof(char*));
         search_fields = malloc(x*sizeof(char*));
@@ -370,6 +511,7 @@ void update_cmd(int f_type) {
             }
         }
 
+        // Obtendo campos e valore a serem atualizados
         scanf("%d ", &y);
         update_values = malloc(y*sizeof(char*));
         update_fields = malloc(y*sizeof(char*));
@@ -384,7 +526,7 @@ void update_cmd(int f_type) {
             }
         }
 
-        update_bin(file_bin_rw, f_type, file_idx_rw, x, search_fields, search_values, y, update_fields, update_values, header);
+        update_bin(file_bin_rw, f_type, &I_list, &n_indices, x, search_fields, search_values, y, update_fields, update_values, header);
 
         for (int j=0; j<x; j++) {
             free(search_fields[j]);
@@ -401,20 +543,19 @@ void update_cmd(int f_type) {
         fflush(file_bin_rw);
     }
 
+    // Atualizando cabeçalho 
     update_header(file_bin_rw, header, f_type);
-    set_status_bin(file_bin_rw, '1');
+    fclose(file_bin_rw);
 
     // Reescrevendo arquivo de índices
-    write_idx_file_from_bin(f_bin, f_idx, f_type);
+    refresh_idx_file(f_idx, I_list, n_indices, f_type);
 
     binarioNaTela(f_bin);
     binarioNaTela(f_idx);
 
     free(f_bin);
     free(f_idx);
-
-    fclose(file_bin_rw);
-    fclose(file_idx_rw);
+    free(header);
 }
 
 int main(int argc, char *argv[]){

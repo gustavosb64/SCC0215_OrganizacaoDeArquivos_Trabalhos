@@ -1,6 +1,7 @@
 #ifndef RECORDS_UTILS_H
 #define RECORDS_UTILS_H
 
+#include "./index.h"
 
 /*
  * Estrutura contendo os dados do cabeçalho dos arquivos de registro binários
@@ -51,11 +52,6 @@ Header* read_header_from_bin(FILE *file_bin_r, int f_type);
  * Comment section
 */
 int update_header(FILE *file_bin_rw, Header *H, int f_type);
-
-/*
- * Comment section
-*/
-void print_header(Header *H, int f_type);
 
 /*
  * Lê todos os registros de um arquivo binário
@@ -177,24 +173,9 @@ int print_vehicle(Vehicle V, int f_type);
 int free_vehicle(Vehicle *V);
 
 /*
- * Função fornecida para a comparação dos binários gerados pelas funções de escrita
-*/
-void binarioNaTela(char *nomeArquivoBinario) ;
- 
-/*
  * Comment section
 */
-int add_new_reg(FILE *file_bin_rw, int f_type, Header *header, char *id, char *ano, char *qtt, char *sigla, char *cidade, char *marca, char *modelo);
-
-/*
- * Comment section
-*/
-int update_nroRegRem(FILE *file_bin_rw, int f_type, char operation);
-
-/*
- * Comment section
-*/
-int update_list(FILE *file_bin_rw, int f_type, long int new_value);
+int add_new_reg(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, Header *header, char *id, char *ano, char *qtt, char *sigla, char *cidade, char *marca, char *modelo);
 
 /*
  * Comment section
@@ -204,17 +185,7 @@ int update_prox(FILE *file_bin_rw, int f_type, long int new_value);
 /*
  * Comment section
 */
-long int get_list_top(FILE *file_bin_rw, int f_type);
-
-/*
- * Comment section
-*/
-long int get_prox(FILE *file_bin_rw, int f_type);
-
-/*
- * Comment section
-*/
-int set_status_bin(FILE *file_bin_rw, char status);
+int set_status_file(FILE *file_rw, char status);
 
 /*
  * Comment section
@@ -224,22 +195,27 @@ char get_status(FILE *file_bin_r);
 /*
  * Comment section
 */
-int delete_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int n, char** fields, char** values, Header *header) ;
+char get_status_from_header(Header *header);
 
 /*
  * Comment section
 */
-void update_vehicle(Vehicle *V, int n, char** fields, char** values) ;
+int delete_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, int n, char** fields, char** values, Header *header) ;
 
 /*
  * Comment section
 */
-int update_bin(FILE *file_bin_rw, int f_type, FILE *file_idx_rw, int x, char** search_fields, char** search_values, int y, char** update_fields, char** update_values, Header *header) ;
+void setup_vehicle_strings(Vehicle *V) ;
 
 /*
  * Comment section
 */
-void update_nRegRem(Header *H, char operation);
+void update_vehicle(Vehicle *V, int n, char** fields, char** values, Index **I_list, int n_indices, int f_type) ;
+
+/*
+ * Comment section
+*/
+int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, int x, char** search_fields, char** search_values, int y, char** update_fields, char** update_values, Header *header) ;
 
 
 #endif
