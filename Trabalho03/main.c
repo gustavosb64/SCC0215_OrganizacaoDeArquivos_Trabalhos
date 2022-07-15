@@ -621,18 +621,38 @@ void select_from_btree_cmd(int f_type) {
         printf("Falha no processamento do arquivo.");
         return;
     }
-    Header *header = read_header_from_bin(file_bin_r, f_type);
+    Header *f_header = read_header_from_bin(file_bin_r, f_type);
 
     // Caso arquivo conste como inconsistente, retorna sinal de erro
-    if (get_status_from_header(header) != '1'){
+    if (get_status_from_header(f_header) != '1'){
 
         printf("Falha no processamento do arquivo.");
 
         free(f_bin);
         free(f_btree);
-        free(header);
+        free(f_header);
         fclose(file_bin_r);
 
+        return;
+    }
+
+    FILE *file_btree_r = fopen(f_btree, "rb");
+    if (file_btree_r == NULL){
+        printf("Falha no processamento do arquivo.");
+        return;
+    }
+    B_Header *b_header = read_header_from_btree(file_btree_r); 
+
+    if (get_status(file_btree_r) != '1'){
+        printf("Falha no processamento do arquivo.");
+
+        free(f_bin);
+        free(f_btree);
+        free(f_header);
+        free(b_header);
+        fclose(file_bin_r);
+        fclose(file_btree_r);
+        
         return;
     }
 
@@ -644,11 +664,14 @@ void select_from_btree_cmd(int f_type) {
     int id;
     scanf(" %d",&id);
 
-    printf("search_id_from_btree()\n");
-    //search_id_from_btree(file_bin_r, header, f_btree, f_type);
-
-    fclose(file_bin_r);
+    //printf("search_id_from_btree()\n");
+    search_reg_in_btree(file_bin_r, file_btree_r, id, f_header, b_header, f_type);
     
+    fclose(file_bin_r);
+    fclose(file_btree_r);
+    
+    free(f_header);
+    free(b_header);
     free(f_bin);
     free(f_btree);
 

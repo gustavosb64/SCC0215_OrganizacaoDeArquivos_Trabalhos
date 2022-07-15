@@ -1251,3 +1251,23 @@ int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
     }
     return 0;
 }
+
+int search_reg_in_btree(FILE *file_bin_r, FILE *file_btree_r, int src_id, Header *f_header, B_Header *b_header, int f_type){
+
+    // Busca referência do ID src_id na Árvore-B
+    long int ref = search_index_in_b_tree(file_bin_r, file_btree_r, src_id, b_header, f_header, f_type);
+
+    // Imprime veículo buscado
+    Vehicle V = initialize_vehicle(f_type);
+    if (f_type == 1)
+        read_reg_from_bin_type1(file_bin_r, &V, ref);
+    else 
+        read_reg_from_bin_type2(file_bin_r, &V, &ref);
+
+    print_vehicle(V, f_type);
+    printf("\n");
+
+    free_vehicle(&V);
+
+    return 0;
+}

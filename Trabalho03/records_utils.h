@@ -2,6 +2,7 @@
 #define RECORDS_UTILS_H
 
 #include "./index.h"
+#include "./b_tree.h"
 
 /*
  * Estrutura contendo os dados do cabeçalho dos arquivos de registro binários
@@ -219,6 +220,8 @@ void update_vehicle(Vehicle *V, int n, char** fields, char** values, Index **I_l
  * Atualiza veículos no arquivo de dados com os dados presentes em values e campos de fieelds
 */
 int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, int x, char** search_fields, char** search_values, int y, char** update_fields, char** update_values, Header *header) ;
+
+int search_reg_in_btree(FILE *file_bin_r, FILE *file_btree_r, int src_id, Header *f_header, B_Header *b_header, int f_type);
 
 
 #endif
