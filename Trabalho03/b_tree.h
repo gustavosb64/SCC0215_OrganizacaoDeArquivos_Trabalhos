@@ -10,7 +10,7 @@ typedef struct node Node;
 
 B_Header* initialize_btree_header();
 
-int update_btree_header(FILE *file_btree_rw, B_Header *b_header);
+int write_btree_header(FILE *file_btree_rw, B_Header *b_header, int f_type);
 
 Node* initialize_node(int f_type);
 
@@ -38,7 +38,9 @@ void test_insertion_sort();
 
 int insert_subtree_rrn_in_node(Node *node, int subtree_rrn, int index);
 
-int insert_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int cur_rrn_btree, int f_type, Key *promo_key, int *promo_r_child);
+int insert_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int cur_rrn_btree, int f_type, Key *promo_key, int *promo_r_child, int recursion_counter);
+
+int create_new_root_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int f_type);
 
 int add_new_node_btree(FILE *file_btree_rw, B_Header *b_header, int id, long int id_ref, int f_type);
 

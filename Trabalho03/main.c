@@ -762,7 +762,7 @@ void insert_using_btree_cmd(int f_type) {
     fclose(file_bin_rw);
 
     // Atualizando cabeçalho de arquivo de índices Árvore-B
-    update_btree_header(file_btree_rw, b_header);
+    write_btree_header(file_btree_rw, b_header, f_type);
     fclose(file_btree_rw);
 
     binarioNaTela(f_bin);
