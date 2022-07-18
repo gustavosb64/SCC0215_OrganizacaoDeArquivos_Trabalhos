@@ -801,9 +801,10 @@ int add_new_reg_using_btree(FILE *file_bin_rw, FILE *file_btree_rw, int f_type, 
         long int offset = 0;
 
         add_new_reg_type2(file_bin_rw, V, f_header, &offset);
+        add_new_node_btree(file_btree_rw, b_header, V.id, offset, f_type);
+
         // Adiciona um novo tipo e atualiza lista de índices 
         /*
-        add_new_index(I_list, n_indices, V.id, offset, f_type);
         */
     }
 

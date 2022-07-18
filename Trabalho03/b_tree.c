@@ -164,13 +164,13 @@ Node* read_node_from_b_tree(FILE *file_btree_r, int rrn_b_tree, int f_type){
 long int search_in_page_b_tree(FILE *file_btree_r, Node *cur_node, int src_id, int f_type){
 
     /*
-    print_node(cur_node, 1);
-    printf("-------------\n");
+    //print_node(cur_node, 1);
+    //printf("-------------\n");
     */
 
     // Itera por cada uma das chaves comparando com o ID buscado
     for (int i=0; i < cur_node->nroChaves; i++){
-        //printf("i: %d, src_id: %d, cur_node[C]: %d\n",i, src_id, cur_node->C[i]);
+        ////printf("i: %d, src_id: %d, cur_node[C]: %d\n",i, src_id, cur_node->C[i]);
 
         // Caso a chave atual seja igual ao ID buscado, retorna sua referência
         if (cur_node->key[i].C == src_id){
@@ -187,7 +187,7 @@ long int search_in_page_b_tree(FILE *file_btree_r, Node *cur_node, int src_id, i
         if (cur_node->key[i].C > src_id){
             
             /*
-            printf("Maior:\n");
+            //printf("Maior:\n");
             */
             
             Node *new_node = read_node_from_b_tree(file_btree_r, cur_node->P[i], f_type);
@@ -198,8 +198,8 @@ long int search_in_page_b_tree(FILE *file_btree_r, Node *cur_node, int src_id, i
             }
 
             /*
-            print_node(new_node, f_type);
-            printf("-------------\n");
+            //print_node(new_node, f_type);
+            //printf("-------------\n");
             */
             
             return search_in_page_b_tree(file_btree_r, new_node, src_id, f_type);
@@ -224,9 +224,9 @@ long int search_index_in_b_tree(FILE *file_bin_r, FILE *file_btree_r, int src_id
 
     
     /*
-    printf("noRaiz: %d\n", b_header->noRaiz);
-    printf("src_id: %d\n", src_id);
-    printf("\n");
+    //printf("noRaiz: %d\n", b_header->noRaiz);
+    //printf("src_id: %d\n", src_id);
+    //printf("\n");
     */
 
     // Declarando valor de retorno (i.e., índice no arquivo de dados)
@@ -271,9 +271,13 @@ Key* insertion_sort(Key* v, int N) {
 */
 int isLeafNode(Node *node){
 
+    if (node->tipoNo == '1') return 0;
     if (node->tipoNo == '2') return 1;
-    else return 0;
 
+    if (node->P[0] != -1)
+        return 0;
+
+    return 1;
 }
 
 /* 
@@ -310,7 +314,7 @@ void test_write_node(){
     
     FILE *file = fopen("indice_teste.bin", "rw+");
     if(file == NULL){
-        printf("oops\n");
+        //printf("oops\n");
     }
     B_Header *b_header = read_header_from_btree(file);
 
@@ -328,8 +332,8 @@ void test_write_node(){
     node->P[1] = 12;
     node->P[2] = 15;
 
-    printf("proxRRN: %d\n", b_header->proxRRN);
-    print_node(node, 2);
+    //printf("proxRRN: %d\n", b_header->proxRRN);
+    //print_node(node, 2);
 
     write_node_in_btree_file(file, node, b_header->proxRRN, 2);
     fflush(file);
@@ -350,15 +354,15 @@ int split_node(FILE *file_btree_rw, Node *cur_node, B_Header *b_header, int f_ty
         return 0;
     }
 
-    printf("@@@@@@@@@@@@@@@@\n");
-    printf("SPLIT\n");
-    printf("@@@@@@@@@@@@@@@@\n");
-    print_node(cur_node,1);
-    printf("----------------\n");
+    //printf("@@@@@@@@@@@@@@@@\n");
+    //printf("SPLIT\n");
+    //printf("@@@@@@@@@@@@@@@@\n");
+    //print_node(cur_node,2);
+    //printf("----------------\n");
 
     // Cria um novo nó e o atualiza com valores 
     Node *new_node = initialize_node(f_type);
-    print_node(new_node,1);
+    //print_node(new_node,2);
 
     new_node->key[0] = cur_node->key[3];
     new_node->nroChaves = 1;
@@ -405,12 +409,12 @@ int insert_new_id_in_node(FILE *file_btree_rw, Node *node, B_Header *b_header, K
 */
 int insert_new_id_in_node(Node *node, Key new_key){ 
 
-    printf("################\n");
-    printf("INSERTING NEW ID\n");
-    printf("################\n");
-    print_node(node,1);
-    printf("new_key: %d\n",new_key.C);
-    printf("################\n");
+    //printf("################\n");
+    //printf("INSERTING NEW ID\n");
+    //printf("################\n");
+    //print_node(node,2);
+    //printf("new_key: %d\n",new_key.C);
+    //printf("################\n");
 
 
     // Insere nova chave na página
@@ -433,8 +437,8 @@ int insert_new_id_in_node(Node *node, Key new_key){
         node->key[j+1] = aux_key;        
     }
 
-    print_node(node,1);
-    printf("################\n");
+    //print_node(node,2);
+    //printf("################\n");
 
     return 0;
 }
@@ -455,21 +459,21 @@ void test_insertion_sort(){
     new_key.C = 6;
     new_key.Pr.rrn = 5;
 
-    print_node(node,1);
-    printf("_--------------\n");
+    //print_node(node,2);
+    //printf("_--------------\n");
 
     insert_new_id_in_node(node, new_key);
 
-    print_node(node,1);
-    printf("_--------------\n");
+    //print_node(node,2);
+    //printf("_--------------\n");
 
     new_key.C = 5;
     new_key.Pr.rrn = 80;
 
     insert_new_id_in_node(node, new_key);
 
-    print_node(node,1);
-    printf("_--------------\n");
+    //print_node(node,2);
+    //printf("_--------------\n");
 }
 
 /* 
@@ -497,9 +501,9 @@ int insert_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int cur_r
     // Carrga página atual na memória
     Node *cur_node = read_node_from_b_tree(file_btree_rw, cur_rrn_btree, f_type);
 
-    printf("------------------\n");
-    print_node(cur_node, f_type);
-    printf("------------------\n");
+    //printf("------------------\n");
+    //print_node(cur_node, f_type);
+    //printf("------------------\n");
 
     int nro_chaves = cur_node->nroChaves;
     int split_return = 0;
@@ -513,11 +517,11 @@ int insert_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int cur_r
 
         // Caso o novo ID seja menor do que a chave atual, posição encontrada
         if (new_key.C < cur_node->key[i].C){
-            printf(">>>>>>>>>> 1.1\n");
+            //printf(">>>>>>>>>> 1.1\n");
 
             // Caso não seja um nó folha, afunda na árvore
             if (!isLeafNode(cur_node)){
-                printf(">>>>>>>>>> 1.2\n");
+                //printf(">>>>>>>>>> 1.2\n");
 
                 // Novo nó a ser investigado
                 int next_node_rrn = cur_node->P[i];
@@ -526,7 +530,7 @@ int insert_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int cur_r
                 // Caso tenha ocorrido split no nó abaixo
                 if(split_return == 1){
                     
-                    printf(">>>>>>>>>> 1.2.split\n");
+                    //printf(">>>>>>>>>> 1.2.split\n");
                     // Insere a chave promovida no nó atual
                     insert_new_id_in_node(cur_node, (*promo_key));
                     
@@ -547,7 +551,7 @@ int insert_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int cur_r
             }
             else{
                 
-                printf(">>>>>>>>>> 1.3\n");
+                //printf(">>>>>>>>>> 1.3\n");
                 // Insere o novo ID no nó atual
                 insert_new_id_in_node(cur_node, new_key);
 
@@ -572,10 +576,10 @@ int insert_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int cur_r
     // Caso o novo ID seja maior do que a chave atual, posição encontrada
     if (new_key.C > cur_node->key[cur_node->nroChaves-1].C){
         
-        printf(">>>>>>>>>> 2.1\n");
+        //printf(">>>>>>>>>> 2.1\n");
         // Caso não seja um nó folha, afunda na árvore
         if (!isLeafNode(cur_node)){
-            printf(">>>>>>>>>> 2.2\n");
+            //printf(">>>>>>>>>> 2.2\n");
 
             // Novo nó a ser investigado
             int next_node_rrn = cur_node->P[cur_node->nroChaves];
@@ -585,7 +589,7 @@ int insert_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int cur_r
             // Caso tenha ocorrido split no nó abaixo
             if(split_return == 1){
                 
-                printf(">>>>>>>>>> 2.2.split\n");
+                //printf(">>>>>>>>>> 2.2.split\n");
                 // Insere a chave promovida no nó atual
                 insert_new_id_in_node(cur_node, (*promo_key));
                 
@@ -602,7 +606,7 @@ int insert_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int cur_r
         }
         else{
 
-            printf(">>>>>>>>>> 2.3\n");
+            //printf(">>>>>>>>>> 2.3\n");
             // Insere o novo ID no nó atual
             insert_new_id_in_node(cur_node, new_key);
 
@@ -620,7 +624,7 @@ int insert_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int cur_r
     }
 
 
-    printf(">>>>>>>>>> 3.0\n");
+    //printf(">>>>>>>>>> 3.0\n");
 
     free(cur_node);
     return split_return;
@@ -637,15 +641,38 @@ int add_new_node_btree(FILE *file_btree_rw, B_Header *b_header, int id, long int
     Key *promo_key = (Key*) malloc(sizeof(Key));
     int promo_r_child = -1;
 
-    int split = insert_btree(file_btree_rw, b_header, new_key, b_header->noRaiz, f_type, promo_key, &promo_r_child);
+    int split_return = insert_btree(file_btree_rw, b_header, new_key, b_header->noRaiz, f_type, promo_key, &promo_r_child);
 
-    printf("split: %d\n",split);
+    // Caso tenha ocorrido split no nó abaixo
+    if(split_return == 1){
 
-    printf("++++++++++++++++++++++++++++++\n");
-    printf("++++++++++++++++++++++++++++++\n");
-    printf("++++++++++++++++++++++++++++++\n");
-    printf("++++++++++++++++++++++++++++++\n");
-    printf("++++++++++++++++++++++++++++++\n");
+        //printf(">>>>>>>>>> 4.1.split <<<<<<<<<<\n");
+
+        Node *new_root = initialize_node(f_type);
+
+        // Insere a chave promovida no nó atual
+        insert_new_id_in_node(new_root, (*promo_key));
+        
+        // Insere novos nós
+        insert_subtree_rrn_in_node(new_root, b_header->noRaiz, 0);
+        insert_subtree_rrn_in_node(new_root, promo_r_child, 1);
+
+        // Atualiza nó no arquivo
+        write_node_in_btree_file(file_btree_rw, new_root, b_header->proxRRN, f_type);
+        fflush(file_btree_rw);
+
+        // Atualiza cabeçalho com nova raiz
+        b_header->noRaiz = b_header->proxRRN;
+        b_header->proxRRN += 1;
+    }
+
+    //printf("split: %d\n",split_return);
+
+    //printf("++++++++++++++++++++++++++++++\n");
+    //printf("++++++++++++++++++++++++++++++\n");
+    //printf("++++++++++++++++++++++++++++++\n");
+    //printf("++++++++++++++++++++++++++++++\n");
+    //printf("++++++++++++++++++++++++++++++\n");
 
     return 0;
 }
