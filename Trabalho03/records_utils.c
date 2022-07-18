@@ -702,7 +702,7 @@ int free_vehicle(Vehicle *V){
 }
 
 /*
- * Adiciona um novo registro ao arquivo de dados
+ * Adiciona um novo registro ao arquivo de dados utilizando uma lista de índices
 */
 int add_new_reg(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, Header *header, char *id, char *ano, char *qtt, char *sigla, char *cidade, char *marca, char *modelo){
 
@@ -748,6 +748,63 @@ int add_new_reg(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, H
         add_new_reg_type2(file_bin_rw, V, header, &offset);
         add_new_index(I_list, n_indices, V.id, offset, f_type);
 
+    }
+
+    return 0;
+}
+
+/*
+ * Adiciona um novo registro ao arquivo de dados utilizando uma Árvore-B
+*/
+int add_new_reg_using_btree(FILE *file_bin_rw, FILE *file_btree_rw, int f_type, Header *f_header, B_Header *b_header, char *id, char *ano, char *qtt, char *sigla, char *cidade, char *marca, char *modelo){
+
+    Vehicle V = initialize_vehicle(f_type);
+
+    // Prepara os dados do novo veículo para inseri-lo no arquivo
+    V.tamCidade = strlen(cidade);
+    V.tamMarca = strlen(marca);
+    V.tamModelo = strlen(modelo);
+
+    // Adapta dados numéricos a serem alterados
+    V.id = atoi(id);
+    if (strcmp("NULO", ano)){
+        V.ano = atoi(ano);
+    }
+    else V.ano = -1;
+    if (strcmp("NULO", qtt)){
+        V.qtt = atoi(qtt);
+    }
+    else V.qtt = -1;
+    if (strlen(sigla) == 0){
+        V.sigla = NULL;
+    }
+    else V.sigla = sigla;
+    V.cidade = cidade;
+    V.marca = marca;
+    V.modelo = modelo;
+
+    // Realiza diferentes rotinas a depender do tipo
+    if (f_type == 1){
+        int rrn;
+
+        // Adiciona um novo tipo e atualiza lista de índices 
+        add_new_reg_type1(file_bin_rw, V, &rrn, f_header);
+
+        add_new_node_btree(file_btree_rw, b_header, V.id, rrn, f_type);
+        /*
+        add_new_index(I_list, n_indices, V.id, rrn, f_type);
+        */
+    }
+    else if (f_type == 2){
+
+        V.tamanhoRegistro = V.tamCidade+5 + V.tamMarca+5 + V.tamModelo+5 + 3*sizeof(int) + sizeof(long int) + 2;
+        long int offset = 0;
+
+        add_new_reg_type2(file_bin_rw, V, f_header, &offset);
+        // Adiciona um novo tipo e atualiza lista de índices 
+        /*
+        add_new_index(I_list, n_indices, V.id, offset, f_type);
+        */
     }
 
     return 0;

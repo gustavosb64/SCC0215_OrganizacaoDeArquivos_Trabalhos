@@ -181,6 +181,8 @@ int free_vehicle(Vehicle *V);
 */
 int add_new_reg(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, Header *header, char *id, char *ano, char *qtt, char *sigla, char *cidade, char *marca, char *modelo);
 
+int add_new_reg_using_btree(FILE *file_bin_rw, FILE *file_btree_rw, int f_type, Header *f_header, B_Header *b_header, char *id, char *ano, char *qtt, char *sigla, char *cidade, char *marca, char *modelo);
+
 /*
  * Altera o próximo RRN ou offset no arquivo
 */

@@ -689,51 +689,49 @@ void insert_using_btree_cmd(int f_type) {
     char *f_bin = readline(stdin, aux_delimiters);
     char *f_btree = readline(stdin, aux_delimiters);
 
-    /* 
-     * Abre arquivo de índices e checa seu status
-    */ 
-    FILE *file_btree_r = fopen(f_btree, "rb"); 
-    if (file_btree_r == NULL){
-        printf("Falha no processamento do arquivo.");
-        return;
-    }
-
-    // Caso arquivo conste como inconsistente, retorna sinal de erro
-    char idx_status = get_idx_status(file_btree_r);
-    if (idx_status != '1'){
-
-        printf("Falha no processamento do arquivo.");
-
-        free(f_bin);
-        free(f_btree);
-        fclose(file_btree_r);
-    }
-    
-    /* 
-     * Abrindo arquivos de dados e checando status
-    */
-    FILE *file_bin_rw = fopen(f_bin, "rb+"); 
+    // Caso haja falha na leitura do arquivo, retorna um erro 
+    FILE *file_bin_rw = fopen(f_bin, "rb+");
     if (file_bin_rw == NULL){
         printf("Falha no processamento do arquivo.");
         return;
     }
+    Header *f_header = read_header_from_bin(file_bin_rw, f_type);
 
     // Caso arquivo conste como inconsistente, retorna sinal de erro
-    char bin_status = get_status(file_bin_rw);
-    if (bin_status != '1'){
+    if (get_status_from_header(f_header) != '1'){
 
         printf("Falha no processamento do arquivo.");
 
         free(f_bin);
         free(f_btree);
+        free(f_header);
         fclose(file_bin_rw);
+
+        return;
+    }
+
+    FILE *file_btree_rw = fopen(f_btree, "rb+");
+    if (file_btree_rw == NULL){
+        printf("Falha no processamento do arquivo.");
+        return;
+    }
+    B_Header *b_header = read_header_from_btree(file_btree_rw); 
+
+    if (get_status(file_btree_rw) != '1'){
+        printf("Falha no processamento do arquivo.");
+
+        free(f_bin);
+        free(f_btree);
+        free(f_header);
+        free(b_header);
+        fclose(file_bin_rw);
+        fclose(file_btree_rw);
+        
+        return;
     }
 
     // Setando status de arquivo binário para inconsistente
     set_status_file(file_bin_rw, '0');
-
-    // Carregando cabeçalho na memória RAM
-    Header *header = read_header_from_bin(file_bin_rw, f_type);
 
     int n;
     scanf("%d\n", &n);
@@ -755,13 +753,17 @@ void insert_using_btree_cmd(int f_type) {
         scan_quote_string(modelo);
         getchar();
 
-        //add_new_reg_using_btree(file_bin_rw, f_type, &I_list, &n_indices, header, id, ano, qtt, sigla, cidade, marca, modelo);
+        add_new_reg_using_btree(file_bin_rw, file_btree_rw, f_type, f_header, b_header, id, ano, qtt, sigla, cidade, marca, modelo);
 
     }
 
     // Atualizando cabeçalho de arquivo binário de dados
-    update_header(file_bin_rw, header, f_type);
+    update_header(file_bin_rw, f_header, f_type);
     fclose(file_bin_rw);
+
+    // Atualizando cabeçalho de arquivo de índices Árvore-B
+    update_btree_header(file_btree_rw, b_header);
+    fclose(file_btree_rw);
 
     binarioNaTela(f_bin);
     binarioNaTela(f_btree);
@@ -775,7 +777,8 @@ void insert_using_btree_cmd(int f_type) {
     free(modelo);
     free(f_bin);
     free(f_btree);
-    free(header);
+    free(f_header);
+    free(b_header);
 }
 
 int main(int argc, char *argv[]){
