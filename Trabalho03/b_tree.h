@@ -28,15 +28,13 @@ int isLeafNode(Node *node);
 
 int write_node_in_btree_file(FILE *file_btree_rw, Node *node, int rrn, int f_type);
 
-void test_write_node();
-
 int split_node(FILE *file_btree_rw, Node *cur_node, B_Header *b_header, int f_type, Key *promo_key, int *promo_r_child);
  
 int insert_new_id_in_node(Node *node, Key new_key);
  
-void test_insertion_sort();
-
 int insert_subtree_rrn_in_node(Node *node, int subtree_rrn, int index);
+
+int insertion_routine(FILE *file_btree_rw, B_Header *b_header, Key new_key, int cur_rrn_btree, int f_type, Key *promo_key, int *promo_r_child, int recursion_counter, Node *cur_node, int i);
 
 int insert_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int cur_rrn_btree, int f_type, Key *promo_key, int *promo_r_child, int recursion_counter);
 
@@ -45,6 +43,8 @@ int initialize_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int f
 int add_new_node_btree(FILE *file_btree_rw, B_Header *b_header, int id, long int id_ref, int f_type);
 
 int write_btree_file_from_bin(FILE *file_bin_r, Header *f_header, char *btree_filename, int f_type);
+
+char get_status_from_btree_header(B_Header *b_header);
 
 void print_node(Node *node, int f_type);
 

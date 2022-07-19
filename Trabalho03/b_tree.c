@@ -5,10 +5,7 @@
 #include "./reg_type2.h"
 #include "./b_tree.h"
 
-#define MAX_RRN 97
-#define REG_HEADER_SIZE_TYPE1 182
 #define REG_HEADER_SIZE_TYPE2 190
-#define BUFFER 4096
 #define NODE_SIZE_TYPE1 45
 #define NODE_SIZE_TYPE2 57
 #define MAX_NUM_KEYS 3
@@ -28,15 +25,12 @@ struct key{
     }Pr;    // Referência ao arquivo de dados
 };
 
-/* Type1: 45 bytes
- * Type2: 56 bytes */
 struct node{
     char tipoNo;    // tipo do nó; 0 = raiz, 1 = intermediário, 2 = folha
     int nroChaves;  // número de chaves presentes no nó
     struct key key[4];     // Chaves e RRN/offset no arquivo de dados
     int P[5];       // Subárvores no arquivo da Árvore-B
 };
-
 
 /*
  * Inicializa um cabeçalho de Árvore-B
@@ -53,6 +47,9 @@ B_Header* initialize_btree_header(){
     return b_header;
 }
 
+/* 
+ * Escreve o cabeçalho de Árvore-B com os dados referentes à b_header
+*/
 int write_btree_header(FILE *file_btree_rw, B_Header *b_header, int f_type){
 
     // Seta status do cabeçalho para 1
@@ -154,7 +151,6 @@ Node* read_node_from_b_tree(FILE *file_btree_r, int rrn_b_tree, int f_type){
 
     // Aloca região para nó e lê dados
     Node *node = initialize_node(f_type);
-    //Node *node = (Node*)malloc(sizeof(Node));
 
     fread(&(node->tipoNo), sizeof(char), 1, file_btree_r);
     fread(&(node->nroChaves), sizeof(int), 1, file_btree_r);
@@ -176,14 +172,8 @@ Node* read_node_from_b_tree(FILE *file_btree_r, int rrn_b_tree, int f_type){
 
 long int search_in_page_b_tree(FILE *file_btree_r, Node *cur_node, int src_id, int f_type){
 
-    /*
-    //print_node(cur_node, 1);
-    //printf("-------------\n");
-    */
-
     // Itera por cada uma das chaves comparando com o ID buscado
     for (int i=0; i < cur_node->nroChaves; i++){
-        ////printf("i: %d, src_id: %d, cur_node[C]: %d\n",i, src_id, cur_node->C[i]);
 
         // Caso a chave atual seja igual ao ID buscado, retorna sua referência
         if (cur_node->key[i].C == src_id){
@@ -197,11 +187,9 @@ long int search_in_page_b_tree(FILE *file_btree_r, Node *cur_node, int src_id, i
             return Pr;
         }
 
+        /* Caso a chave atual seja maior do que o ID buscado, prossegue a busca
+         * à esquerda da chave (valores menores que a chave) */
         if (cur_node->key[i].C > src_id){
-            
-            /*
-            //printf("Maior:\n");
-            */
             
             Node *new_node = read_node_from_b_tree(file_btree_r, cur_node->P[i], f_type);
             free(cur_node);
@@ -209,17 +197,14 @@ long int search_in_page_b_tree(FILE *file_btree_r, Node *cur_node, int src_id, i
                 free(new_node);
                 return -1;
             }
-
-            /*
-            //print_node(new_node, f_type);
-            //printf("-------------\n");
-            */
             
             return search_in_page_b_tree(file_btree_r, new_node, src_id, f_type);
         }
 
     }
 
+    /* Caso a chave atual não seja nem menor, nem igual ao ID buscado, prossegue a busca
+     * à direita da chave (valores maiores que a chave) */
     Node *new_node = read_node_from_b_tree(file_btree_r, cur_node->P[cur_node->nroChaves], f_type);
     free(cur_node);
     if (new_node == NULL){
@@ -235,13 +220,6 @@ long int search_in_page_b_tree(FILE *file_btree_r, Node *cur_node, int src_id, i
 */
 long int search_index_in_b_tree(FILE *file_bin_r, FILE *file_btree_r, int src_id, B_Header *b_header, Header *f_header, int f_type){
 
-    
-    /*
-    //printf("noRaiz: %d\n", b_header->noRaiz);
-    //printf("src_id: %d\n", src_id);
-    //printf("\n");
-    */
-
     // Declarando valor de retorno (i.e., índice no arquivo de dados)
     long int ref = -1;
 
@@ -252,43 +230,10 @@ long int search_index_in_b_tree(FILE *file_bin_r, FILE *file_btree_r, int src_id
     return ref;
 }
 
-/* AUTOTAD_PRIVATE
-Key* insertion_sort(Key* v, int N) {
-
-	int i = 1;
-
-	// Para cada elemento na lista desordenada
-	while (i < N) {		
-		int el = v[i].C;  // fixa elemento a ser comparado com anteriores
-		int j = i-1;    // indice para percorrer elementos anteriores
-
-		// enquanto houver elementos a serem comparados e o
-		// elemento for menor do que o anterior
-		while (j >= 0 && el < v[j].C) {
-			v[j+1] = v[j];  // movimenta valor para frente
-			j--;            // indice retorna uma posicao
-		}
-
-		// Encontrei a posicao correta
-		v[j+1].C = el;
-
-		i++;
-	}
-
-    return v;
-}
-*/
-
 /*
  * Checa se nó node se trata de um nó folha
 */
 int isLeafNode(Node *node){
-
-    /*
-    if (node->tipoNo == '1') return 0;
-    if (node->tipoNo == '2') return 1;
-    */
-
     if (node->P[0] != -1) return 0;
     else return 1;
 }
@@ -323,38 +268,6 @@ int write_node_in_btree_file(FILE *file_btree_rw, Node *node, int rrn, int f_typ
     return 0;
 }
 
-void test_write_node(){
-    
-    FILE *file = fopen("indice_teste.bin", "rw+");
-    if(file == NULL){
-        //printf("oops\n");
-    }
-    B_Header *b_header = read_header_from_btree(file);
-
-    Node *node = initialize_node(2);
-
-    node->tipoNo = '2';
-    node->key[0].C = 9;
-    node->key[0].Pr.offset = 8;
-    node->key[1].C = 32;
-    node->key[1].Pr.offset = 7;
-
-    node->nroChaves = 2;
-
-    node->P[0] = 10;
-    node->P[1] = 12;
-    node->P[2] = 15;
-
-    //printf("proxRRN: %d\n", b_header->proxRRN);
-    //print_node(node, 2);
-
-    write_node_in_btree_file(file, node, b_header->proxRRN, 2);
-    fflush(file);
-
-    fclose(file);
-
-}
-
 /*
  * Função de split do nó quando atinge a capacidade máxima. 
  *  Retorna 0 quando não ocorre split
@@ -367,15 +280,8 @@ int split_node(FILE *file_btree_rw, Node *cur_node, B_Header *b_header, int f_ty
         return 0;
     }
 
-    //printf("@@@@@@@@@@@@@@@@\n");
-    //printf("SPLIT\n");
-    //printf("@@@@@@@@@@@@@@@@\n");
-    //print_node(cur_node,2);
-    //printf("----------------\n");
-
     // Cria um novo nó e o atualiza com valores 
     Node *new_node = initialize_node(f_type);
-    //print_node(new_node,2);
 
     new_node->key[0] = cur_node->key[3];
     new_node->nroChaves = 1;
@@ -392,9 +298,8 @@ int split_node(FILE *file_btree_rw, Node *cur_node, B_Header *b_header, int f_ty
 
     // Escreve o novo nó ao final do arquivo
     write_node_in_btree_file(file_btree_rw, new_node, b_header->proxRRN, f_type);
-    fflush(file_btree_rw);
 
-    // Terceira e quarta chaves são removidas do nó 
+    // Terceira e quarta chaves são removidas do nó antigo
     cur_node->key[2].C = -1;
     cur_node->key[3].C = -1;
     if (f_type == 1){
@@ -416,23 +321,10 @@ int split_node(FILE *file_btree_rw, Node *cur_node, B_Header *b_header, int f_ty
     return 1;
 }
 
-/* AUTOTAD_PRIVATE
-int insert_new_id_in_node(FILE *file_btree_rw, Node *node, B_Header *b_header, Key new_key, int f_type, int *promo_id, int *promo_r_child){ 
-}
-*/
-
 /*
  * Insere um novo id chave na página referenciada por node
 */
 int insert_new_id_in_node(Node *node, Key new_key){ 
-
-    //printf("################\n");
-    //printf("INSERTING NEW ID\n");
-    //printf("################\n");
-    //print_node(node,2);
-    //printf("new_key: %d\n",new_key.C);
-    //printf("################\n");
-
 
     // Insere nova chave na página
     int new_idx = node->nroChaves;
@@ -454,52 +346,18 @@ int insert_new_id_in_node(Node *node, Key new_key){
         node->key[j+1] = aux_key;        
     }
 
-    //print_node(node,2);
-    //printf("################\n");
-
     return 0;
 }
 
-void test_insertion_sort(){
-
-    Node *node = initialize_node(1);
-
-    node->tipoNo = '2';
-    node->nroChaves = 2;
-
-    node->key[0].C = 4;
-    node->key[0].Pr.rrn = 3;
-    node->key[1].C = 8;
-    node->key[1].Pr.rrn = 7;
-
-    Key new_key;
-    new_key.C = 6;
-    new_key.Pr.rrn = 5;
-
-    //print_node(node,2);
-    //printf("_--------------\n");
-
-    insert_new_id_in_node(node, new_key);
-
-    //print_node(node,2);
-    //printf("_--------------\n");
-
-    new_key.C = 5;
-    new_key.Pr.rrn = 80;
-
-    insert_new_id_in_node(node, new_key);
-
-    //print_node(node,2);
-    //printf("_--------------\n");
-}
-
 /* 
- * Insere um novo RRN de subárvore em um nó especificado por node
+ * Insere um novo RRN de subárvore em um nó especificado por node no índice especificado por index
 */
 int insert_subtree_rrn_in_node(Node *node, int subtree_rrn, int index){
 
     int prev_p, next_p;
     next_p = subtree_rrn;
+
+    // Realiza shift de todos os elementos após colocar novo elemento
     for (int i=index; i < 5; i++){
         prev_p = next_p;
         next_p = node->P[i];
@@ -509,8 +367,72 @@ int insert_subtree_rrn_in_node(Node *node, int subtree_rrn, int index){
     return 0;
 }
 
+/*
+ * Executa a rotina de inserção de uma chave
+*/
+int insertion_routine(FILE *file_btree_rw, B_Header *b_header, Key new_key, int cur_rrn_btree, int f_type, Key *promo_key, int *promo_r_child, int recursion_counter, Node *cur_node, int i){
+
+    int split_return = 0;
+
+    // Caso não seja um nó folha, afunda na árvore
+    if (!isLeafNode(cur_node)){
+
+        // Novo nó a ser investigado
+        int next_node_rrn = cur_node->P[i];
+        split_return = insert_btree(file_btree_rw, b_header, new_key, next_node_rrn, f_type, promo_key, promo_r_child, recursion_counter+1);
+
+        // Caso tenha ocorrido split no nó abaixo
+        if(split_return == 1){
+            
+            // Insere a chave promovida no nó atual
+            insert_new_id_in_node(cur_node, (*promo_key));
+            
+            // Insere a referência da chava promovida
+            insert_subtree_rrn_in_node(cur_node, (*promo_r_child), i+1);
+
+            // Realiza split do nó (quando necessário)
+            split_return = split_node(file_btree_rw, cur_node, b_header, f_type, promo_key, promo_r_child);
+            
+            /* Caso tenha ocorrido split na primeira chamada, houve split 
+             * em um nó raiz; portanto, seu tipo é atualizado antes de 
+             * ser reescrito no arquivo */
+            if (split_return == 1 && recursion_counter == 1)
+                cur_node->tipoNo = '1'; // como é um nó com filhos, passa a ser intermediário
+
+            // Atualiza nó no arquivo
+            write_node_in_btree_file(file_btree_rw, cur_node, cur_rrn_btree, f_type);
+        }
+    }
+    // Caso seja um nó sem filhos, insere
+    else{
+
+        // Insere o novo ID no nó atual
+        insert_new_id_in_node(cur_node, new_key);
+
+        // Realiza split do nó (quando necessário)
+        split_return = split_node(file_btree_rw, cur_node, b_header, f_type, promo_key, promo_r_child);
+
+        /* Caso tenha ocorrido split na primeira chamada, houve split 
+         * em um nó raiz; portanto, seu tipo é atualizado antes de 
+         * ser reescrito no arquivo */
+        if (split_return == 1 && recursion_counter == 1)
+            cur_node->tipoNo = '2'; // como é um nó sem filhos, passa a ser folha
+
+        // Atualiza nó no arquivo
+        write_node_in_btree_file(file_btree_rw, cur_node, cur_rrn_btree, f_type);
+
+    }
+
+    free(cur_node);
+    return split_return;
+}
+
+/*
+ * Procura posição a se inserir nova chave especificada por new_key e chama rotina de inserção
+*/
 int insert_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int cur_rrn_btree, int f_type, Key *promo_key, int *promo_r_child, int recursion_counter){
 
+    // Caso o RRN passado seja inválido, retorna
     if (cur_rrn_btree == -1){
         return -2;
     }
@@ -518,12 +440,7 @@ int insert_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int cur_r
     // Carrga página atual na memória
     Node *cur_node = read_node_from_b_tree(file_btree_rw, cur_rrn_btree, f_type);
 
-    //printf("------------------\n");
-    //print_node(cur_node, f_type);
-    //printf("------------------\n");
-
     int nro_chaves = cur_node->nroChaves;
-    int split_return = 0;
     for (int i=0; i < nro_chaves; i++){
 
         // Caso chave já exista, retorna sinal -1
@@ -532,146 +449,20 @@ int insert_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int cur_r
             return -1;
         }
 
-        // Caso o novo ID seja menor do que a chave atual, posição encontrada
-        if (new_key.C < cur_node->key[i].C){
-            //printf(">>>>>>>>>> 1.1\n");
-
-            // Caso não seja um nó folha, afunda na árvore
-            if (!isLeafNode(cur_node)){
-                //printf(">>>>>>>>>> 1.2\n");
-
-                // Novo nó a ser investigado
-                int next_node_rrn = cur_node->P[i];
-                split_return = insert_btree(file_btree_rw, b_header, new_key, next_node_rrn, f_type, promo_key, promo_r_child, recursion_counter+1);
-
-                // Caso tenha ocorrido split no nó abaixo
-                if(split_return == 1){
-                    
-                    //printf(">>>>>>>>>> 1.2.split\n");
-                    // Insere a chave promovida no nó atual
-                    insert_new_id_in_node(cur_node, (*promo_key));
-                    
-                    // Insere a referência da chava promovida
-                    insert_subtree_rrn_in_node(cur_node, (*promo_r_child), i+1);
-
-                    // Realiza split do nó (quando necessário)
-                    split_return = split_node(file_btree_rw, cur_node, b_header, f_type, promo_key, promo_r_child);
-                    
-                    /* Caso tenha ocorrido split na primeira chamada, houve split 
-                     * em um nó raiz; portanto, seu tipo é atualizando antes de 
-                     * ser reescrito no arquivo*/
-                    if (split_return == 1 && recursion_counter == 1){
-                        cur_node->tipoNo = '1'; // como é um nó com filhos, passa a ser intermediário
-                    }
-
-                    // Atualiza nó no arquivo
-                    write_node_in_btree_file(file_btree_rw, cur_node, cur_rrn_btree, f_type);
-                    fflush(file_btree_rw);
-
-                    free(cur_node);
-                    return split_return;
-                }
-
-            }
-            else{
-                
-                //printf(">>>>>>>>>> 1.3\n");
-                // Insere o novo ID no nó atual
-                insert_new_id_in_node(cur_node, new_key);
-
-                // Realiza split do nó (quando necessário)
-                split_return = split_node(file_btree_rw, cur_node, b_header, f_type, promo_key, promo_r_child);
-
-                /* Caso tenha ocorrido split na primeira chamada, houve split 
-                 * em um nó raiz; portanto, seu tipo é atualizando antes de 
-                 * ser reescrito no arquivo*/
-                if (split_return == 1 && recursion_counter == 1){
-                    cur_node->tipoNo = '2'; // como é um nó sem filhos, passa a ser folha
-                }
-
-                // Atualiza nó no arquivo
-                write_node_in_btree_file(file_btree_rw, cur_node, cur_rrn_btree, f_type);
-                fflush(file_btree_rw);
-
-                free(cur_node);
-                return split_return;
-            }
-
-            free(cur_node);
-            return 0;
-        }
+        /* Caso o novo ID seja menor do que a chave atual,
+         * se chama a rotina de inserção para a posição encontrada */
+        if (new_key.C < cur_node->key[i].C)
+            return insertion_routine(file_btree_rw, b_header, new_key, cur_rrn_btree, f_type, promo_key, promo_r_child, recursion_counter, cur_node, i);
 
     }
 
-    int i = cur_node->nroChaves;
-    // Caso o novo ID seja maior do que a chave atual, posição encontrada
-    if (new_key.C > cur_node->key[cur_node->nroChaves-1].C){
-        
-        //printf(">>>>>>>>>> 2.1\n");
-        // Caso não seja um nó folha, afunda na árvore
-        if (!isLeafNode(cur_node)){
-            //printf(">>>>>>>>>> 2.2\n");
-
-            // Novo nó a ser investigado
-            int next_node_rrn = cur_node->P[cur_node->nroChaves];
-
-            split_return = insert_btree(file_btree_rw, b_header, new_key, next_node_rrn, f_type, promo_key, promo_r_child, recursion_counter+1);
-
-            // Caso tenha ocorrido split no nó abaixo
-            if(split_return == 1){
-                
-                //printf(">>>>>>>>>> 2.2.split\n");
-                // Insere a chave promovida no nó atual
-                insert_new_id_in_node(cur_node, (*promo_key));
-                
-                // Insere a referência da chava promovida
-                insert_subtree_rrn_in_node(cur_node, (*promo_r_child), i+1);
-
-                // Realiza split do nó (quando necessário)
-                split_return = split_node(file_btree_rw, cur_node, b_header, f_type, promo_key, promo_r_child);
-
-                /* Caso tenha ocorrido split na primeira chamada, houve split 
-                 * em um nó raiz; portanto, seu tipo é atualizando antes de 
-                 * ser reescrito no arquivo*/
-                if (split_return == 1 && recursion_counter == 1){
-                    cur_node->tipoNo = '1'; // como é um nó com filhos, passa a ser intermediário
-                }
-                
-                // Atualiza nó no arquivo
-                write_node_in_btree_file(file_btree_rw, cur_node, cur_rrn_btree, f_type);
-                fflush(file_btree_rw);
-            }
-        }
-        else{
-
-            //printf(">>>>>>>>>> 2.3\n");
-            // Insere o novo ID no nó atual
-            insert_new_id_in_node(cur_node, new_key);
-
-            // Realiza split do nó (quando necessário)
-            split_return = split_node(file_btree_rw, cur_node, b_header, f_type, promo_key, promo_r_child);
-
-            /* Caso tenha ocorrido split na primeira chamada, houve split 
-             * em um nó raiz; portanto, seu tipo é atualizando antes de 
-             * ser reescrito no arquivo*/
-            if (split_return == 1 && recursion_counter == 1){
-                cur_node->tipoNo = '2'; // como é um nó sem filhos, passa a ser folha
-            }
-
-            // Atualiza nó no arquivo
-            write_node_in_btree_file(file_btree_rw, cur_node, cur_rrn_btree, f_type);
-            fflush(file_btree_rw);
-
-            free(cur_node);
-            return split_return;
-        }
-
-    }
-
-    //printf(">>>>>>>>>> 3.0\n");
+    /* Caso o novo ID seja maior do que a última chave,
+     * se chama a rotina de inserção para a posição encontrada */
+    if (new_key.C > cur_node->key[nro_chaves].C)
+        return insertion_routine(file_btree_rw, b_header, new_key, cur_rrn_btree, f_type, promo_key, promo_r_child, recursion_counter, cur_node, nro_chaves);
 
     free(cur_node);
-    return split_return;
+    return 0;
 }
 
 /*
@@ -687,8 +478,8 @@ int initialize_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int f
 
     // Escreve novo nó no arquivo
     write_node_in_btree_file(file_btree_rw, new_root, b_header->proxRRN, f_type);
-    fflush(file_btree_rw);
 
+    // Atualiza cabeçalho
     b_header->noRaiz = b_header->proxRRN;
     b_header->nroNos += 1;
     b_header->proxRRN +=1;
@@ -719,10 +510,8 @@ int add_new_node_btree(FILE *file_btree_rw, B_Header *b_header, int id, long int
 
     int insertion_return = insert_btree(file_btree_rw, b_header, new_key, b_header->noRaiz, f_type, promo_key, &promo_r_child, recursion_counter+1);
 
-    // Caso tenha ocorrido split no nó abaixo
+    // Caso tenha ocorrido split no nó abaixo, nova raiz é criada
     if(insertion_return == 1){
-
-        //printf(">>>>>>>>>> 4.1.split <<<<<<<<<<\n");
 
         Node *new_root = initialize_node(f_type);
         new_root->tipoNo = '0';
@@ -736,7 +525,6 @@ int add_new_node_btree(FILE *file_btree_rw, B_Header *b_header, int id, long int
 
         // Atualiza nó no arquivo
         write_node_in_btree_file(file_btree_rw, new_root, b_header->proxRRN, f_type);
-        fflush(file_btree_rw);
 
         // Atualiza cabeçalho com nova raiz
         b_header->noRaiz = b_header->proxRRN;
@@ -744,14 +532,7 @@ int add_new_node_btree(FILE *file_btree_rw, B_Header *b_header, int id, long int
         b_header->nroNos += 1;
     }
 
-    //printf("split: %d\n",split_return);
-
-    //printf("++++++++++++++++++++++++++++++\n");
-    //printf("++++++++++++++++++++++++++++++\n");
-    //printf("++++++++++++++++++++++++++++++\n");
-    //printf("++++++++++++++++++++++++++++++\n");
-    //printf("++++++++++++++++++++++++++++++\n");
-
+    fflush(file_btree_rw);
     return 0;
 }
 
@@ -761,13 +542,8 @@ int add_new_node_btree(FILE *file_btree_rw, B_Header *b_header, int id, long int
 int write_btree_file_from_bin(FILE *file_bin_r, Header *f_header, char *btree_filename, int f_type){
 
     FILE *file_btree_wr = fopen(btree_filename, "wb+");
-    /*
-    if (file_btree_rw == NULL){
-        printf("NULL\n");
-        return 1;
-    }
-    */
 
+    // Inicializa cabeçalho
     B_Header *b_header = initialize_btree_header();
     write_btree_header(file_btree_wr, b_header, f_type);
 
@@ -776,12 +552,13 @@ int write_btree_file_from_bin(FILE *file_bin_r, Header *f_header, char *btree_fi
 
         int counter = 0;
 
+        // Enquanto ainda houverem registros a serem lidos no arquivo de dados
         while(!read_id_from_reg_type1(file_bin_r, &id, counter, f_header)){
 
-            if (id != -1){
-                //printf("id: %d\n",id);
+            // Caso o ID seja válido, chama função de inserção de novo nó
+            if (id != -1)
                 add_new_node_btree(file_btree_wr, b_header, id, counter, f_type);
-            }
+
             counter++;
         }
     }
@@ -792,9 +569,11 @@ int write_btree_file_from_bin(FILE *file_bin_r, Header *f_header, char *btree_fi
 
         // Enquanto ainda houverem registros a serem lidos no arquivo de dados
         while(!read_id_from_reg_type2(file_bin_r, &id, &new_offset, f_header)){
-            if (id != -1){
+            
+            // Caso o ID seja válido, chama função de inserção de novo nó
+            if (id != -1)
                 add_new_node_btree(file_btree_wr, b_header, id, offset, f_type);
-            }
+
             offset = new_offset;
         }
     }
@@ -803,6 +582,13 @@ int write_btree_file_from_bin(FILE *file_bin_r, Header *f_header, char *btree_fi
 
     fclose(file_btree_wr);
     return 0;
+}
+
+/* 
+ * Lê status em uma estrutura B_Header e o retorna
+*/
+char get_status_from_btree_header(B_Header *b_header){
+    return b_header->status;
 }
 
 /* 
@@ -823,12 +609,3 @@ void print_node(Node *node, int f_type){
 
     return;
 }
-
-// AUTOTAD_PRIVATE
-/* Caso tenha ocorrido split na primeira chamada, houve split 
- * em um nó raiz; portanto, seu tipo é atualizando antes de 
- * ser reescrito no arquivo 
-if (split_return == 1 && recursion_counter == 1){
-    cur_node->tipoNo = '1';
-}
-*/

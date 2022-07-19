@@ -753,64 +753,6 @@ int add_new_reg(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, H
     return 0;
 }
 
-/*
- * Adiciona um novo registro ao arquivo de dados utilizando uma Árvore-B
-*/
-int add_new_reg_using_btree(FILE *file_bin_rw, FILE *file_btree_rw, int f_type, Header *f_header, B_Header *b_header, char *id, char *ano, char *qtt, char *sigla, char *cidade, char *marca, char *modelo){
-
-    Vehicle V = initialize_vehicle(f_type);
-
-    // Prepara os dados do novo veículo para inseri-lo no arquivo
-    V.tamCidade = strlen(cidade);
-    V.tamMarca = strlen(marca);
-    V.tamModelo = strlen(modelo);
-
-    // Adapta dados numéricos a serem alterados
-    V.id = atoi(id);
-    if (strcmp("NULO", ano)){
-        V.ano = atoi(ano);
-    }
-    else V.ano = -1;
-    if (strcmp("NULO", qtt)){
-        V.qtt = atoi(qtt);
-    }
-    else V.qtt = -1;
-    if (strlen(sigla) == 0){
-        V.sigla = NULL;
-    }
-    else V.sigla = sigla;
-    V.cidade = cidade;
-    V.marca = marca;
-    V.modelo = modelo;
-
-    // Realiza diferentes rotinas a depender do tipo
-    if (f_type == 1){
-        int rrn;
-
-        // Adiciona um novo tipo e atualiza lista de índices 
-        add_new_reg_type1(file_bin_rw, V, &rrn, f_header);
-
-        add_new_node_btree(file_btree_rw, b_header, V.id, rrn, f_type);
-        /*
-        add_new_index(I_list, n_indices, V.id, rrn, f_type);
-        */
-    }
-    else if (f_type == 2){
-
-        V.tamanhoRegistro = V.tamCidade+5 + V.tamMarca+5 + V.tamModelo+5 + 3*sizeof(int) + sizeof(long int) + 2;
-        long int offset = 0;
-
-        add_new_reg_type2(file_bin_rw, V, f_header, &offset);
-        add_new_node_btree(file_btree_rw, b_header, V.id, offset, f_type);
-
-        // Adiciona um novo tipo e atualiza lista de índices 
-        /*
-        */
-    }
-
-    return 0;
-}
-
 /* 
  * Atualiza prox RRN ou offset no cabeçalho no arquivo
 */
@@ -1315,17 +1257,79 @@ int search_reg_in_btree(FILE *file_bin_r, FILE *file_btree_r, int src_id, Header
     // Busca referência do ID src_id na Árvore-B
     long int ref = search_index_in_b_tree(file_bin_r, file_btree_r, src_id, b_header, f_header, f_type);
 
+    // Caso o registro não tenha sido encontrado
+    if (ref == -1){
+        printf("Registro inexistente.");
+        return 1;
+    }
+
     // Imprime veículo buscado
     Vehicle V = initialize_vehicle(f_type);
-    if (f_type == 1)
-        read_reg_from_bin_type1(file_bin_r, &V, ref);
-    else 
-        read_reg_from_bin_type2(file_bin_r, &V, &ref);
+    if (f_type == 1) read_reg_from_bin_type1(file_bin_r, &V, ref);
+    else read_reg_from_bin_type2(file_bin_r, &V, &ref);
 
     print_vehicle(V, f_type);
     printf("\n");
 
     free_vehicle(&V);
+
+    return 0;
+}
+
+/*
+ * Adiciona um novo registro ao arquivo de dados utilizando uma Árvore-B
+*/
+int add_new_reg_using_btree(FILE *file_bin_rw, FILE *file_btree_rw, int f_type, Header *f_header, B_Header *b_header, char *id, char *ano, char *qtt, char *sigla, char *cidade, char *marca, char *modelo){
+
+    // Checa se o registro não existe no arquivo binário de dados
+    int i_id = atoi(id); 
+    long int ref = search_index_in_b_tree(file_bin_rw, file_btree_rw, i_id, b_header, f_header, f_type);
+    if (ref != -1){
+        return 1;
+    }
+
+    Vehicle V = initialize_vehicle(f_type);
+
+    // Prepara os dados do novo veículo para inseri-lo no arquivo
+    V.tamCidade = strlen(cidade);
+    V.tamMarca = strlen(marca);
+    V.tamModelo = strlen(modelo);
+
+    // Adapta dados numéricos a serem alterados
+    V.id = i_id;
+    if (strcmp("NULO", ano)){
+        V.ano = atoi(ano);
+    }
+    else V.ano = -1;
+    if (strcmp("NULO", qtt)){
+        V.qtt = atoi(qtt);
+    }
+    else V.qtt = -1;
+    if (strlen(sigla) == 0){
+        V.sigla = NULL;
+    }
+    else V.sigla = sigla;
+    V.cidade = cidade;
+    V.marca = marca;
+    V.modelo = modelo;
+
+    // Realiza diferentes rotinas a depender do tipo
+    if (f_type == 1){
+        int rrn;
+
+        // Adiciona um novo tipo e atualiza Árvore-B
+        add_new_reg_type1(file_bin_rw, V, &rrn, f_header);
+        add_new_node_btree(file_btree_rw, b_header, V.id, rrn, f_type);
+    }
+    else if (f_type == 2){
+        long int offset = 0;
+
+        V.tamanhoRegistro = V.tamCidade+5 + V.tamMarca+5 + V.tamModelo+5 + 3*sizeof(int) + sizeof(long int) + 2;
+
+        // Adiciona um novo tipo e atualiza Árvore-B
+        add_new_reg_type2(file_bin_rw, V, f_header, &offset);
+        add_new_node_btree(file_btree_rw, b_header, V.id, offset, f_type);
+    }
 
     return 0;
 }
