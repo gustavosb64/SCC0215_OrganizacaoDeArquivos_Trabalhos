@@ -1,7 +1,9 @@
 /*
  * Alunos:
  *  Gustavo Siqueira Barbosa, NºUSP 10728122
+ *      * porcentagem de participação: 100%
  *  Luiz Fernando Silva Eugênio dos Santos, NºUSP 10892680
+ *      * porcentagem de participação: 100%
  * Código do curso: SCC0215
  * Ano/semestre: 2022/1º semestre
  * Título: Terceiro Trabalho Prático

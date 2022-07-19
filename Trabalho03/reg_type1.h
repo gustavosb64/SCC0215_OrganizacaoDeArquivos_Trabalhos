@@ -60,26 +60,61 @@ int search_vehicle_rrn(char *filename_in_bin ,int rrn) ;
 
 /*
  * Remove um registro tipo 1 dado seu RRN
+ *  @param:
+ *      FILE *file_bin_rw: arquivo binário de dados
+ *      int rrn: RRN referente ao registro a ser removido
+ *      Header *header: estrutura Header* com os dados do cabeçalho do arquivo de dados
+ *  @return:
+ *      0: nenhum erro ocorreu
+ *      -1: registro já se encontra removido
 */
 int remove_reg_by_rrn(FILE *file_bin_rw, int rrn, Header *header);
 
 /*
  * Imprime na tela um registro tipo 1 dado seu RRN
+ *  @param:
+ *      char *filename: nome de arquivo a ser lido
+ *      int rrn: RRN referente ao registro que será lido
+ *  @return:
+ *      0: nenhum erro ocorreu
 */
 int print_reg_from_bin_by_rrn(char *filename, int rrn);
 
 /*
  * Adiciona um novo registro tipo 1 no arquivo binário de dados
+ *  @param:
+ *      FILE *file_bin_rw: arquivo binário de dados
+ *      Vehicle V: estrutura Vehicle com os dados que devem ser escritos no arquivo
+ *      int *rrn: RRN referente ao registro que será lido
+ *      Header *header: estrutura Header* com os dados do cabeçalho do arquivo de dados
+ *  @return:
+ *      0: nenhum erro ocorreu
+ *      -1: registro a ser inserido consta como removido
 */
 int add_new_reg_type1(FILE *file_bin_rw, Vehicle V, int *rrn, Header *header);
 
 /*
  * Lê um ID de um registro tipo 1 dado seu RRN
+ *  @param:
+ *      FILE *file_bin_rw: arquivo binário de dados
+ *      int *id: armazena ID lido de registro
+ *      int *rrn: RRN referente ao registro que será lido
+ *      Header *header: estrutura Header* com os dados do cabeçalho do arquivo de dados
+ *  @return:
+ *      0: nenhum erro ocorreu
+ *      2, 3: falha de leitura
 */
 int read_id_from_reg_type1(FILE *file_bin_r, int *id, int rrn, Header *header);
 
 /*
  * Atualiza um registro tipo 1 com os dados presentes em Vehicle V
+ *  @param:
+ *      FILE *file_bin_rw: arquivo binário de dados
+ *      Vehicle V: estrutura com dados atualizados a serem escritos no arquivo
+ *      int rrn: RRN referente ao registro que será atualizado
+ *  @return:
+ *      0: nenhum erro ocorreu
+ *      -1: registro a ser inserido consta como removido
 */
 int update_reg_type1(FILE *file_bin_rw, Vehicle V, int rrn);
 
