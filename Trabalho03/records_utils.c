@@ -1252,6 +1252,10 @@ int update_bin(FILE *file_bin_rw, int f_type, Index **I_list, int *n_indices, in
     return 0;
 }
 
+/*
+ * Busca um registro em um arquivo binário de dados a partir de um 
+ * arquivo de índices Árvore-B
+*/ 
 int search_reg_in_btree(FILE *file_bin_r, FILE *file_btree_r, int src_id, Header *f_header, B_Header *b_header, int f_type){
 
     // Busca referência do ID src_id na Árvore-B

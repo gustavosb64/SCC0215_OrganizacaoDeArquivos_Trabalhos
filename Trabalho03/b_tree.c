@@ -100,18 +100,9 @@ Node* initialize_node(int f_type){
     return node;
 }
 
-int write_b_tree_header(FILE *file_btree_w, B_Header *b_header){
-
-    fseek(file_btree_w, 0, SEEK_SET);
-
-    fwrite(&b_header->status, sizeof(char), 1, file_btree_w);
-    fwrite(&b_header->noRaiz, sizeof(int), 1, file_btree_w);
-    fwrite(&b_header->proxRRN, sizeof(int), 1, file_btree_w);
-    fwrite(&b_header->nroNos, sizeof(int), 1, file_btree_w);
-
-    return 0;
-}
-
+/*
+ * Lê cabeçalho de um arquivo binário de índices estilo Árvore-B
+*/
 B_Header* read_header_from_btree(FILE *file_btree_r){
 
     // Posiciona ponteiro no início do arquivo da Árvore-B
@@ -170,6 +161,9 @@ Node* read_node_from_b_tree(FILE *file_btree_r, int rrn_b_tree, int f_type){
     return node;
 }
 
+/*
+ * Busca id referenciado por src_id em nó referenciado por cur_node
+*/
 long int search_in_page_b_tree(FILE *file_btree_r, Node *cur_node, int src_id, int f_type){
 
     // Itera por cada uma das chaves comparando com o ID buscado
