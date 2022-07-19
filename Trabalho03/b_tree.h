@@ -40,9 +40,11 @@ int insert_subtree_rrn_in_node(Node *node, int subtree_rrn, int index);
 
 int insert_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int cur_rrn_btree, int f_type, Key *promo_key, int *promo_r_child, int recursion_counter);
 
-int create_new_root_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int f_type);
+int initialize_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int f_type);
 
 int add_new_node_btree(FILE *file_btree_rw, B_Header *b_header, int id, long int id_ref, int f_type);
+
+int write_btree_file_from_bin(FILE *file_bin_r, Header *f_header, char *btree_filename, int f_type);
 
 void print_node(Node *node, int f_type);
 

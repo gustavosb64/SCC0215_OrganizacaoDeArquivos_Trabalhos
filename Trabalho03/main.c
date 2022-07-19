@@ -576,24 +576,22 @@ void create_index_btree_cmd(int f_type) {
         printf("Falha no processamento do arquivo.");
         return;
     }
-    Header *header = read_header_from_bin(file_bin_r, f_type);
+    Header *f_header = read_header_from_bin(file_bin_r, f_type);
 
     // Caso arquivo conste como inconsistente, retorna sinal de erro
-    if (get_status_from_header(header) != '1'){
+    if (get_status_from_header(f_header) != '1'){
 
         printf("Falha no processamento do arquivo.");
 
         free(f_bin);
         free(f_btree);
-        free(header);
+        free(f_header);
         fclose(file_bin_r);
 
         return;
     }
 
-    printf("write_b_tree_file_from_bin()\n");
-    //write_b_tree_file_from_bin(file_bin_r, header, f_btree, f_type);
-
+    write_btree_file_from_bin(file_bin_r, f_header, f_btree, f_type);
     fclose(file_bin_r);
 
     binarioNaTela(f_btree);

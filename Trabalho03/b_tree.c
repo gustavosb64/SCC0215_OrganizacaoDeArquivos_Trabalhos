@@ -87,7 +87,7 @@ Node* initialize_node(int f_type){
 
     Node *node = (Node*) malloc(sizeof(Node));
 
-    node->tipoNo = '2';     // iniciando o nó como uma folha
+    node->tipoNo = 0;     // iniciando o nó como uma folha
     node->nroChaves = 0;
 
     for(int i=0; i<4; i++){
@@ -154,6 +154,7 @@ Node* read_node_from_b_tree(FILE *file_btree_r, int rrn_b_tree, int f_type){
 
     // Aloca região para nó e lê dados
     Node *node = initialize_node(f_type);
+    //Node *node = (Node*)malloc(sizeof(Node));
 
     fread(&(node->tipoNo), sizeof(char), 1, file_btree_r);
     fread(&(node->nroChaves), sizeof(int), 1, file_btree_r);
@@ -384,6 +385,10 @@ int split_node(FILE *file_btree_rw, Node *cur_node, B_Header *b_header, int f_ty
     // Terceira chave é promovida
     (*promo_key) = cur_node->key[2];
     (*promo_r_child) = b_header->proxRRN;
+
+    // Checa tipo do novo nó criado
+    if (new_node->P[0] != -1) new_node->tipoNo = '1';
+    else new_node->tipoNo = '2';
 
     // Escreve o novo nó ao final do arquivo
     write_node_in_btree_file(file_btree_rw, new_node, b_header->proxRRN, f_type);
@@ -683,6 +688,10 @@ int initialize_btree(FILE *file_btree_rw, B_Header *b_header, Key new_key, int f
     // Escreve novo nó no arquivo
     write_node_in_btree_file(file_btree_rw, new_root, b_header->proxRRN, f_type);
     fflush(file_btree_rw);
+
+    b_header->noRaiz = b_header->proxRRN;
+    b_header->nroNos += 1;
+    b_header->proxRRN +=1;
     
     free(new_root);
     return 0;
@@ -716,6 +725,7 @@ int add_new_node_btree(FILE *file_btree_rw, B_Header *b_header, int id, long int
         //printf(">>>>>>>>>> 4.1.split <<<<<<<<<<\n");
 
         Node *new_root = initialize_node(f_type);
+        new_root->tipoNo = '0';
 
         // Insere a chave promovida no nó atual
         insert_new_id_in_node(new_root, (*promo_key));
@@ -731,6 +741,7 @@ int add_new_node_btree(FILE *file_btree_rw, B_Header *b_header, int id, long int
         // Atualiza cabeçalho com nova raiz
         b_header->noRaiz = b_header->proxRRN;
         b_header->proxRRN += 1;
+        b_header->nroNos += 1;
     }
 
     //printf("split: %d\n",split_return);
@@ -744,32 +755,53 @@ int add_new_node_btree(FILE *file_btree_rw, B_Header *b_header, int id, long int
     return 0;
 }
 
-int write_btree_file_from_bin(FILE *file_bin_r, Header f_header, char *btree_filename, int f_type){
+/*
+ * Escreve arquivo de índices Árvore-B a partir de um arquivo binário de dados
+*/
+int write_btree_file_from_bin(FILE *file_bin_r, Header *f_header, char *btree_filename, int f_type){
 
-    FILE *file_btree_w = fopen(btree_filename, "wb");
-    if (file_btree_w == NULL){
+    FILE *file_btree_wr = fopen(btree_filename, "wb+");
+    /*
+    if (file_btree_rw == NULL){
+        printf("NULL\n");
         return 1;
     }
+    */
 
-    Key new_key;
+    B_Header *b_header = initialize_btree_header();
+    write_btree_header(file_btree_wr, b_header, f_type);
+
+    int id = -1;
     if (f_type == 1){
 
-        int rrn = 0;
-        int id = -1;
         int counter = 0;
 
         while(!read_id_from_reg_type1(file_bin_r, &id, counter, f_header)){
-            
-            new_key.C = id; 
-            new_key.Pr.rrn = counter; 
 
             if (id != -1){
+                //printf("id: %d\n",id);
+                add_new_node_btree(file_btree_wr, b_header, id, counter, f_type);
             }
+            counter++;
         }
+    }
+    else{
 
+        long int new_offset = REG_HEADER_SIZE_TYPE2;
+        long int offset = new_offset;
 
+        // Enquanto ainda houverem registros a serem lidos no arquivo de dados
+        while(!read_id_from_reg_type2(file_bin_r, &id, &new_offset, f_header)){
+            if (id != -1){
+                add_new_node_btree(file_btree_wr, b_header, id, offset, f_type);
+            }
+            offset = new_offset;
+        }
     }
 
+    write_btree_header(file_btree_wr, b_header, f_type);
+
+    fclose(file_btree_wr);
     return 0;
 }
 
