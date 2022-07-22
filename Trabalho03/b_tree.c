@@ -539,7 +539,12 @@ int write_btree_file_from_bin(FILE *file_bin_r, Header *f_header, char *btree_fi
 
     // Inicializa cabeçalho
     B_Header *b_header = initialize_btree_header();
-    write_btree_header(file_btree_wr, b_header, f_type);
+
+    // Pula bytes referentes ao cabeçalho
+    int header_offset;
+    if (f_type == 1) header_offset = NODE_SIZE_TYPE1;
+    else header_offset = NODE_SIZE_TYPE2;
+    fseek(file_btree_wr, header_offset, SEEK_SET);
 
     int id = -1;
     if (f_type == 1){
